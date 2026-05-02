@@ -58,7 +58,8 @@
         {
           "appleTeamId": "XXXXXXXXXX"
         }
-      ]
+      ],
+      "./plugins/withAndroidWidget.js"
     ],
     "experiments": {
       "typedRoutes": true,

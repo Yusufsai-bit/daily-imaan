@@ -82,16 +82,18 @@ export default function HomeScreen() {
     return () => sub.remove();
   }, [state.settings.ayatOrder]);
 
-  // Write widget payload to shared storage whenever ayah changes
+  // Sync ayah data to the native widget bridge whenever the displayed ayah changes.
+  // On iOS this writes to App Group UserDefaults and calls WidgetCenter.reloadAllTimelines().
+  // On Android this writes to SharedPreferences and broadcasts ACTION_APPWIDGET_UPDATE.
+  // Falls back silently in Expo Go (native module not present).
   useEffect(() => {
     if (Platform.OS === "web") return;
-    const payload = JSON.stringify({
-      arabicText: ayah.arabicText,
-      englishText: ayah.englishText.slice(0, 140),
-      surahRef: `${ayah.surahNameEnglish} ${ayah.surahId}:${ayah.ayahNumber}`,
-    });
-    import("@react-native-async-storage/async-storage").then(({ default: AS }) => {
-      AS.setItem("@widget_ayat", payload).catch(() => undefined);
+    const surahRef = `${ayah.surahNameEnglish} ${ayah.surahId}:${ayah.ayahNumber}`;
+    const englishShort = ayah.englishText.length > 140
+      ? ayah.englishText.slice(0, 137) + "…"
+      : ayah.englishText;
+    import("@/modules/DailyImaanWidget").then(({ setWidgetData }) => {
+      setWidgetData(ayah.arabicText, englishShort, surahRef).catch(() => undefined);
     });
   }, [ayah]);
 

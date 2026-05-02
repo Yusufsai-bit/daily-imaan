@@ -1,0 +1,15 @@
+{
+  "name": "daily-imaan-widget",
+  "version": "1.0.0",
+  "description": "Native widget data bridge for Daily Imaan",
+  "main": "index.ts",
+  "expo-module-config": {
+    "platforms": ["ios", "android"],
+    "android": {
+      "modules": ["expo.modules.dailyimaanwidget.DailyImaanWidgetModule"]
+    },
+    "ios": {
+      "modules": ["DailyImaanWidgetModule"]
+    }
+  }
+}
