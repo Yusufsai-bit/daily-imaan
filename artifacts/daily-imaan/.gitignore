@@ -39,3 +39,6 @@ yarn-error.*
 .vercel
 
 .env
+
+# EAS submit credentials — never commit
+play-service-account.json

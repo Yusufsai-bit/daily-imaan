@@ -754,6 +754,45 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      {/* Privacy & Legal */}
+      <View style={styles.section}>
+        <Text
+          maxFontSizeMultiplier={1.4}
+          style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+        >
+          PRIVACY & LEGAL
+        </Text>
+        <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/privacy" as never);
+            }}
+            {...a11yButton("Privacy Policy", "Opens the in-app privacy policy")}
+            style={({ pressed }) => [
+              styles.optionRow,
+              { borderBottomWidth: 0, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <View style={styles.optionContent}>
+              <Text
+                maxFontSizeMultiplier={1.6}
+                style={[styles.optionTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+              >
+                Privacy Policy
+              </Text>
+              <Text
+                maxFontSizeMultiplier={1.6}
+                style={[styles.optionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+              >
+                What data the app uses and where it goes
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={C.mutedForeground} {...a11yDecorative} />
+          </Pressable>
+        </View>
+      </View>
+
       {/* About — Sources */}
       <View style={styles.section}>
         <Text

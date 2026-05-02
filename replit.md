@@ -16,6 +16,7 @@ manages its own dependencies.
 - **Persistence**: AsyncStorage (no backend, no database)
 - **Audio**: expo-av (recitation streamed from cdn.alquran.cloud)
 - **Tafsir**: Quran.com Foundation API (Ibn Kathir Abridged), AsyncStorage cache with LRU eviction
+- **Crash reporting**: `@sentry/react-native` v7, init in `lib/sentry.ts`. DSN read from `EXPO_PUBLIC_SENTRY_DSN`; gracefully no-ops when unset.
 
 ## Active artifacts
 
@@ -44,3 +45,12 @@ defeat the lazy-load.
 
 See the `pnpm-workspace` skill for workspace structure and TypeScript setup.
 See the `expo` skill for Expo build conventions.
+
+## Launch readiness
+
+The Daily Imaan app is code-ready for App Store + Play Store submission. The
+human-action checklist (Apple Developer enrolment, real Apple Team ID, EAS
+account, Sentry DSN, hosted Privacy Policy URL, store metadata) is in
+`artifacts/daily-imaan/LAUNCH_CHECKLIST.md`. Reference docs alongside it:
+`PRIVACY_POLICY.md` (hostable), `STORE_LISTING.md` (copy/keywords/screenshots),
+and `PRIVACY_NUTRITION_LABELS.md` (Apple App Privacy + Google Data Safety).

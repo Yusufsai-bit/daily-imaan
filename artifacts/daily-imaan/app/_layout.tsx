@@ -23,6 +23,11 @@ import {
   requestNotificationPermission,
   scheduleAyatNotifications,
 } from "@/hooks/useNotifications";
+import { initSentry, reportRenderError, wrapRoot } from "@/lib/sentry";
+
+// Initialize crash reporting as early as possible so init-time errors are
+// captured. No-op when EXPO_PUBLIC_SENTRY_DSN is unset.
+initSentry();
 
 function getGlobalId(surahId: number, ayahNumber: number): number {
   const surah = SURAHS.find((s) => s.id === surahId);
@@ -125,11 +130,12 @@ function RootLayoutNav() {
       <Stack.Screen name="bookmarks" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="feeling" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="qibla" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="privacy" options={{ headerShown: false, presentation: "card" }} />
     </Stack>
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -147,7 +153,7 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ErrorBoundary>
+      <ErrorBoundary onError={reportRenderError}>
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView style={{ flex: 1 }}>
             <KeyboardProvider>
@@ -162,3 +168,7 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+// Wrapped with Sentry for navigation/transaction tracking when DSN is set;
+// no-op otherwise.
+export default wrapRoot(RootLayout);

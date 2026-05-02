@@ -57,6 +57,7 @@
   },
   "dependencies": {
     "@react-native-community/datetimepicker": "8.4.4",
+    "@sentry/react-native": "~7.2.0",
     "expo-av": "^16.0.8",
     "expo-notifications": "^0.32.17",
     "expo-sensors": "^15.0.8"

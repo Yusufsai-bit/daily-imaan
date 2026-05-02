@@ -11,12 +11,18 @@
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1A6B4A"
+      "backgroundColor": "#1A6B4A",
+      "dark": {
+        "image": "./assets/images/icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#0F2E22"
+      }
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.dailyimaan.app",
       "buildNumber": "1",
+      "icon": "./assets/images/icon.png",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Daily Imaan needs your location to calculate accurate prayer times.",
         "ITSAppUsesNonExemptEncryption": false
@@ -25,6 +31,10 @@
     "android": {
       "package": "com.dailyimaan.app",
       "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#1A6B4A"
+      },
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "RECEIVE_BOOT_COMPLETED",
@@ -63,7 +73,8 @@
           "appleTeamId": "XXXXXXXXXX"
         }
       ],
-      "./plugins/withAndroidWidget.js"
+      "./plugins/withAndroidWidget.js",
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true,
