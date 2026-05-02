@@ -466,15 +466,21 @@ export default function SettingsScreen() {
         </Text>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000", padding: 16 }]}>
           <Text style={[styles.aboutText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            English translation: Saheeh International.
+            English translation: Saheeh International. Every featured ayah and the verses behind each "I am feeling…" prompt are audited verbatim against the Saheeh International edition served by the Quran.com Foundation API.
             {"\n"}
-            Tafsir: linked out to Quran.com, where you can read verified classical tafsir (Ibn Kathīr, al-Saʿdī, and others).
+            Arabic text: text_uthmani via the Quran.com Foundation API — true Uthmani script.
+            {"\n"}
+            Tafsir: Tafsīr Ibn Kathīr (Abridged), fetched on demand from Quran.com and cached on your device. The words are verbatim from the cited scholar.
+            {"\n"}
+            Surah info: linked out to Quran.com from each surah page.
+            {"\n"}
+            Du'as: sunnah-attested, with the primary hadith collection cited under each one (Bukhari, Muslim, Abu Dawud, Tirmidhi, etc.).
             {"\n"}
             Audio recitation: Mishary al-Afasy (via alquran.cloud).
             {"\n"}
-            Prayer times: calculated locally from the Aladhan API.
+            Prayer times: Aladhan API.
             {"\n\n"}
-            This app does not include any AI-generated commentary on Qur'anic verses. For questions about meaning or rulings, please consult a qualified scholar.
+            This app does not generate or paraphrase any commentary, summaries, or "reminders" about Qur'anic verses, hadith, or Islamic teachings. For questions about meaning or rulings, please consult a qualified scholar.
           </Text>
         </View>
       </View>

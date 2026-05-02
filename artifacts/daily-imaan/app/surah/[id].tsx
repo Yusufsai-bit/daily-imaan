@@ -18,11 +18,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import type { DimensionValue } from "react-native";
 
+import * as Linking from "expo-linking";
+
 import colors from "@/constants/colors";
 import { useApp } from "@/context/AppContext";
 import { SURAHS, getSurahById } from "@/data/surahsData";
 import { getQuranSurah } from "@/data/quranFull";
-import { SURAH_THEMES } from "@/data/surahThemes";
 
 interface ParsedAyah {
   number: number;
@@ -299,14 +300,25 @@ export default function SurahDetailScreen() {
                   </Text>
                 </View>
               )}
-              {SURAH_THEMES[surahId] ? (
-                <View style={[styles.themeCard, { backgroundColor: C.secondary, borderLeftColor: C.primary }]}>
-                  <Ionicons name="bulb-outline" size={14} color={C.primary} />
-                  <Text style={[styles.themeText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                    {SURAH_THEMES[surahId]}
-                  </Text>
-                </View>
-              ) : null}
+              {/* Link to authoritative scholarly info about this surah on Quran.com.
+                  We do NOT include any in-app summary or theme description, since
+                  any paraphrased description would be unsourced commentary. */}
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  const url = `https://quran.com/${surahId}/info`;
+                  Linking.openURL(url).catch(() => {
+                    Alert.alert("Could not open browser", "Please visit quran.com to read about this surah.");
+                  });
+                }}
+                style={[styles.themeCard, { backgroundColor: C.secondary, borderLeftColor: C.primary }]}
+              >
+                <Ionicons name="information-circle-outline" size={14} color={C.primary} />
+                <Text style={[styles.themeText, { color: C.primary, fontFamily: "Inter_500Medium" }]}>
+                  Read about this surah on Quran.com
+                </Text>
+                <Ionicons name="open-outline" size={12} color={C.primary} />
+              </Pressable>
             </View>
           )}
         />

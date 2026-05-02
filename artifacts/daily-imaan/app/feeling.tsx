@@ -245,30 +245,6 @@ export default function FeelingScreen() {
                       — {f.dua.source}
                     </Text>
                   </View>
-
-                  {/* Gentle reminder */}
-                  <View
-                    style={[
-                      styles.reminder,
-                      {
-                        backgroundColor: isDark
-                          ? "rgba(45,191,127,0.10)"
-                          : "rgba(26,107,74,0.06)",
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.reminderText,
-                        {
-                          color: C.primary,
-                          fontFamily: "Inter_500Medium",
-                        },
-                      ]}
-                    >
-                      {f.reminder}
-                    </Text>
-                  </View>
                 </View>
               )}
             </View>
@@ -335,13 +311,6 @@ const styles = StyleSheet.create({
   english: { fontSize: 14, lineHeight: 22 },
   ref: { fontSize: 12, marginTop: 2 },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
-  reminder: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-    marginTop: 2,
-  },
-  reminderText: { fontSize: 13, lineHeight: 19, textAlign: "center" },
   footer: {
     fontSize: 12,
     textAlign: "center",
