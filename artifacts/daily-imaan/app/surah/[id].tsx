@@ -126,37 +126,54 @@ export default function SurahDetailScreen() {
   }, []);
 
   // Load surah from bundled data and update Continue Reading + intentions.
-  // The full Saheeh International + Uthmani text is shipped in quranFull.ts
-  // (see data/quranFull.ts) so this is a synchronous, offline lookup.
+  // The full Saheeh International + Uthmani text lives in quranFullData.ts
+  // and is loaded lazily via dynamic import (see data/quranFull.ts) so the
+  // 2.3 MB payload doesn't parse during cold start of unrelated screens.
+  // First call into this surah pays the parse cost once; subsequent calls
+  // hit the in-memory index.
   useEffect(() => {
     if (!surahId || !surah) {
       setLoading(false);
       return;
     }
-    const localData = getQuranSurah(surahId);
-    if (localData) {
-      const parsed = localData.ayahs.map((a) => ({
-        number: surah.startingAyah + a.n - 1,
-        numberInSurah: a.n,
-        arabic: a.a,
-        english: a.e,
-      }));
-      setAyat(parsed);
-      // Update "Continue reading" position to the start of this surah on
-      // mount. Tracking actual scroll offset would add a lot of complexity
-      // for marginal benefit — first-ayah of the most recent surah is a
-      // sensible resume point.
-      setLastReadPosition({
-        surahId,
-        ayahNumber: 1,
-        surahName: surah.nameEnglish,
-        updatedAt: Date.now(),
-      });
-      // Auto-link the "Read Quran" intention. markDeedDone is idempotent —
-      // it never undoes a manual check.
-      markDeedDone("quran");
-    }
-    setLoading(false);
+    let cancelled = false;
+    (async () => {
+      let localData: Awaited<ReturnType<typeof getQuranSurah>> = undefined;
+      try {
+        localData = await getQuranSurah(surahId);
+      } catch {
+        // Lazy module load failed — treat as missing surah and stop the
+        // spinner rather than leaving the screen in a perpetual loading
+        // state. The user sees the standard "Surah not found" empty UI.
+      }
+      if (cancelled) return;
+      if (localData) {
+        const parsed = localData.ayahs.map((a) => ({
+          number: surah.startingAyah + a.n - 1,
+          numberInSurah: a.n,
+          arabic: a.a,
+          english: a.e,
+        }));
+        setAyat(parsed);
+        // Update "Continue reading" position to the start of this surah on
+        // mount. Tracking actual scroll offset would add a lot of complexity
+        // for marginal benefit — first-ayah of the most recent surah is a
+        // sensible resume point.
+        setLastReadPosition({
+          surahId,
+          ayahNumber: 1,
+          surahName: surah.nameEnglish,
+          updatedAt: Date.now(),
+        });
+        // Auto-link the "Read Quran" intention. markDeedDone is idempotent —
+        // it never undoes a manual check.
+        markDeedDone("quran");
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [surahId, surah, setLastReadPosition, markDeedDone]);
 
   const playAyah = useCallback(

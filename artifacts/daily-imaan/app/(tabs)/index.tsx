@@ -3,12 +3,13 @@ import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Animated,
   AppState,
+  InteractionManager,
   Platform,
   Pressable,
   ScrollView,
@@ -25,7 +26,7 @@ import { FEATURED_AYAT, FeaturedAyah, getTodayAyah } from "@/data/featuredAyat";
 import { SURAHS } from "@/data/surahsData";
 import { usePrayerTimes } from "@/hooks/usePrayerTimes";
 import { schedulePrayerNotifications } from "@/hooks/useNotifications";
-import { useTafsir } from "@/hooks/useTafsir";
+import { useTafsir, prewarmTafsir } from "@/hooks/useTafsir";
 import colors from "@/constants/colors";
 
 function getGlobalAyahNumber(surahId: number, ayahNumber: number): number {
@@ -76,12 +77,29 @@ export default function HomeScreen() {
 
   // Schedule prayer-time notifications whenever prayer times OR per-prayer
   // sound settings change. Each prayer fires with sound on/off per the user's
-  // choice (Fajr defaults to silent for quiet hours).
+  // choice (Fajr defaults to silent for quiet hours). Deferred via
+  // InteractionManager so the cold-start render is not blocked by scheduling
+  // ~5 notifications through the native bridge.
   useEffect(() => {
-    if (prayerTimes) {
+    if (!prayerTimes) return;
+    const handle = InteractionManager.runAfterInteractions(() => {
       schedulePrayerNotifications(prayerTimes, state.settings.prayerSoundEnabled);
-    }
+    });
+    return () => handle.cancel();
   }, [prayerTimes, state.settings.prayerSoundEnabled]);
+
+  // Pre-warm the tafsir cache for the currently displayed featured ayah
+  // after the first interaction frame settles. When the user later taps
+  // "Show tafsir", the result is already in AsyncStorage and renders
+  // instantly. Best-effort and silent on failure. Skipped on web where the
+  // tafsir UI shows a "Open on Quran.com" CTA instead.
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const handle = InteractionManager.runAfterInteractions(() => {
+      prewarmTafsir(ayah.surahId, ayah.ayahNumber);
+    });
+    return () => handle.cancel();
+  }, [ayah.surahId, ayah.ayahNumber]);
 
   // Refresh ayah when app returns to foreground (e.g. after midnight)
   useEffect(() => {
@@ -196,9 +214,13 @@ export default function HomeScreen() {
 
   const bookmarked = isBookmarked(globalAyahId);
 
-  const prayerNames = prayerTimes
-    ? Object.entries(prayerTimes).filter(([k]) => k !== "Sunrise")
-    : [];
+  const prayerNames = useMemo(
+    () =>
+      prayerTimes
+        ? Object.entries(prayerTimes).filter(([k]) => k !== "Sunrise")
+        : [],
+    [prayerTimes],
+  );
 
   return (
     <ScrollView

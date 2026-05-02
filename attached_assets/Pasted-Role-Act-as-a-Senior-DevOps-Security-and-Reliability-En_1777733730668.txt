@@ -1,0 +1,146 @@
+Role:
+Act as a Senior DevOps, Security, and Reliability Engineer preparing a production release for a live mobile/web application.
+
+Context
+
+This is a Daily Imaan app designed for Muslims in the West with busy lifestyles.
+Core features include:
+
+Daily ayah (Arabic + English + short explanation)
+Duas for daily situations
+Dhikr counter
+Prayer time reminders (location-based)
+Daily good deeds checklist
+Notifications and home screen widget
+Offline functionality
+
+The app must be:
+
+Private, reliable, lightweight, and trustworthy
+
+Objective
+
+Perform a full production readiness audit, identify risks, and provide actionable fixes before deployment.
+
+Task 1: Production Readiness Audit
+1. Security Review
+Detect any hardcoded API keys, secrets, tokens, or credentials
+Identify vulnerabilities:
+XSS
+Injection risks (SQL, NoSQL, command)
+Unsafe input handling
+Review authentication/session handling (if present)
+Check for missing best practices:
+HTTPS assumptions
+Secure headers
+Dependency vulnerabilities
+2. Privacy & Data Handling (Critical)
+List all user data being collected or stored
+Identify:
+What is stored locally vs remotely
+Any unnecessary data collection
+Ensure a privacy-first approach:
+No sensitive behavioural tracking unless required
+Flag any risks related to:
+Location data (prayer times)
+Personal habits (streaks, deeds, dhikr usage)
+3. Performance Review
+Detect:
+Redundant API calls
+Inefficient loops or unnecessary re-renders
+Heavy/unoptimised assets (images, audio, fonts)
+Recommend optimisations for:
+Mobile devices
+Low bandwidth environments
+Fast app load times
+4. Error Handling & Resilience
+Confirm:
+Custom 404 page
+Global error boundary / 500 fallback
+Verify:
+API failure handling
+Network timeout handling
+No blank screens or crashes
+Ensure graceful fallback for:
+Ayah loading
+Prayer times
+Audio playback
+5. Notifications & Time Handling
+Audit:
+Notification scheduling reliability
+Background execution behaviour
+Timezone handling
+Daylight Saving Time impact
+Check behaviour when:
+Notifications are disabled
+Device is offline
+6. Offline Functionality
+Verify:
+Quran access works offline
+Duas work offline
+Core features do not break without internet
+Identify any missing offline fallbacks
+7. Content Integrity (Critical for this app)
+Validate:
+Quran ayat accuracy
+Translation consistency and source
+Authenticity of duas
+Flag any risks of:
+Incorrect or partial content
+Data corruption or mismatch
+8. Environment Configuration
+List all required process.env variables
+Specify:
+Required vs optional
+Where each is used
+Ensure compatibility with Replit Secrets
+Task 2: UI/UX Production Polish
+Review all:
+Buttons
+Forms
+Navigation
+
+Ensure:
+
+All async actions have loading indicators
+Disabled states exist where needed
+Clear feedback for:
+Success
+Errors
+Retry states
+No broken links or dead flows
+
+Also check:
+
+First-time user experience
+Empty states (no bookmarks, no streak yet)
+Task 3: Accessibility Review
+Verify:
+Readable Arabic and English text
+Font scaling support
+Sufficient contrast (especially dark mode)
+Ensure usability for:
+Non-native English users
+Older users
+Task 4: Post-Launch Readiness
+Confirm basic logging or error tracking exists
+Identify top failure points in production
+Ensure fallback behaviour is defined for all core features
+Task 5: Deployment Plan (Replit)
+
+Provide a step-by-step checklist including:
+
+Environment variable setup (Replit Secrets)
+Build and production configuration
+Security checks before deploy
+Deployment steps
+Post-deploy smoke tests
+Rollback strategy if something fails
+Output Requirements
+Structured Audit Report (clear sections)
+Top 3 High-Priority Issues (must fix before deploy)
+Clear, actionable recommendations (no vague advice)
+Critical Instruction
+
+DO NOT deploy the app.
+Only provide the audit findings, risks, and recommendations.

@@ -1,10 +1,11 @@
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import React, { useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  FlatList,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   useColorScheme,
@@ -31,19 +32,42 @@ interface BookmarkRow {
  * Resolves stored bookmark IDs into surah + ayah info using bundled data.
  * Defensive de-dup in case earlier client versions persisted duplicates.
  * Sort by surah then ayah for stable display order.
+ *
+ * The bundled Quran text now lives in a separate ~2.3 MB module that is
+ * loaded lazily via dynamic import (see data/quranFull.ts), so this
+ * function is async. Each surah is fetched at most once per build via
+ * de-duped Promise.all.
  */
-function buildRows(globalIds: number[]): BookmarkRow[] {
+async function buildRows(globalIds: number[]): Promise<BookmarkRow[]> {
   const unique = Array.from(new Set(globalIds));
-  const rows: BookmarkRow[] = [];
-  for (const globalId of unique) {
-    const surah = SURAHS.find(
-      (s) => globalId >= s.startingAyah && globalId < s.startingAyah + s.ayahCount
+  const resolved = unique
+    .map((globalId) => {
+      const surah = SURAHS.find(
+        (s) => globalId >= s.startingAyah && globalId < s.startingAyah + s.ayahCount
+      );
+      if (!surah) return null;
+      return { globalId, surah, ayahNumber: globalId - surah.startingAyah + 1 };
+    })
+    .filter(
+      (
+        x,
+      ): x is {
+        globalId: number;
+        surah: (typeof SURAHS)[number];
+        ayahNumber: number;
+      } => x !== null,
     );
-    if (!surah) continue;
-    const ayahNumber = globalId - surah.startingAyah + 1;
-    const surahData = getQuranSurah(surah.id);
+
+  const surahIds = Array.from(new Set(resolved.map((r) => r.surah.id)));
+  const surahDataEntries = await Promise.all(
+    surahIds.map(async (id) => [id, await getQuranSurah(id)] as const),
+  );
+  const surahDataMap = new Map(surahDataEntries);
+
+  const rows: BookmarkRow[] = resolved.map(({ globalId, surah, ayahNumber }) => {
+    const surahData = surahDataMap.get(surah.id);
     const ayah = surahData?.ayahs.find((a) => a.n === ayahNumber);
-    rows.push({
+    return {
       globalId,
       surahId: surah.id,
       surahName: surah.name,
@@ -51,10 +75,10 @@ function buildRows(globalIds: number[]): BookmarkRow[] {
       ayahNumber,
       arabic: ayah?.a ?? "",
       english: ayah?.e ?? "",
-    });
-  }
+    };
+  });
   rows.sort((a, b) =>
-    a.surahId !== b.surahId ? a.surahId - b.surahId : a.ayahNumber - b.ayahNumber
+    a.surahId !== b.surahId ? a.surahId - b.surahId : a.ayahNumber - b.ayahNumber,
   );
   return rows;
 }
@@ -66,7 +90,76 @@ export default function BookmarksScreen() {
   const insets = useSafeAreaInsets();
 
   const { state, toggleBookmark } = useApp();
-  const rows = useMemo(() => buildRows(state.bookmarks), [state.bookmarks]);
+  const [rows, setRows] = useState<BookmarkRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    buildRows(state.bookmarks)
+      .then((next) => {
+        if (cancelled) return;
+        setRows(next);
+        setLoading(false);
+      })
+      .catch(() => {
+        // If the lazy quranFullData import ever rejects (offline first
+        // launch + corrupted bundle is the only realistic case), fall
+        // back to an empty list rather than spinning forever.
+        if (cancelled) return;
+        setRows([]);
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [state.bookmarks]);
+
+  const renderItem = ({ item: row }: { item: BookmarkRow }) => (
+    <Pressable
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        router.push(`/surah/${row.surahId}` as never);
+      }}
+      accessibilityLabel={`Open ${row.surahNameEnglish} verse ${row.ayahNumber}`}
+      style={({ pressed }) => [
+        styles.row,
+        { backgroundColor: C.card, borderColor: C.border, opacity: pressed ? 0.85 : 1 },
+      ]}
+    >
+      <View style={styles.rowHeader}>
+        <View style={[styles.surahBadge, { backgroundColor: C.secondary }]}>
+          <Text style={[styles.surahBadgeText, { color: C.primary, fontFamily: "Inter_600SemiBold" }]}>
+            {row.surahNameEnglish} · {row.surahId}:{row.ayahNumber}
+          </Text>
+        </View>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            toggleBookmark(row.globalId);
+          }}
+          hitSlop={10}
+          accessibilityLabel="Remove bookmark"
+          style={({ pressed }) => [styles.removeBtn, { opacity: pressed ? 0.5 : 1 }]}
+        >
+          <Ionicons name="bookmark" size={18} color="#C8933C" />
+        </Pressable>
+      </View>
+      {row.arabic ? (
+        <Text style={[styles.arabic, { color: C.foreground }]} numberOfLines={3}>
+          {row.arabic}
+        </Text>
+      ) : null}
+      {row.english ? (
+        <Text
+          style={[styles.english, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+          numberOfLines={3}
+        >
+          {row.english}
+        </Text>
+      ) : null}
+    </Pressable>
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: C.background }]}>
@@ -87,7 +180,11 @@ export default function BookmarksScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      {rows.length === 0 ? (
+      {loading && state.bookmarks.length > 0 ? (
+        <View style={styles.empty}>
+          <ActivityIndicator color={C.primary} />
+        </View>
+      ) : rows.length === 0 ? (
         <View style={styles.empty}>
           <Ionicons name="bookmark-outline" size={56} color={C.mutedForeground} />
           <Text style={[styles.emptyTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
@@ -98,57 +195,17 @@ export default function BookmarksScreen() {
           </Text>
         </View>
       ) : (
-        <ScrollView
+        <FlatList
+          data={rows}
+          keyExtractor={(row) => String(row.globalId)}
+          renderItem={renderItem}
           contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 20 }]}
+          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           showsVerticalScrollIndicator={false}
-        >
-          {rows.map((row) => (
-            <Pressable
-              key={row.globalId}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push(`/surah/${row.surahId}` as never);
-              }}
-              accessibilityLabel={`Open ${row.surahNameEnglish} verse ${row.ayahNumber}`}
-              style={({ pressed }) => [
-                styles.row,
-                { backgroundColor: C.card, borderColor: C.border, opacity: pressed ? 0.85 : 1 },
-              ]}
-            >
-              <View style={styles.rowHeader}>
-                <View style={[styles.surahBadge, { backgroundColor: C.secondary }]}>
-                  <Text style={[styles.surahBadgeText, { color: C.primary, fontFamily: "Inter_600SemiBold" }]}>
-                    {row.surahNameEnglish} · {row.surahId}:{row.ayahNumber}
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    toggleBookmark(row.globalId);
-                  }}
-                  hitSlop={10}
-                  accessibilityLabel="Remove bookmark"
-                  style={({ pressed }) => [styles.removeBtn, { opacity: pressed ? 0.5 : 1 }]}
-                >
-                  <Ionicons name="bookmark" size={18} color="#C8933C" />
-                </Pressable>
-              </View>
-              {row.arabic ? (
-                <Text style={[styles.arabic, { color: C.foreground }]} numberOfLines={3}>
-                  {row.arabic}
-                </Text>
-              ) : null}
-              {row.english ? (
-                <Text
-                  style={[styles.english, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
-                  numberOfLines={3}
-                >
-                  {row.english}
-                </Text>
-              ) : null}
-            </Pressable>
-          ))}
-        </ScrollView>
+          initialNumToRender={8}
+          windowSize={9}
+          removeClippedSubviews
+        />
       )}
     </View>
   );
@@ -164,7 +221,7 @@ const styles = StyleSheet.create({
   empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingHorizontal: 40 },
   emptyTitle: { fontSize: 17 },
   emptyText: { fontSize: 14, lineHeight: 20, textAlign: "center" },
-  list: { padding: 16, gap: 12 },
+  list: { padding: 16 },
   row: { borderRadius: 14, padding: 14, gap: 10, borderWidth: StyleSheet.hairlineWidth },
   rowHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   surahBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },

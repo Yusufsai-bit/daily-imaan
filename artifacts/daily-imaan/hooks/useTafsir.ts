@@ -211,3 +211,57 @@ export function useTafsir(
 
   return state;
 }
+
+/**
+ * Eagerly fetch + cache the tafsir for an ayah without subscribing any UI.
+ * Called from the home screen for the current featured ayah after the first
+ * interaction frame settles, so when the user later taps "Show tafsir" the
+ * result is already in AsyncStorage and renders instantly.
+ *
+ * Best-effort and silent: a missing network connection, a 4xx/5xx response,
+ * or a malformed payload all just no-op. Never throws.
+ */
+export async function prewarmTafsir(
+  surahId: number,
+  ayahNumber: number,
+): Promise<void> {
+  try {
+    const verseKey = `${surahId}:${ayahNumber}`;
+    const cacheKey = `${CACHE_PREFIX}${TAFSIR_ID}_${verseKey}`;
+
+    // Fast path: a fresh cache entry already exists, nothing to do.
+    try {
+      const cached = await AsyncStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed: CacheEntry = JSON.parse(cached);
+        if (parsed?.text && Date.now() - parsed.fetchedAt < CACHE_TTL_MS) {
+          touchIndex(cacheKey);
+          return;
+        }
+      }
+    } catch {
+      // Ignore malformed cache and fall through to network fetch.
+    }
+
+    const url = `https://api.qurancdn.com/api/qdc/tafsirs/${TAFSIR_ID}/by_ayah/${verseKey}`;
+    const res = await fetch(url);
+    if (!res.ok) return;
+    const data = await res.json();
+    const rawText: string = data?.tafsir?.text ?? "";
+    const sourceName: string =
+      data?.tafsir?.translated_name?.name ||
+      data?.tafsir?.resource_name ||
+      "Tafsir Ibn Kathir";
+
+    const cleanText = htmlToText(rawText);
+    if (!cleanText) return;
+
+    await writeWithLRU(cacheKey, {
+      text: cleanText,
+      source: `${sourceName} · via Quran.com`,
+      fetchedAt: Date.now(),
+    });
+  } catch {
+    // best-effort — never throws
+  }
+}
