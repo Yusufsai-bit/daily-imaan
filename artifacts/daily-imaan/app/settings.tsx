@@ -15,6 +15,9 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
 import type { DimensionValue } from "react-native";
 
@@ -22,6 +25,13 @@ import colors from "@/constants/colors";
 import { RECITERS } from "@/constants/reciters";
 import { useApp, type PrayerSoundSettings } from "@/context/AppContext";
 import { requestNotificationPermission } from "@/hooks/useNotifications";
+import {
+  a11yButton,
+  a11yChecked,
+  a11yDecorative,
+  a11ySelectable,
+  a11yToggle,
+} from "@/components/a11y";
 
 const PRAYER_METHODS = [
   { id: 2, label: "ISNA (North America)" },
@@ -53,15 +63,24 @@ function SettingRow({
         !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
       ]}
     >
-      <View style={[styles.settingIcon, { backgroundColor: C.secondary }]}>
+      <View
+        style={[styles.settingIcon, { backgroundColor: C.secondary }]}
+        {...a11yDecorative}
+      >
         <Ionicons name={icon as never} size={16} color={C.primary} />
       </View>
       <View style={styles.settingContent}>
-        <Text style={[styles.settingTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
+        <Text
+          maxFontSizeMultiplier={1.6}
+          style={[styles.settingTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+        >
           {title}
         </Text>
         {subtitle ? (
-          <Text style={[styles.settingSubtitle, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          <Text
+            maxFontSizeMultiplier={1.6}
+            style={[styles.settingSubtitle, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+          >
             {subtitle}
           </Text>
         ) : null}
@@ -80,7 +99,15 @@ export default function SettingsScreen() {
   const { state, updateSettings } = useApp();
   const { settings } = state;
 
+  // Web fallback: keep the manual HH:MM input since the native picker
+  // does not support web. On native we use DateTimePicker.
   const [newTime, setNewTime] = useState("");
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [pickerValue, setPickerValue] = useState<Date>(() => {
+    const d = new Date();
+    d.setSeconds(0, 0);
+    return d;
+  });
 
   const handleDarkModeToggle = useCallback(
     (val: boolean) => {
@@ -93,33 +120,60 @@ export default function SettingsScreen() {
     [updateSettings]
   );
 
-  const handleAddTime = useCallback(async () => {
+  // Shared add path used by both native picker and web text input.
+  const commitNewTime = useCallback(
+    async (time: string) => {
+      if (settings.notificationTimes.includes(time)) {
+        Alert.alert("Duplicate", "This time is already added.");
+        return;
+      }
+      if (Platform.OS !== "web") {
+        const granted = await requestNotificationPermission();
+        if (!granted) {
+          Alert.alert(
+            "Permission Required",
+            "Please enable notifications in your device settings to receive daily reminders."
+          );
+          return;
+        }
+      }
+      updateSettings({ notificationTimes: [...settings.notificationTimes, time].sort() });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    [settings.notificationTimes, updateSettings]
+  );
+
+  const handleAddTimeWeb = useCallback(async () => {
     const trimmed = newTime.trim();
     const valid = /^([01]?\d|2[0-3]):([0-5]\d)$/.test(trimmed);
     if (!valid) {
       Alert.alert("Invalid Time", "Please enter time in HH:MM format (e.g. 07:00)");
       return;
     }
-    if (settings.notificationTimes.includes(trimmed)) {
-      Alert.alert("Duplicate", "This time is already added.");
-      return;
-    }
-
-    if (Platform.OS !== "web") {
-      const granted = await requestNotificationPermission();
-      if (!granted) {
-        Alert.alert(
-          "Permission Required",
-          "Please enable notifications in your device settings to receive daily reminders."
-        );
-        return;
-      }
-    }
-
-    updateSettings({ notificationTimes: [...settings.notificationTimes, trimmed].sort() });
+    await commitNewTime(trimmed);
     setNewTime("");
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, [newTime, settings.notificationTimes, updateSettings]);
+  }, [newTime, commitNewTime]);
+
+  const handlePickerChange = useCallback(
+    (event: DateTimePickerEvent, date?: Date) => {
+      // Android: dialog auto-dismisses after any interaction; iOS: stays mounted.
+      if (Platform.OS === "android") {
+        setPickerVisible(false);
+      }
+      if (event.type !== "set" || !date) return;
+      const hh = String(date.getHours()).padStart(2, "0");
+      const mm = String(date.getMinutes()).padStart(2, "0");
+      const time = `${hh}:${mm}`;
+      setPickerValue(date);
+      void commitNewTime(time);
+    },
+    [commitNewTime]
+  );
+
+  const openPicker = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setPickerVisible(true);
+  }, []);
 
   const handleRemoveTime = useCallback(
     (time: string) => {
@@ -176,14 +230,18 @@ export default function SettingsScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => router.back()}
+          {...a11yButton("Back", "Returns to the previous screen")}
           style={({ pressed }) => [
             styles.backBtn,
             { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 },
           ]}
         >
-          <Ionicons name="arrow-back" size={20} color={C.foreground} />
+          <Ionicons name="arrow-back" size={20} color={C.foreground} {...a11yDecorative} />
         </Pressable>
-        <Text style={[styles.title, { color: C.foreground, fontFamily: "Inter_700Bold" }]}>
+        <Text
+          maxFontSizeMultiplier={1.6}
+          style={[styles.title, { color: C.foreground, fontFamily: "Inter_700Bold" }]}
+        >
           Settings
         </Text>
         <View style={{ width: 40 }} />
@@ -191,7 +249,10 @@ export default function SettingsScreen() {
 
       {/* Appearance */}
       <View style={styles.section}>
-        <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+        <Text
+          maxFontSizeMultiplier={1.4}
+          style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+        >
           APPEARANCE
         </Text>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
@@ -207,6 +268,7 @@ export default function SettingsScreen() {
                 onValueChange={handleDarkModeToggle}
                 trackColor={{ false: C.border, true: C.primary }}
                 thumbColor="#fff"
+                {...a11yToggle("Dark mode", settings.darkMode, "Overrides the system appearance setting")}
               />
             }
           />
@@ -215,7 +277,10 @@ export default function SettingsScreen() {
 
       {/* Ayat Order */}
       <View style={styles.section}>
-        <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+        <Text
+          maxFontSizeMultiplier={1.4}
+          style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+        >
           AYAT OF THE DAY
         </Text>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
@@ -224,21 +289,31 @@ export default function SettingsScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               updateSettings({ ayatOrder: "sequential" });
             }}
+            {...a11ySelectable(
+              "Sequential — one ayah per day in fixed order",
+              settings.ayatOrder === "sequential",
+            )}
             style={({ pressed }) => [
               styles.optionRow,
               { borderBottomColor: C.border, opacity: pressed ? 0.7 : 1 },
             ]}
           >
             <View style={styles.optionContent}>
-              <Text style={[styles.optionTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
+              <Text
+                maxFontSizeMultiplier={1.6}
+                style={[styles.optionTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+              >
                 Sequential
               </Text>
-              <Text style={[styles.optionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              <Text
+                maxFontSizeMultiplier={1.6}
+                style={[styles.optionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+              >
                 One ayah per day in fixed order
               </Text>
             </View>
             {settings.ayatOrder === "sequential" && (
-              <Ionicons name="checkmark-circle" size={22} color={C.primary} />
+              <Ionicons name="checkmark-circle" size={22} color={C.primary} {...a11yDecorative} />
             )}
           </Pressable>
 
@@ -247,18 +322,28 @@ export default function SettingsScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               updateSettings({ ayatOrder: "random" });
             }}
+            {...a11ySelectable(
+              "Random — different each day, date-seeded",
+              settings.ayatOrder === "random",
+            )}
             style={({ pressed }) => [styles.optionRow, { opacity: pressed ? 0.7 : 1 }]}
           >
             <View style={styles.optionContent}>
-              <Text style={[styles.optionTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
+              <Text
+                maxFontSizeMultiplier={1.6}
+                style={[styles.optionTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+              >
                 Random
               </Text>
-              <Text style={[styles.optionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              <Text
+                maxFontSizeMultiplier={1.6}
+                style={[styles.optionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+              >
                 Different each day (date-seeded, consistent)
               </Text>
             </View>
             {settings.ayatOrder === "random" && (
-              <Ionicons name="checkmark-circle" size={22} color={C.primary} />
+              <Ionicons name="checkmark-circle" size={22} color={C.primary} {...a11yDecorative} />
             )}
           </Pressable>
         </View>
@@ -267,17 +352,26 @@ export default function SettingsScreen() {
       {/* Notification Times */}
       <View style={styles.section}>
         <View style={{ gap: 2, marginBottom: 8 }}>
-          <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+          <Text
+            maxFontSizeMultiplier={1.4}
+            style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+          >
             DAILY REMINDERS
           </Text>
-          <Text style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          <Text
+            maxFontSizeMultiplier={1.6}
+            style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+          >
             Gentle nudges — no guilt, just a moment with Allah
           </Text>
         </View>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
           {settings.notificationTimes.length === 0 ? (
             <View style={styles.emptyRow}>
-              <Text style={[styles.emptyText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              <Text
+                maxFontSizeMultiplier={1.6}
+                style={[styles.emptyText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+              >
                 No reminders set
               </Text>
             </View>
@@ -293,58 +387,132 @@ export default function SettingsScreen() {
                   },
                 ]}
               >
-                <Ionicons name="notifications-outline" size={18} color={C.primary} />
-                <Text style={[styles.timeText, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                <Ionicons name="notifications-outline" size={18} color={C.primary} {...a11yDecorative} />
+                <Text
+                  maxFontSizeMultiplier={1.6}
+                  style={[styles.timeText, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}
+                >
                   {time}
                 </Text>
                 <Pressable
                   onPress={() => handleRemoveTime(time)}
+                  {...a11yButton(`Remove reminder at ${time}`)}
                   style={({ pressed }) => [
                     styles.removeBtn,
                     { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 },
                   ]}
                 >
-                  <Ionicons name="close" size={14} color={C.mutedForeground} />
+                  <Ionicons name="close" size={14} color={C.mutedForeground} {...a11yDecorative} />
                 </Pressable>
               </View>
             ))
           )}
 
-          <View
-            style={[
-              styles.addTimeRow,
-              settings.notificationTimes.length > 0 && {
-                borderTopWidth: StyleSheet.hairlineWidth,
-                borderTopColor: C.border,
-              },
-            ]}
-          >
-            <TextInput
-              value={newTime}
-              onChangeText={setNewTime}
-              placeholder="HH:MM (e.g. 07:00)"
-              placeholderTextColor={C.mutedForeground}
+          {Platform.OS === "web" ? (
+            <View
               style={[
-                styles.timeInput,
-                { color: C.foreground, backgroundColor: C.muted, fontFamily: "Inter_400Regular" },
-              ]}
-              keyboardType="numbers-and-punctuation"
-              returnKeyType="done"
-              onSubmitEditing={handleAddTime}
-            />
-            <Pressable
-              onPress={handleAddTime}
-              style={({ pressed }) => [
-                styles.addBtn,
-                { backgroundColor: C.primary, opacity: pressed ? 0.7 : 1 },
+                styles.addTimeRow,
+                settings.notificationTimes.length > 0 && {
+                  borderTopWidth: StyleSheet.hairlineWidth,
+                  borderTopColor: C.border,
+                },
               ]}
             >
-              <Ionicons name="add" size={18} color="#fff" />
-              <Text style={[styles.addBtnText, { fontFamily: "Inter_600SemiBold" }]}>Add</Text>
+              <TextInput
+                value={newTime}
+                onChangeText={setNewTime}
+                placeholder="HH:MM (e.g. 07:00)"
+                placeholderTextColor={C.mutedForeground}
+                style={[
+                  styles.timeInput,
+                  { color: C.foreground, backgroundColor: C.muted, fontFamily: "Inter_400Regular" },
+                ]}
+                keyboardType="numbers-and-punctuation"
+                returnKeyType="done"
+                onSubmitEditing={handleAddTimeWeb}
+                accessibilityLabel="Reminder time in HH:MM format"
+              />
+              <Pressable
+                onPress={handleAddTimeWeb}
+                {...a11yButton("Add reminder time")}
+                style={({ pressed }) => [
+                  styles.addBtn,
+                  { backgroundColor: C.primary, opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Ionicons name="add" size={18} color="#fff" {...a11yDecorative} />
+                <Text
+                  maxFontSizeMultiplier={1.4}
+                  style={[styles.addBtnText, { fontFamily: "Inter_600SemiBold" }]}
+                >
+                  Add
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              onPress={openPicker}
+              {...a11yButton(
+                "Add reminder time",
+                "Opens a time picker to add a new daily reminder",
+              )}
+              style={({ pressed }) => [
+                styles.addPickerRow,
+                settings.notificationTimes.length > 0 && {
+                  borderTopWidth: StyleSheet.hairlineWidth,
+                  borderTopColor: C.border,
+                },
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <View style={[styles.addPickerIcon, { backgroundColor: C.primary }]}>
+                <Ionicons name="add" size={18} color="#fff" {...a11yDecorative} />
+              </View>
+              <Text
+                maxFontSizeMultiplier={1.4}
+                style={[styles.addPickerLabel, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}
+              >
+                Add Reminder Time
+              </Text>
+              <Ionicons name="time-outline" size={18} color={C.mutedForeground} {...a11yDecorative} />
+            </Pressable>
+          )}
+        </View>
+
+        {pickerVisible && Platform.OS !== "web" && (
+          <DateTimePicker
+            value={pickerValue}
+            mode="time"
+            is24Hour={false}
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={handlePickerChange}
+          />
+        )}
+
+        {Platform.OS === "ios" && pickerVisible && (
+          <View style={styles.iosPickerActions}>
+            <Pressable
+              onPress={() => setPickerVisible(false)}
+              {...a11yButton("Cancel time picker")}
+              style={({ pressed }) => [
+                styles.iosPickerBtn,
+                { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Text
+                maxFontSizeMultiplier={1.4}
+                style={[styles.iosPickerBtnText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+              >
+                Done
+              </Text>
             </Pressable>
           </View>
-        </View>
-        <Text style={[styles.hint, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+        )}
+
+        <Text
+          maxFontSizeMultiplier={1.6}
+          style={[styles.hint, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+        >
           You'll receive the Ayat of the Day at each time with a "Read" button to open the app.
           {Platform.OS !== "web" ? " Requires notification permissions." : ""}
         </Text>
@@ -353,10 +521,16 @@ export default function SettingsScreen() {
       {/* Prayer Method */}
       <View style={styles.section}>
         <View style={{ gap: 2, marginBottom: 8 }}>
-          <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+          <Text
+            maxFontSizeMultiplier={1.4}
+            style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+          >
             PRAYER CALCULATION METHOD
           </Text>
-          <Text style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          <Text
+            maxFontSizeMultiplier={1.6}
+            style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+          >
             Affects Fajr and Isha angles. ISNA matches IslamicFinder's default.
           </Text>
         </View>
@@ -365,6 +539,7 @@ export default function SettingsScreen() {
             <Pressable
               key={method.id}
               onPress={() => handleMethodSelect(method.id)}
+              {...a11ySelectable(method.label, settings.prayerMethod === method.id)}
               style={({ pressed }) => [
                 styles.methodRow,
                 i < PRAYER_METHODS.length - 1 && {
@@ -374,11 +549,14 @@ export default function SettingsScreen() {
                 { opacity: pressed ? 0.7 : 1 },
               ]}
             >
-              <Text style={[styles.methodLabel, { color: C.foreground, fontFamily: "Inter_400Regular" }]}>
+              <Text
+                maxFontSizeMultiplier={1.6}
+                style={[styles.methodLabel, { color: C.foreground, fontFamily: "Inter_400Regular" }]}
+              >
                 {method.label}
               </Text>
               {settings.prayerMethod === method.id && (
-                <Ionicons name="checkmark-circle" size={20} color={C.primary} />
+                <Ionicons name="checkmark-circle" size={20} color={C.primary} {...a11yDecorative} />
               )}
             </Pressable>
           ))}
@@ -388,10 +566,16 @@ export default function SettingsScreen() {
       {/* Asr Juristic School */}
       <View style={styles.section}>
         <View style={{ gap: 2, marginBottom: 8 }}>
-          <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+          <Text
+            maxFontSizeMultiplier={1.4}
+            style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+          >
             ASR JURISTIC SCHOOL
           </Text>
-          <Text style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          <Text
+            maxFontSizeMultiplier={1.6}
+            style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+          >
             Hanafi Asr starts later (when shadow = 2× object). Standard follows Shafi'i, Maliki, Hanbali (shadow = 1×).
           </Text>
         </View>
@@ -403,6 +587,7 @@ export default function SettingsScreen() {
             <Pressable
               key={s.id}
               onPress={() => handleSchoolSelect(s.id)}
+              {...a11ySelectable(`${s.label} — ${s.desc}`, settings.prayerSchool === s.id)}
               style={({ pressed }) => [
                 styles.optionRow,
                 i < arr.length - 1
@@ -412,15 +597,21 @@ export default function SettingsScreen() {
               ]}
             >
               <View style={styles.optionContent}>
-                <Text style={[styles.optionTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
+                <Text
+                  maxFontSizeMultiplier={1.6}
+                  style={[styles.optionTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+                >
                   {s.label}
                 </Text>
-                <Text style={[styles.optionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                <Text
+                  maxFontSizeMultiplier={1.6}
+                  style={[styles.optionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+                >
                   {s.desc}
                 </Text>
               </View>
               {settings.prayerSchool === s.id && (
-                <Ionicons name="checkmark-circle" size={20} color={C.primary} />
+                <Ionicons name="checkmark-circle" size={20} color={C.primary} {...a11yDecorative} />
               )}
             </Pressable>
           ))}
@@ -430,10 +621,16 @@ export default function SettingsScreen() {
       {/* Prayer Sound (Adhan with quiet hours) */}
       <View style={styles.section}>
         <View style={{ gap: 2, marginBottom: 8 }}>
-          <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+          <Text
+            maxFontSizeMultiplier={1.4}
+            style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+          >
             PRAYER SOUND
           </Text>
-          <Text style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          <Text
+            maxFontSizeMultiplier={1.6}
+            style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+          >
             Choose which prayer reminders make sound. Fajr is silent by default — quiet hours for the household.
           </Text>
         </View>
@@ -458,12 +655,19 @@ export default function SettingsScreen() {
                   onValueChange={(val) => handlePrayerSoundToggle(prayer, val)}
                   trackColor={{ false: C.border, true: C.primary }}
                   thumbColor="#fff"
+                  {...a11yToggle(
+                    `${prayer} prayer sound`,
+                    settings.prayerSoundEnabled[prayer],
+                  )}
                 />
               }
             />
           ))}
         </View>
-        <Text style={[styles.hint, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+        <Text
+          maxFontSizeMultiplier={1.6}
+          style={[styles.hint, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+        >
           Uses your device's default notification sound. A bundled adhan recitation requires a licensed audio file and would be added in a future update.
         </Text>
       </View>
@@ -471,10 +675,16 @@ export default function SettingsScreen() {
       {/* Reciter — chooses the qari for ayah audio playback throughout the app */}
       <View style={styles.section}>
         <View style={{ gap: 2, marginBottom: 8 }}>
-          <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+          <Text
+            maxFontSizeMultiplier={1.4}
+            style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+          >
             RECITER
           </Text>
-          <Text style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          <Text
+            maxFontSizeMultiplier={1.6}
+            style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+          >
             Choose the qari for Quran audio. Used everywhere ayat are played.
           </Text>
         </View>
@@ -483,7 +693,10 @@ export default function SettingsScreen() {
             <Pressable
               key={reciter.id}
               onPress={() => handleReciterSelect(reciter.id)}
-              accessibilityLabel={`Select ${reciter.name}`}
+              {...a11ySelectable(
+                `${reciter.name}, ${reciter.country}, ${reciter.style}`,
+                settings.reciter === reciter.id,
+              )}
               style={({ pressed }) => [
                 styles.optionRow,
                 i < RECITERS.length - 1
@@ -493,15 +706,21 @@ export default function SettingsScreen() {
               ]}
             >
               <View style={styles.optionContent}>
-                <Text style={[styles.optionTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
+                <Text
+                  maxFontSizeMultiplier={1.6}
+                  style={[styles.optionTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+                >
                   {reciter.name}
                 </Text>
-                <Text style={[styles.optionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                <Text
+                  maxFontSizeMultiplier={1.6}
+                  style={[styles.optionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+                >
                   {reciter.country} · {reciter.style}
                 </Text>
               </View>
               {settings.reciter === reciter.id && (
-                <Ionicons name="checkmark-circle" size={20} color={C.primary} />
+                <Ionicons name="checkmark-circle" size={20} color={C.primary} {...a11yDecorative} />
               )}
             </Pressable>
           ))}
@@ -510,11 +729,17 @@ export default function SettingsScreen() {
 
       {/* About — Sources */}
       <View style={styles.section}>
-        <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+        <Text
+          maxFontSizeMultiplier={1.4}
+          style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+        >
           SOURCES & ATTRIBUTION
         </Text>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000", padding: 16 }]}>
-          <Text style={[styles.aboutText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          <Text
+            maxFontSizeMultiplier={1.6}
+            style={[styles.aboutText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+          >
             English translation: Saheeh International. Every featured ayah and the verses behind each "I am feeling…" prompt are audited verbatim against the Saheeh International edition served by the Quran.com Foundation API.
             {"\n"}
             Arabic text: text_uthmani via the Quran.com Foundation API — true Uthmani script.
@@ -535,7 +760,10 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.appInfo}>
-        <Text style={[styles.appInfoText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+        <Text
+          maxFontSizeMultiplier={1.4}
+          style={[styles.appInfoText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+        >
           Daily Imaan v1.0.0{"\n"}May Allah accept from all of us. آمين
         </Text>
       </View>
@@ -578,10 +806,36 @@ const styles = StyleSheet.create({
   timeInput: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, fontSize: 15 },
   addBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
   addBtnText: { color: "#fff", fontSize: 14 },
+  addPickerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  addPickerIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addPickerLabel: { flex: 1, fontSize: 15 },
+  iosPickerActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 4,
+  },
+  iosPickerBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  iosPickerBtnText: { fontSize: 14 },
   hint: { fontSize: 12, lineHeight: 18 },
   methodRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 13 },
   methodLabel: { flex: 1, fontSize: 15 },
-  appInfo: { alignItems: "center", paddingVertical: 10 },
-  appInfoText: { fontSize: 13, textAlign: "center", lineHeight: 22 },
   aboutText: { fontSize: 13, lineHeight: 20 },
+  appInfo: { alignItems: "center", marginTop: 12 },
+  appInfoText: { fontSize: 12, textAlign: "center", lineHeight: 18 },
 });

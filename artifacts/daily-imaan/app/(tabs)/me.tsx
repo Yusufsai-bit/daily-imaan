@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import colors from "@/constants/colors";
 import { useApp } from "@/context/AppContext";
+import { a11yButton, a11yChecked, a11yDecorative, a11yLink } from "@/components/a11y";
 
 const GOOD_DEEDS = [
   { id: "fajr", label: "Fajr Prayer", icon: "sunny-outline" as const, time: "Dawn" },
@@ -65,9 +66,10 @@ export default function MeScreen() {
         </Text>
         <Pressable
           onPress={() => router.push("/settings" as never)}
+          {...a11yButton("Settings", "Opens app settings")}
           style={({ pressed }) => [styles.settingsBtn, { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 }]}
         >
-          <Ionicons name="settings-outline" size={20} color={C.mutedForeground} />
+          <Ionicons name="settings-outline" size={20} color={C.mutedForeground} {...a11yDecorative} />
         </Pressable>
       </View>
 
@@ -77,14 +79,17 @@ export default function MeScreen() {
           tappable to take the user to their full lists. */}
       <View style={styles.statsRow}>
         <View
+          accessible
+          accessibilityLabel={`${streak.count} days with Allah`}
           style={[
             styles.statCard,
             styles.statCardHero,
             { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" },
           ]}
         >
-          <Ionicons name="leaf" size={30} color={C.primary} />
+          <Ionicons name="leaf" size={30} color={C.primary} {...a11yDecorative} />
           <Text
+            maxFontSizeMultiplier={1.5}
             style={[
               styles.statNumberHero,
               { color: C.foreground, fontFamily: "Inter_700Bold" },
@@ -92,17 +97,30 @@ export default function MeScreen() {
           >
             {streak.count}
           </Text>
-          <Text style={[styles.statLabel, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          <Text
+            maxFontSizeMultiplier={1.5}
+            style={[styles.statLabel, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+          >
             Days with Allah
           </Text>
         </View>
 
-        <View style={[styles.statCard, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
-          <Ionicons name="book-outline" size={26} color="#C8933C" />
-          <Text style={[styles.statNumber, { color: C.foreground, fontFamily: "Inter_700Bold" }]}>
+        <View
+          accessible
+          accessibilityLabel={`${readAyatIds.length} verses read`}
+          style={[styles.statCard, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}
+        >
+          <Ionicons name="book-outline" size={26} color="#C8933C" {...a11yDecorative} />
+          <Text
+            maxFontSizeMultiplier={1.5}
+            style={[styles.statNumber, { color: C.foreground, fontFamily: "Inter_700Bold" }]}
+          >
             {readAyatIds.length}
           </Text>
-          <Text style={[styles.statLabel, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          <Text
+            maxFontSizeMultiplier={1.5}
+            style={[styles.statLabel, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+          >
             Verses Read
           </Text>
         </View>
@@ -112,17 +130,26 @@ export default function MeScreen() {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.push("/bookmarks" as never);
           }}
-          accessibilityLabel={`View ${bookmarks.length} saved verses`}
+          {...a11yButton(
+            `${bookmarks.length} saved verses`,
+            "Opens your bookmarked ayat",
+          )}
           style={({ pressed }) => [
             styles.statCard,
             { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000", opacity: pressed ? 0.85 : 1 },
           ]}
         >
-          <Ionicons name="bookmark" size={26} color={C.primary} />
-          <Text style={[styles.statNumber, { color: C.foreground, fontFamily: "Inter_700Bold" }]}>
+          <Ionicons name="bookmark" size={26} color={C.primary} {...a11yDecorative} />
+          <Text
+            maxFontSizeMultiplier={1.5}
+            style={[styles.statNumber, { color: C.foreground, fontFamily: "Inter_700Bold" }]}
+          >
             {bookmarks.length}
           </Text>
-          <Text style={[styles.statLabel, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          <Text
+            maxFontSizeMultiplier={1.5}
+            style={[styles.statLabel, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+          >
             Saved
           </Text>
         </Pressable>
@@ -137,6 +164,10 @@ export default function MeScreen() {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push("/feeling" as never);
         }}
+        {...a11yButton(
+          "I am feeling",
+          "Opens a list of feelings to find a verse or dua",
+        )}
         style={({ pressed }) => [
           styles.feelingCard,
           {
@@ -147,6 +178,7 @@ export default function MeScreen() {
         ]}
       >
         <View
+          {...a11yDecorative}
           style={[
             styles.feelingIcon,
             {
@@ -220,6 +252,7 @@ export default function MeScreen() {
               <Pressable
                 key={deed.id}
                 onPress={() => handleToggle(deed.id)}
+                {...a11yChecked(deed.label, isChecked, "Toggles today's intention")}
                 style={({ pressed }) => [
                   styles.deedRow,
                   i < GOOD_DEEDS.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
@@ -227,6 +260,7 @@ export default function MeScreen() {
                 ]}
               >
                 <View
+                  {...a11yDecorative}
                   style={[
                     styles.deedCheck,
                     {
@@ -239,6 +273,7 @@ export default function MeScreen() {
                 </View>
 
                 <Ionicons
+                  {...a11yDecorative}
                   name={deed.icon}
                   size={18}
                   color={isChecked ? C.primary : C.mutedForeground}
@@ -277,24 +312,32 @@ export default function MeScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push("/qibla" as never);
             }}
+            {...a11yLink("Qibla Compass", "Opens the Qibla compass")}
             style={({ pressed }) => [styles.linkRow, { borderBottomColor: C.border, opacity: pressed ? 0.7 : 1 }]}
           >
-            <Ionicons name="compass-outline" size={20} color={C.primary} />
-            <Text style={[styles.linkText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
+            <Ionicons name="compass-outline" size={20} color={C.primary} {...a11yDecorative} />
+            <Text
+              maxFontSizeMultiplier={1.5}
+              style={[styles.linkText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+            >
               Qibla Compass
             </Text>
-            <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} style={{ marginLeft: "auto" }} />
+            <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} style={{ marginLeft: "auto" }} {...a11yDecorative} />
           </Pressable>
 
           <Pressable
             onPress={() => router.push("/settings" as never)}
+            {...a11yLink("Settings", "Opens app settings")}
             style={({ pressed }) => [styles.linkRow, { borderBottomColor: C.border, opacity: pressed ? 0.7 : 1 }]}
           >
-            <Ionicons name="settings-outline" size={20} color={C.primary} />
-            <Text style={[styles.linkText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
+            <Ionicons name="settings-outline" size={20} color={C.primary} {...a11yDecorative} />
+            <Text
+              maxFontSizeMultiplier={1.5}
+              style={[styles.linkText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+            >
               Settings
             </Text>
-            <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} style={{ marginLeft: "auto" }} />
+            <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} style={{ marginLeft: "auto" }} {...a11yDecorative} />
           </Pressable>
 
           <Pressable
@@ -302,13 +345,20 @@ export default function MeScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push("/bookmarks" as never);
             }}
+            {...a11yLink(
+              `Bookmarked Ayat, ${bookmarks.length} saved`,
+              "Opens your bookmarked ayat",
+            )}
             style={({ pressed }) => [styles.linkRow, { borderBottomColor: C.border, borderBottomWidth: 0, opacity: pressed ? 0.7 : 1 }]}
           >
-            <Ionicons name="bookmark-outline" size={20} color={C.primary} />
-            <Text style={[styles.linkText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
+            <Ionicons name="bookmark-outline" size={20} color={C.primary} {...a11yDecorative} />
+            <Text
+              maxFontSizeMultiplier={1.5}
+              style={[styles.linkText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+            >
               Bookmarked Ayat ({bookmarks.length})
             </Text>
-            <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} style={{ marginLeft: "auto" }} />
+            <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} style={{ marginLeft: "auto" }} {...a11yDecorative} />
           </Pressable>
         </View>
       </View>

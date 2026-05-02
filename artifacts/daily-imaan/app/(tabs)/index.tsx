@@ -28,6 +28,7 @@ import { usePrayerTimes } from "@/hooks/usePrayerTimes";
 import { schedulePrayerNotifications } from "@/hooks/useNotifications";
 import { useTafsir, prewarmTafsir } from "@/hooks/useTafsir";
 import colors from "@/constants/colors";
+import { a11yButton, a11yDecorative, a11yLink } from "@/components/a11y";
 
 function getGlobalAyahNumber(surahId: number, ayahNumber: number): number {
   const surah = SURAHS.find((s) => s.id === surahId);
@@ -251,20 +252,24 @@ export default function HomeScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push("/qibla" as never);
             }}
-            accessibilityLabel="Open Qibla compass"
+            {...a11yButton("Qibla compass", "Opens the Qibla compass")}
             style={({ pressed }) => [
               styles.qiblaQuick,
               { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 },
             ]}
           >
-            <Ionicons name="compass-outline" size={18} color={C.primary} />
+            <Ionicons name="compass-outline" size={18} color={C.primary} {...a11yDecorative} />
           </Pressable>
           <View
-            style={[styles.streakBadge, { backgroundColor: C.secondary }]}
+            accessible
             accessibilityLabel={`${state.streak.count} days with Allah`}
+            style={[styles.streakBadge, { backgroundColor: C.secondary }]}
           >
-            <Ionicons name="leaf" size={16} color={C.primary} />
-            <Text style={[styles.streakText, { color: C.foreground, fontFamily: "Inter_700Bold" }]}>
+            <Ionicons name="leaf" size={16} color={C.primary} {...a11yDecorative} />
+            <Text
+              maxFontSizeMultiplier={1.5}
+              style={[styles.streakText, { color: C.foreground, fontFamily: "Inter_700Bold" }]}
+            >
               {state.streak.count}
             </Text>
           </View>
@@ -290,7 +295,10 @@ export default function HomeScreen() {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.push(`/surah/${state.lastReadPosition!.surahId}` as never);
           }}
-          accessibilityLabel={`Continue reading ${state.lastReadPosition.surahName}`}
+          {...a11yLink(
+            `Continue reading ${state.lastReadPosition.surahName}`,
+            "Resumes the last surah you opened",
+          )}
           style={({ pressed }) => [
             styles.continueCard,
             { backgroundColor: C.card, borderColor: C.border, opacity: pressed ? 0.85 : 1 },
@@ -349,14 +357,22 @@ export default function HomeScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setShowTafsir(!showTafsir);
             }}
+            {...a11yButton(
+              showTafsir ? "Hide tafsir" : "Show tafsir",
+              "Shows or hides the Ibn Kathir tafsir for this ayah",
+            )}
             style={[styles.explanationToggle, { backgroundColor: C.secondary }]}
           >
             <Ionicons
+              {...a11yDecorative}
               name={showTafsir ? "chevron-up" : "book-outline"}
               size={14}
               color={C.primary}
             />
-            <Text style={[styles.explanationToggleText, { color: C.primary, fontFamily: "Inter_500Medium" }]}>
+            <Text
+              maxFontSizeMultiplier={1.5}
+              style={[styles.explanationToggleText, { color: C.primary, fontFamily: "Inter_500Medium" }]}
+            >
               {showTafsir ? "Hide tafsir" : "Show tafsir"}
             </Text>
           </Pressable>
@@ -430,6 +446,9 @@ export default function HomeScreen() {
           <View style={styles.actionRow}>
             <Pressable
               onPress={handleAudio}
+              {...a11yButton(
+                isPlaying ? "Pause recitation" : "Listen to recitation",
+              )}
               style={({ pressed }) => [
                 styles.actionBtn,
                 { backgroundColor: isPlaying ? C.primary : C.secondary, opacity: pressed ? 0.7 : 1 },
@@ -439,24 +458,30 @@ export default function HomeScreen() {
                 <ActivityIndicator size="small" color={isPlaying ? "#fff" : C.primary} />
               ) : (
                 <Ionicons
+                  {...a11yDecorative}
                   name={isPlaying ? "pause" : "play"}
                   size={18}
                   color={isPlaying ? "#fff" : C.primary}
                 />
               )}
-              <Text style={[styles.actionBtnText, { color: isPlaying ? "#fff" : C.primary, fontFamily: "Inter_500Medium" }]}>
+              <Text
+                maxFontSizeMultiplier={1.5}
+                style={[styles.actionBtnText, { color: isPlaying ? "#fff" : C.primary, fontFamily: "Inter_500Medium" }]}
+              >
                 {isPlaying ? "Pause" : "Listen"}
               </Text>
             </Pressable>
 
             <Pressable
               onPress={handleBookmark}
+              {...a11yButton(bookmarked ? "Remove bookmark" : "Bookmark this ayah")}
               style={({ pressed }) => [
                 styles.actionBtnSmall,
                 { backgroundColor: bookmarked ? "#C8933C" : C.secondary, opacity: pressed ? 0.7 : 1 },
               ]}
             >
               <Ionicons
+                {...a11yDecorative}
                 name={bookmarked ? "bookmark" : "bookmark-outline"}
                 size={18}
                 color={bookmarked ? "#fff" : C.accent}
@@ -465,22 +490,24 @@ export default function HomeScreen() {
 
             <Pressable
               onPress={handleShare}
+              {...a11yButton("Share this ayah")}
               style={({ pressed }) => [
                 styles.actionBtnSmall,
                 { backgroundColor: C.secondary, opacity: pressed ? 0.7 : 1 },
               ]}
             >
-              <Ionicons name="share-outline" size={18} color={C.mutedForeground} />
+              <Ionicons name="share-outline" size={18} color={C.mutedForeground} {...a11yDecorative} />
             </Pressable>
 
             <Pressable
               onPress={handleRefresh}
+              {...a11yButton("Show a different ayah")}
               style={({ pressed }) => [
                 styles.actionBtnSmall,
                 { backgroundColor: C.secondary, opacity: pressed ? 0.7 : 1 },
               ]}
             >
-              <Ionicons name="shuffle-outline" size={18} color={C.mutedForeground} />
+              <Ionicons name="shuffle-outline" size={18} color={C.mutedForeground} {...a11yDecorative} />
             </Pressable>
           </View>
         </View>
@@ -510,6 +537,7 @@ export default function HomeScreen() {
               }}
               hitSlop={10}
               disabled={prayerLoading}
+              {...a11yButton("Refresh prayer times")}
               style={({ pressed }) => [
                 styles.refreshBtn,
                 { backgroundColor: C.muted, opacity: pressed || prayerLoading ? 0.5 : 1 },
@@ -518,7 +546,7 @@ export default function HomeScreen() {
               {prayerLoading ? (
                 <ActivityIndicator size="small" color={C.mutedForeground} />
               ) : (
-                <Ionicons name="refresh" size={14} color={C.mutedForeground} />
+                <Ionicons name="refresh" size={14} color={C.mutedForeground} {...a11yDecorative} />
               )}
             </Pressable>
           </View>
