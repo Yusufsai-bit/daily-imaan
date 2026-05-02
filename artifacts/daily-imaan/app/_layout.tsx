@@ -5,20 +5,62 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
+import * as Notifications from "expo-notifications";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
+import { Appearance, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AppProvider } from "@/context/AppContext";
+import { AppProvider, useApp } from "@/context/AppContext";
+import { getTodayAyah } from "@/data/featuredAyat";
+import { scheduleNotifications } from "@/hooks/useNotifications";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+
+function NotificationHandler() {
+  const { state, incrementStreak } = useApp();
+
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+
+    // Handle notification tap / action ("Read" button)
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      incrementStreak();
+      const action = response.actionIdentifier;
+      if (
+        action === "read" ||
+        action === Notifications.DEFAULT_ACTION_IDENTIFIER
+      ) {
+        router.navigate("/");
+      }
+    });
+
+    return () => sub.remove();
+  }, [incrementStreak]);
+
+  // Re-schedule whenever notification times change
+  useEffect(() => {
+    const { notificationTimes, ayatOrder } = state.settings;
+    const todayAyah = getTodayAyah(ayatOrder);
+    const shortText = `"${todayAyah.englishText.slice(0, 120)}${todayAyah.englishText.length > 120 ? "…" : ""}" — ${todayAyah.surahNameEnglish} ${todayAyah.surahId}:${todayAyah.ayahNumber}`;
+    scheduleNotifications(notificationTimes, shortText);
+  }, [state.settings.notificationTimes, state.settings.ayatOrder]);
+
+  // Sync dark mode with Appearance API
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    Appearance.setColorScheme(state.settings.darkMode ? "dark" : "light");
+  }, [state.settings.darkMode]);
+
+  return null;
+}
 
 function RootLayoutNav() {
   return (
@@ -53,6 +95,7 @@ export default function RootLayout() {
           <GestureHandlerRootView style={{ flex: 1 }}>
             <KeyboardProvider>
               <AppProvider>
+                <NotificationHandler />
                 <RootLayoutNav />
               </AppProvider>
             </KeyboardProvider>

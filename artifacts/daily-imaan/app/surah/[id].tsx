@@ -16,36 +16,17 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import type { DimensionValue } from "react-native";
 
 import colors from "@/constants/colors";
 import { SURAHS, getSurahById } from "@/data/surahsData";
-
-interface AyahData {
-  number: number;
-  numberInSurah: number;
-  text: string;
-}
-
-interface SurahResponse {
-  ayahs: AyahData[];
-}
+import { getQuranSurah } from "@/data/quranFull";
 
 interface ParsedAyah {
   number: number;
   numberInSurah: number;
   arabic: string;
   english: string;
-}
-
-function parseResponse(data: SurahResponse[]): ParsedAyah[] {
-  const arabic = data[0]?.ayahs ?? [];
-  const english = data[1]?.ayahs ?? [];
-  return arabic.map((a, i) => ({
-    number: a.number,
-    numberInSurah: a.numberInSurah,
-    arabic: a.text,
-    english: english[i]?.text ?? "",
-  }));
 }
 
 const CACHE_PREFIX = "@surah_cache_";
@@ -74,12 +55,29 @@ export default function SurahDetailScreen() {
 
   useEffect(() => {
     if (!surahId) return;
-    fetchSurah();
+    loadSurah();
   }, [surahId]);
 
-  const fetchSurah = useCallback(async () => {
+  const loadSurah = useCallback(async () => {
     setLoading(true);
     setError(null);
+
+    // 1. Try local bundled data first (always works offline)
+    const localData = getQuranSurah(surahId);
+    if (localData) {
+      setAyat(
+        localData.ayahs.map((a) => ({
+          number: (surah?.startingAyah ?? 1) + a.n - 1,
+          numberInSurah: a.n,
+          arabic: a.a,
+          english: a.e,
+        }))
+      );
+      setLoading(false);
+      return;
+    }
+
+    // 2. Try AsyncStorage cache
     const cacheKey = `${CACHE_PREFIX}${surahId}`;
     try {
       const cached = await AsyncStorage.getItem(cacheKey);
@@ -88,12 +86,29 @@ export default function SurahDetailScreen() {
         setLoading(false);
         return;
       }
+    } catch {
+      // ignore cache errors
+    }
+
+    // 3. Fetch from API as last resort
+    try {
       const res = await fetch(
         `https://api.alquran.cloud/v1/surah/${surahId}/editions/quran-uthmani,en.asad`
       );
-      const json = await res.json() as { code: number; data: SurahResponse[] };
+      const json = (await res.json()) as {
+        code: number;
+        data: { ayahs: { number: number; numberInSurah: number; text: string }[] }[];
+      };
       if (json.code !== 200 || !json.data) throw new Error("API error");
-      const parsed = parseResponse(json.data);
+
+      const arabic = json.data[0]?.ayahs ?? [];
+      const english = json.data[1]?.ayahs ?? [];
+      const parsed: ParsedAyah[] = arabic.map((a, i) => ({
+        number: a.number,
+        numberInSurah: a.numberInSurah,
+        arabic: a.text,
+        english: english[i]?.text ?? "",
+      }));
       setAyat(parsed);
       await AsyncStorage.setItem(cacheKey, JSON.stringify(parsed));
     } catch {
@@ -101,7 +116,7 @@ export default function SurahDetailScreen() {
     } finally {
       setLoading(false);
     }
-  }, [surahId]);
+  }, [surahId, surah]);
 
   const playAyah = useCallback(
     async (ayah: ParsedAyah) => {
@@ -202,7 +217,7 @@ export default function SurahDetailScreen() {
   return (
     <View style={[styles.container, { backgroundColor: C.background }]}>
       {/* Custom header */}
-      <View style={[styles.header, { paddingTop: insets.top, backgroundColor: C.primary }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: C.primary }]}>
         <Pressable
           onPress={() => router.back()}
           style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
@@ -211,7 +226,7 @@ export default function SurahDetailScreen() {
         </Pressable>
         <View style={styles.headerCenter}>
           <Text style={[styles.surahName, { fontFamily: "Inter_700Bold" }]}>{surah.nameEnglish}</Text>
-          <Text style={[styles.surahArabic]}>{surah.name}</Text>
+          <Text style={styles.surahArabic}>{surah.name}</Text>
           <Text style={[styles.surahMeta, { fontFamily: "Inter_400Regular" }]}>
             {surah.nameTranslation} · {surah.ayahCount} Ayat · {surah.revelationType}
           </Text>
@@ -233,7 +248,7 @@ export default function SurahDetailScreen() {
             {error}
           </Text>
           <Pressable
-            onPress={fetchSurah}
+            onPress={loadSurah}
             style={[styles.retryBtn, { backgroundColor: C.primary }]}
           >
             <Text style={[styles.retryText, { fontFamily: "Inter_600SemiBold" }]}>Retry</Text>

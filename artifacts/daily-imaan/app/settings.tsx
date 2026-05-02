@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React, { useCallback, useState } from "react";
 import {
   Alert,
+  Appearance,
   Platform,
   Pressable,
   ScrollView,
@@ -15,9 +16,11 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import type { DimensionValue } from "react-native";
 
 import colors from "@/constants/colors";
 import { useApp } from "@/context/AppContext";
+import { requestNotificationPermission } from "@/hooks/useNotifications";
 
 const PRAYER_METHODS = [
   { id: 2, label: "ISNA (North America)" },
@@ -26,6 +29,46 @@ const PRAYER_METHODS = [
   { id: 4, label: "Umm Al-Qura (Makkah)" },
   { id: 5, label: "University of Islamic Sciences" },
 ];
+
+function SettingRow({
+  icon,
+  title,
+  subtitle,
+  right,
+  last = false,
+  C,
+}: {
+  icon: string;
+  title: string;
+  subtitle?: string;
+  right: React.ReactNode;
+  last?: boolean;
+  C: (typeof colors)["light"];
+}) {
+  return (
+    <View
+      style={[
+        styles.settingRow,
+        !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
+      ]}
+    >
+      <View style={[styles.settingIcon, { backgroundColor: C.secondary }]}>
+        <Ionicons name={icon as never} size={16} color={C.primary} />
+      </View>
+      <View style={styles.settingContent}>
+        <Text style={[styles.settingTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text style={[styles.settingSubtitle, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
+      {right}
+    </View>
+  );
+}
 
 export default function SettingsScreen() {
   const scheme = useColorScheme();
@@ -38,7 +81,18 @@ export default function SettingsScreen() {
 
   const [newTime, setNewTime] = useState("");
 
-  const handleAddTime = useCallback(() => {
+  const handleDarkModeToggle = useCallback(
+    (val: boolean) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      updateSettings({ darkMode: val });
+      if (Platform.OS !== "web") {
+        Appearance.setColorScheme(val ? "dark" : "light");
+      }
+    },
+    [updateSettings]
+  );
+
+  const handleAddTime = useCallback(async () => {
     const trimmed = newTime.trim();
     const valid = /^([01]?\d|2[0-3]):([0-5]\d)$/.test(trimmed);
     if (!valid) {
@@ -49,6 +103,18 @@ export default function SettingsScreen() {
       Alert.alert("Duplicate", "This time is already added.");
       return;
     }
+
+    if (Platform.OS !== "web") {
+      const granted = await requestNotificationPermission();
+      if (!granted) {
+        Alert.alert(
+          "Permission Required",
+          "Please enable notifications in your device settings to receive daily reminders."
+        );
+        return;
+      }
+    }
+
     updateSettings({ notificationTimes: [...settings.notificationTimes, trimmed].sort() });
     setNewTime("");
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -73,14 +139,20 @@ export default function SettingsScreen() {
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: C.background }]}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 40 }]}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 40 },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
       <View style={styles.header}>
         <Pressable
           onPress={() => router.back()}
-          style={({ pressed }) => [styles.backBtn, { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 }]}
+          style={({ pressed }) => [
+            styles.backBtn,
+            { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 },
+          ]}
         >
           <Ionicons name="arrow-back" size={20} color={C.foreground} />
         </Pressable>
@@ -90,9 +162,33 @@ export default function SettingsScreen() {
         <View style={{ width: 40 }} />
       </View>
 
+      {/* Appearance */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+          APPEARANCE
+        </Text>
+        <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+          <SettingRow
+            icon="moon-outline"
+            title="Dark Mode"
+            subtitle="Override system appearance"
+            C={C}
+            last
+            right={
+              <Switch
+                value={settings.darkMode}
+                onValueChange={handleDarkModeToggle}
+                trackColor={{ false: C.border, true: C.primary }}
+                thumbColor="#fff"
+              />
+            }
+          />
+        </View>
+      </View>
+
       {/* Ayat Order */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+        <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
           AYAT OF THE DAY
         </Text>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
@@ -101,14 +197,17 @@ export default function SettingsScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               updateSettings({ ayatOrder: "sequential" });
             }}
-            style={[styles.optionRow, { borderBottomColor: C.border }]}
+            style={({ pressed }) => [
+              styles.optionRow,
+              { borderBottomColor: C.border, opacity: pressed ? 0.7 : 1 },
+            ]}
           >
             <View style={styles.optionContent}>
               <Text style={[styles.optionTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
                 Sequential
               </Text>
               <Text style={[styles.optionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                One ayah per day in order
+                One ayah per day in fixed order
               </Text>
             </View>
             {settings.ayatOrder === "sequential" && (
@@ -121,14 +220,14 @@ export default function SettingsScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               updateSettings({ ayatOrder: "random" });
             }}
-            style={styles.optionRow}
+            style={({ pressed }) => [styles.optionRow, { opacity: pressed ? 0.7 : 1 }]}
           >
             <View style={styles.optionContent}>
               <Text style={[styles.optionTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
                 Random
               </Text>
               <Text style={[styles.optionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                Different ayah each day (date-seeded)
+                Different each day (date-seeded, consistent)
               </Text>
             </View>
             {settings.ayatOrder === "random" && (
@@ -140,7 +239,7 @@ export default function SettingsScreen() {
 
       {/* Notification Times */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+        <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
           DAILY REMINDERS
         </Text>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
@@ -156,7 +255,10 @@ export default function SettingsScreen() {
                 key={time}
                 style={[
                   styles.timeRow,
-                  i < settings.notificationTimes.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
+                  i < settings.notificationTimes.length - 1 && {
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: C.border,
+                  },
                 ]}
               >
                 <Ionicons name="notifications-outline" size={18} color={C.primary} />
@@ -165,7 +267,10 @@ export default function SettingsScreen() {
                 </Text>
                 <Pressable
                   onPress={() => handleRemoveTime(time)}
-                  style={({ pressed }) => [styles.removeBtn, { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 }]}
+                  style={({ pressed }) => [
+                    styles.removeBtn,
+                    { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 },
+                  ]}
                 >
                   <Ionicons name="close" size={14} color={C.mutedForeground} />
                 </Pressable>
@@ -173,38 +278,49 @@ export default function SettingsScreen() {
             ))
           )}
 
-          {/* Add time row */}
-          <View style={[styles.addTimeRow, { borderTopWidth: settings.notificationTimes.length > 0 ? StyleSheet.hairlineWidth : 0, borderTopColor: C.border }]}>
+          <View
+            style={[
+              styles.addTimeRow,
+              settings.notificationTimes.length > 0 && {
+                borderTopWidth: StyleSheet.hairlineWidth,
+                borderTopColor: C.border,
+              },
+            ]}
+          >
             <TextInput
               value={newTime}
               onChangeText={setNewTime}
               placeholder="HH:MM (e.g. 07:00)"
               placeholderTextColor={C.mutedForeground}
-              style={[styles.timeInput, { color: C.foreground, backgroundColor: C.muted, fontFamily: "Inter_400Regular" }]}
+              style={[
+                styles.timeInput,
+                { color: C.foreground, backgroundColor: C.muted, fontFamily: "Inter_400Regular" },
+              ]}
               keyboardType="numbers-and-punctuation"
               returnKeyType="done"
               onSubmitEditing={handleAddTime}
             />
             <Pressable
               onPress={handleAddTime}
-              style={({ pressed }) => [styles.addBtn, { backgroundColor: C.primary, opacity: pressed ? 0.7 : 1 }]}
+              style={({ pressed }) => [
+                styles.addBtn,
+                { backgroundColor: C.primary, opacity: pressed ? 0.7 : 1 },
+              ]}
             >
               <Ionicons name="add" size={18} color="#fff" />
               <Text style={[styles.addBtnText, { fontFamily: "Inter_600SemiBold" }]}>Add</Text>
             </Pressable>
           </View>
         </View>
-
-        {Platform.OS !== "web" && (
-          <Text style={[styles.hint, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            Notifications require app permissions enabled in device settings.
-          </Text>
-        )}
+        <Text style={[styles.hint, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          You'll receive the Ayat of the Day at each time with a "Read" button to open the app.
+          {Platform.OS !== "web" ? " Requires notification permissions." : ""}
+        </Text>
       </View>
 
       {/* Prayer Method */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+        <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
           PRAYER CALCULATION METHOD
         </Text>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
@@ -214,7 +330,10 @@ export default function SettingsScreen() {
               onPress={() => handleMethodSelect(method.id)}
               style={({ pressed }) => [
                 styles.methodRow,
-                i < PRAYER_METHODS.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
+                i < PRAYER_METHODS.length - 1 && {
+                  borderBottomWidth: StyleSheet.hairlineWidth,
+                  borderBottomColor: C.border,
+                },
                 { opacity: pressed ? 0.7 : 1 },
               ]}
             >
@@ -229,11 +348,9 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      {/* App info */}
       <View style={styles.appInfo}>
         <Text style={[styles.appInfoText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-          Daily Imaan v1.0.0{"\n"}
-          May Allah accept from all of us. آمين
+          Daily Imaan v1.0.0{"\n"}May Allah accept from all of us. آمين
         </Text>
       </View>
     </ScrollView>
@@ -247,13 +364,19 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   title: { fontSize: 20 },
   section: { gap: 10 },
-  sectionTitle: { fontSize: 11, letterSpacing: 1 },
+  sectionLabel: { fontSize: 11, letterSpacing: 1 },
   card: {
     borderRadius: 14, overflow: "hidden",
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
+  settingRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
+  settingIcon: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  settingContent: { flex: 1 },
+  settingTitle: { fontSize: 15 },
+  settingSubtitle: { fontSize: 12, marginTop: 1 },
   optionRow: {
-    flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14,
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 16, paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   optionContent: { flex: 1 },

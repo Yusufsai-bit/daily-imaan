@@ -10,6 +10,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import type { DimensionValue } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import colors from "@/constants/colors";
@@ -121,7 +122,7 @@ export default function MeScreen() {
               styles.progressFill,
               {
                 backgroundColor: C.primary,
-                width: `${progress * 100}%` as any,
+                width: `${Math.round(progress * 100)}%` as DimensionValue,
               },
             ]}
           />
