@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "lzEWNAB_oEwyZrlcjyqh4"
+uri = "file://artifacts/daily-imaan/assets/images/icon.png"
+type = "image"
+title = "daily imaan app icon"
