@@ -1,5 +1,6 @@
 import { Audio } from "expo-av";
 import * as Haptics from "expo-haptics";
+import * as Linking from "expo-linking";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -53,7 +54,6 @@ export default function HomeScreen() {
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioLoading, setAudioLoading] = useState(false);
-  const [showExplanation, setShowExplanation] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.96)).current;
@@ -71,12 +71,14 @@ export default function HomeScreen() {
     markAyahRead(getGlobalAyahNumber(ayah.surahId, ayah.ayahNumber));
   }, [ayah.id, loaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Schedule prayer-time notifications whenever today's prayer times load/change
+  // Schedule prayer-time notifications whenever prayer times OR per-prayer
+  // sound settings change. Each prayer fires with sound on/off per the user's
+  // choice (Fajr defaults to silent for quiet hours).
   useEffect(() => {
     if (prayerTimes) {
-      schedulePrayerNotifications(prayerTimes);
+      schedulePrayerNotifications(prayerTimes, state.settings.prayerSoundEnabled);
     }
-  }, [prayerTimes]);
+  }, [prayerTimes, state.settings.prayerSoundEnabled]);
 
   // Refresh ayah when app returns to foreground (e.g. after midnight)
   useEffect(() => {
@@ -178,7 +180,6 @@ export default function HomeScreen() {
       Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: useND }),
       Animated.spring(scaleAnim, { toValue: 1, tension: 80, friction: 8, useNativeDriver: useND }),
     ]).start();
-    setShowExplanation(false);
     setAyah(FEATURED_AYAT[randomIndex]!);
   }, [sound, fadeAnim, scaleAnim]);
 
@@ -258,28 +259,24 @@ export default function HomeScreen() {
             Translation: Saheeh International
           </Text>
 
-          {/* Explanation toggle */}
+          {/* Read tafsir on Quran.com — links to authoritative scholarly tafsir
+              (Ibn Kathir, al-Saʿdi, etc.) rather than embedding any in-app commentary. */}
           <Pressable
-            onPress={() => setShowExplanation(!showExplanation)}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              const url = `https://quran.com/${ayah.surahId}/${ayah.ayahNumber}/tafsirs`;
+              Linking.openURL(url).catch(() => {
+                Alert.alert("Could not open browser", "Please visit quran.com to read tafsir.");
+              });
+            }}
             style={[styles.explanationToggle, { backgroundColor: C.secondary }]}
           >
-            <Ionicons
-              name={showExplanation ? "chevron-up" : "bulb-outline"}
-              size={14}
-              color={C.primary}
-            />
+            <Ionicons name="book-outline" size={14} color={C.primary} />
             <Text style={[styles.explanationToggleText, { color: C.primary, fontFamily: "Inter_500Medium" }]}>
-              {showExplanation ? "Hide" : "Reflection"}
+              Read tafsir on Quran.com
             </Text>
+            <Ionicons name="open-outline" size={12} color={C.primary} />
           </Pressable>
-
-          {showExplanation && (
-            <View style={[styles.explanationBox, { backgroundColor: isDark ? "rgba(45,191,127,0.08)" : "rgba(26,107,74,0.06)", borderLeftColor: C.primary }]}>
-              <Text style={[styles.explanationText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                {ayah.explanation}
-              </Text>
-            </View>
-          )}
 
           {/* Action row */}
           <View style={styles.actionRow}>
@@ -434,8 +431,6 @@ const styles = StyleSheet.create({
   translationCredit: { fontSize: 10, letterSpacing: 0.3, marginTop: -6 },
   explanationToggle: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
   explanationToggleText: { fontSize: 13 },
-  explanationBox: { borderLeftWidth: 3, paddingLeft: 12, paddingVertical: 8, borderRadius: 4 },
-  explanationText: { fontSize: 14, lineHeight: 22, fontStyle: "italic" },
   actionRow: { flexDirection: "row", gap: 8, alignItems: "center", marginTop: 4 },
   actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, borderRadius: 10 },
   actionBtnText: { fontSize: 14 },

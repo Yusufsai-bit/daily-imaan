@@ -2,11 +2,15 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
 import type { PrayerTimes } from "@/hooks/usePrayerTimes";
+import type { PrayerSoundSettings } from "@/context/AppContext";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
-    shouldPlaySound: false,
+    // Per-prayer sound is decided at scheduling time via the
+    // `sound` field on each NotificationContent. The handler simply respects
+    // whatever the scheduled notification specified.
+    shouldPlaySound: true,
     shouldSetBadge: false,
     shouldShowBanner: true,
     shouldShowList: true,
@@ -66,8 +70,18 @@ export async function scheduleAyatNotifications(
   }
 }
 
+/** Default fallback if no settings are passed (matches AppContext defaults). */
+const DEFAULT_PRAYER_SOUND_ENABLED: PrayerSoundSettings = {
+  Fajr: false,
+  Dhuhr: true,
+  Asr: true,
+  Maghrib: true,
+  Isha: true,
+};
+
 export async function schedulePrayerNotifications(
-  prayerTimes: PrayerTimes
+  prayerTimes: PrayerTimes,
+  prayerSoundEnabled: PrayerSoundSettings = DEFAULT_PRAYER_SOUND_ENABLED
 ): Promise<void> {
   if (Platform.OS === "web") return;
   try {
@@ -87,15 +101,13 @@ export async function schedulePrayerNotifications(
       }
     }
 
-    const prayerList: { name: string; timeStr: string }[] = [
+    const prayerList: { name: keyof PrayerSoundSettings; timeStr: string }[] = [
       { name: "Fajr", timeStr: prayerTimes.Fajr },
       { name: "Dhuhr", timeStr: prayerTimes.Dhuhr },
       { name: "Asr", timeStr: prayerTimes.Asr },
       { name: "Maghrib", timeStr: prayerTimes.Maghrib },
       { name: "Isha", timeStr: prayerTimes.Isha },
     ];
-
-    const now = new Date();
 
     for (const prayer of prayerList) {
       const parts = prayer.timeStr.split(":");
@@ -104,17 +116,20 @@ export async function schedulePrayerNotifications(
       const rawMin = (parts[1] ?? "00").split(" ")[0] ?? "00";
       const minute = parseInt(rawMin);
 
-      const prayerDate = new Date(now);
-      prayerDate.setHours(hour, minute, 0, 0);
+      const soundOn = prayerSoundEnabled[prayer.name];
 
       // Use DAILY trigger so the reminder fires every day at the same time.
       // Prayer times shift only ~1 min/day; the app reschedules on each foreground
       // refresh with updated exact times (via usePrayerTimes + AppState listener).
+      // `sound: true` plays the system default notification sound; `false` is
+      // a silent reminder. A bundled adhan recitation would require shipping
+      // a licensed .caf/.mp3 asset and referencing its filename here instead.
       await Notifications.scheduleNotificationAsync({
         content: {
           title: `${prayer.name} Time`,
           body: `It's time for ${prayer.name} prayer.`,
           categoryIdentifier: "prayer_time",
+          sound: soundOn,
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,

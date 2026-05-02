@@ -1,6 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
+export interface PrayerSoundSettings {
+  Fajr: boolean;
+  Dhuhr: boolean;
+  Asr: boolean;
+  Maghrib: boolean;
+  Isha: boolean;
+}
+
 export interface AppSettings {
   ayatOrder: "sequential" | "random";
   notificationTimes: string[];
@@ -8,6 +16,13 @@ export interface AppSettings {
   /** Asr juristic school. 0 = Standard (Shafi'i/Maliki/Hanbali), 1 = Hanafi. */
   prayerSchool: number;
   darkMode: boolean;
+  /**
+   * Per-prayer sound toggle for prayer-time notifications.
+   * Fajr defaults to OFF (quiet hours — no household disturbance before sunrise).
+   * Other prayers default to ON. Sound used is the system default notification
+   * sound. A bundled adhan recitation requires a licensed audio asset.
+   */
+  prayerSoundEnabled: PrayerSoundSettings;
 }
 
 export interface StreakData {
@@ -47,6 +62,13 @@ const DEFAULT_STATE: AppState = {
     prayerMethod: 2,
     prayerSchool: 0,
     darkMode: false,
+    prayerSoundEnabled: {
+      Fajr: false,
+      Dhuhr: true,
+      Asr: true,
+      Maghrib: true,
+      Isha: true,
+    },
   },
   readAyatIds: [],
 };
@@ -58,6 +80,28 @@ const AppContext = createContext<AppContextType | null>(null);
 function getTodayKey(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/**
+ * Storage growth cap: keep only good-deed entries from the last 365 days.
+ * Date keys are ISO-format (YYYY-MM-DD) which sort lexically. Also drops empty
+ * arrays so unchecking the last deed of a day removes the day entirely.
+ */
+const GOOD_DEEDS_RETENTION_DAYS = 365;
+function pruneGoodDeeds(
+  goodDeeds: Record<string, string[]>
+): Record<string, string[]> {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - GOOD_DEEDS_RETENTION_DAYS);
+  const cutoffKey = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}-${String(cutoff.getDate()).padStart(2, "0")}`;
+  const result: Record<string, string[]> = {};
+  for (const key of Object.keys(goodDeeds)) {
+    const value = goodDeeds[key];
+    if (key >= cutoffKey && value && value.length > 0) {
+      result[key] = value;
+    }
+  }
+  return result;
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -82,7 +126,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const save = useCallback(async (newState: AppState) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+      // Cap unbounded growth: prune goodDeeds to retention window before persist.
+      const persisted: AppState = {
+        ...newState,
+        goodDeeds: pruneGoodDeeds(newState.goodDeeds),
+      };
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
     } catch {
       // ignore
     }

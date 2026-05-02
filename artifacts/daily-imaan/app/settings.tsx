@@ -19,7 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { DimensionValue } from "react-native";
 
 import colors from "@/constants/colors";
-import { useApp } from "@/context/AppContext";
+import { useApp, type PrayerSoundSettings } from "@/context/AppContext";
 import { requestNotificationPermission } from "@/hooks/useNotifications";
 
 const PRAYER_METHODS = [
@@ -142,6 +142,16 @@ export default function SettingsScreen() {
       updateSettings({ prayerSchool: id });
     },
     [updateSettings]
+  );
+
+  const handlePrayerSoundToggle = useCallback(
+    (prayer: keyof PrayerSoundSettings, val: boolean) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      updateSettings({
+        prayerSoundEnabled: { ...settings.prayerSoundEnabled, [prayer]: val },
+      });
+    },
+    [settings.prayerSoundEnabled, updateSettings]
   );
 
   return (
@@ -408,6 +418,67 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      {/* Prayer Sound (Adhan with quiet hours) */}
+      <View style={styles.section}>
+        <View style={{ gap: 2, marginBottom: 8 }}>
+          <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+            PRAYER SOUND
+          </Text>
+          <Text style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            Choose which prayer reminders make sound. Fajr is silent by default — quiet hours for the household.
+          </Text>
+        </View>
+        <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+          {(["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"] as const).map((prayer, i, arr) => (
+            <SettingRow
+              key={prayer}
+              icon={prayer === "Fajr" ? "moon-outline" : prayer === "Isha" ? "moon-outline" : "sunny-outline"}
+              title={prayer}
+              subtitle={
+                settings.prayerSoundEnabled[prayer]
+                  ? "Sound on"
+                  : prayer === "Fajr"
+                  ? "Silent — quiet hours"
+                  : "Silent reminder"
+              }
+              C={C}
+              last={i === arr.length - 1}
+              right={
+                <Switch
+                  value={settings.prayerSoundEnabled[prayer]}
+                  onValueChange={(val) => handlePrayerSoundToggle(prayer, val)}
+                  trackColor={{ false: C.border, true: C.primary }}
+                  thumbColor="#fff"
+                />
+              }
+            />
+          ))}
+        </View>
+        <Text style={[styles.hint, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          Uses your device's default notification sound. A bundled adhan recitation requires a licensed audio file and would be added in a future update.
+        </Text>
+      </View>
+
+      {/* About — Sources */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+          SOURCES & ATTRIBUTION
+        </Text>
+        <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000", padding: 16 }]}>
+          <Text style={[styles.aboutText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            English translation: Saheeh International.
+            {"\n"}
+            Tafsir: linked out to Quran.com, where you can read verified classical tafsir (Ibn Kathīr, al-Saʿdī, and others).
+            {"\n"}
+            Audio recitation: Mishary al-Afasy (via alquran.cloud).
+            {"\n"}
+            Prayer times: calculated locally from the Aladhan API.
+            {"\n\n"}
+            This app does not include any AI-generated commentary on Qur'anic verses. For questions about meaning or rulings, please consult a qualified scholar.
+          </Text>
+        </View>
+      </View>
+
       <View style={styles.appInfo}>
         <Text style={[styles.appInfoText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
           Daily Imaan v1.0.0{"\n"}May Allah accept from all of us. آمين
@@ -457,4 +528,5 @@ const styles = StyleSheet.create({
   methodLabel: { flex: 1, fontSize: 15 },
   appInfo: { alignItems: "center", paddingVertical: 10 },
   appInfoText: { fontSize: 13, textAlign: "center", lineHeight: 22 },
+  aboutText: { fontSize: 13, lineHeight: 20 },
 });
