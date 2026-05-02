@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { DimensionValue } from "react-native";
 
 import colors from "@/constants/colors";
+import { useApp } from "@/context/AppContext";
 import { SURAHS, getSurahById } from "@/data/surahsData";
 import { getQuranSurah } from "@/data/quranFull";
 import { SURAH_THEMES } from "@/data/surahThemes";
@@ -41,6 +42,8 @@ export default function SurahDetailScreen() {
   const isDark = scheme === "dark";
   const C = isDark ? colors.dark : colors.light;
   const insets = useSafeAreaInsets();
+
+  const { toggleBookmark, isBookmarked } = useApp();
 
   const [ayat, setAyat] = useState<ParsedAyah[]>([]);
   const [loading, setLoading] = useState(true);
@@ -158,10 +161,17 @@ export default function SurahDetailScreen() {
 
   const renderAyah = ({ item }: { item: ParsedAyah }) => {
     const isPlaying = playingAyah === item.numberInSurah;
+    const bookmarked = isBookmarked(item.number);
     return (
-      <View style={[styles.ayahRow, { borderBottomColor: C.border }]}>
-        <View style={[styles.ayahBadge, { backgroundColor: C.secondary }]}>
-          <Text style={[styles.ayahNumber, { color: C.primary, fontFamily: "Inter_600SemiBold" }]}>
+      <View
+        style={[
+          styles.ayahRow,
+          { borderBottomColor: C.border },
+          bookmarked && { backgroundColor: isDark ? "rgba(45,191,127,0.06)" : "rgba(26,107,74,0.04)" },
+        ]}
+      >
+        <View style={[styles.ayahBadge, { backgroundColor: bookmarked ? C.primary : C.secondary }]}>
+          <Text style={[styles.ayahNumber, { color: bookmarked ? "#fff" : C.primary, fontFamily: "Inter_600SemiBold" }]}>
             {item.numberInSurah}
           </Text>
         </View>
@@ -174,32 +184,50 @@ export default function SurahDetailScreen() {
             {item.english}
           </Text>
 
-          {Platform.OS !== "web" && (
+          <View style={styles.ayahActions}>
+            {Platform.OS !== "web" && (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  playAyah(item);
+                }}
+                style={({ pressed }) => [
+                  styles.playBtn,
+                  { backgroundColor: isPlaying ? C.primary : C.muted, opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Ionicons
+                  name={isPlaying ? "pause" : "play"}
+                  size={12}
+                  color={isPlaying ? "#fff" : C.mutedForeground}
+                />
+                <Text
+                  style={[
+                    styles.playBtnText,
+                    { color: isPlaying ? "#fff" : C.mutedForeground, fontFamily: "Inter_500Medium" },
+                  ]}
+                >
+                  {isPlaying ? "Pause" : "Listen"}
+                </Text>
+              </Pressable>
+            )}
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                playAyah(item);
+                toggleBookmark(item.number);
               }}
               style={({ pressed }) => [
-                styles.playBtn,
-                { backgroundColor: isPlaying ? C.primary : C.muted, opacity: pressed ? 0.7 : 1 },
+                styles.bookmarkBtn,
+                { backgroundColor: bookmarked ? "#C8933C20" : C.muted, opacity: pressed ? 0.7 : 1 },
               ]}
             >
               <Ionicons
-                name={isPlaying ? "pause" : "play"}
-                size={12}
-                color={isPlaying ? "#fff" : C.mutedForeground}
+                name={bookmarked ? "bookmark" : "bookmark-outline"}
+                size={14}
+                color={bookmarked ? "#C8933C" : C.mutedForeground}
               />
-              <Text
-                style={[
-                  styles.playBtnText,
-                  { color: isPlaying ? "#fff" : C.mutedForeground, fontFamily: "Inter_500Medium" },
-                ]}
-              >
-                {isPlaying ? "Pause" : "Listen"}
-              </Text>
             </Pressable>
-          )}
+          </View>
         </View>
       </View>
     );
@@ -304,8 +332,10 @@ const styles = StyleSheet.create({
   ayahContent: { flex: 1, gap: 10 },
   arabicAyah: { fontSize: 22, lineHeight: 42, textAlign: "right", writingDirection: "rtl" },
   englishAyah: { fontSize: 14, lineHeight: 22 },
-  playBtn: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  ayahActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  playBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   playBtnText: { fontSize: 12 },
+  bookmarkBtn: { width: 30, height: 30, alignItems: "center", justifyContent: "center", borderRadius: 8 },
   listHeader: { gap: 8 },
   themeCard: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginHorizontal: 16, marginBottom: 4, padding: 12, borderRadius: 10, borderLeftWidth: 3 },
   themeText: { flex: 1, fontSize: 13, lineHeight: 20 },

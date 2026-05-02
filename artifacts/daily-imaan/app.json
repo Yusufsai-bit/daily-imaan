@@ -52,6 +52,12 @@
         {
           "locationWhenInUsePermission": "Daily Imaan needs your location to calculate accurate prayer times."
         }
+      ],
+      [
+        "@bacons/apple-targets",
+        {
+          "appleTeamId": "XXXXXXXXXX"
+        }
       ]
     ],
     "experiments": {

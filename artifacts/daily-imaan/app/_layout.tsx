@@ -18,7 +18,10 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider, useApp } from "@/context/AppContext";
 import { getTodayAyah } from "@/data/featuredAyat";
-import { scheduleAyatNotifications } from "@/hooks/useNotifications";
+import {
+  requestNotificationPermission,
+  scheduleAyatNotifications,
+} from "@/hooks/useNotifications";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -26,6 +29,12 @@ const queryClient = new QueryClient();
 
 function AppEffects() {
   const { state, incrementStreak } = useApp();
+
+  // Request notification permission at startup so default reminders can fire
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    requestNotificationPermission();
+  }, []);
 
   // Handle notification tap or "Read" action
   useEffect(() => {
