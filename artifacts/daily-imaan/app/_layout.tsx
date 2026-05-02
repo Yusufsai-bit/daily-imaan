@@ -25,8 +25,6 @@ import {
 } from "@/hooks/useNotifications";
 import { initSentry, reportRenderError, wrapRoot } from "@/lib/sentry";
 
-// Initialize crash reporting as early as possible so init-time errors are
-// captured. No-op when EXPO_PUBLIC_SENTRY_DSN is unset.
 initSentry();
 
 function getGlobalId(surahId: number, ayahNumber: number): number {
@@ -47,19 +45,8 @@ function AppEffects() {
     requestNotificationPermission();
   }, []);
 
-  // Handle notification tap or "Mark as Read" action.
-  //
-  // Today's ayah is computed FRESH from current settings at interaction
-  // time (not read from a payload), because a DAILY-trigger notification
-  // would otherwise carry whichever ayahId was current the day it was
-  // scheduled — wrong on day N.
-  //
-  // Default tap (notification body) opens the app to Home so the user can
-  // read the verse. The "Mark as Read" action is dismiss-only: it credits
-  // the streak in the background without yanking the user into the app.
-  //
-  // Guarded by `loaded` so streak/read-count mutations only run against
-  // fully-restored state and never race with the AsyncStorage hydration.
+  // Compute today's ayah fresh on interaction (DAILY-trigger payloads go stale
+  // across days). Default tap opens the app; "Mark as Read" is dismiss-only.
   useEffect(() => {
     if (Platform.OS === "web") return;
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
@@ -75,24 +62,16 @@ function AppEffects() {
     return () => sub.remove();
   }, [loaded, incrementStreak, markAyahRead, state.settings.ayatOrder]);
 
-  // Schedule daily ayat reminders at the configured times. The body is an
-  // evergreen prompt (handled inside `scheduleAyatNotifications`) so the
-  // notification text never goes stale; today's actual verse is computed
-  // when the user opens the app from the notification.
   const rescheduleAyatNotifs = useCallback(() => {
     if (Platform.OS === "web") return;
     scheduleAyatNotifications(state.settings.notificationTimes);
   }, [state.settings.notificationTimes]);
 
-  // Re-schedule whenever the user changes their reminder times.
   useEffect(() => {
     rescheduleAyatNotifs();
   }, [state.settings.notificationTimes]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // When the app returns to the foreground, reschedule with today's ayah.
-  // Without this, a user who doesn't change settings would continue receiving
-  // the body text from whenever the notifications were last scheduled
-  // (potentially from a previous day).
+  // Reschedule on foreground in case the user revisits after a long absence.
   const lastRescheduleDateRef = useRef<string>("");
   useEffect(() => {
     if (Platform.OS === "web") return;
