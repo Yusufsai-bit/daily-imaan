@@ -66,44 +66,44 @@ export default function DhikrScreen() {
 
   const scaleAnims = useRef(DHIKR_CONFIG.map(() => new Animated.Value(1))).current;
   const completionAnims = useRef(DHIKR_CONFIG.map(() => new Animated.Value(0))).current;
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach(clearTimeout);
+    };
+  }, []);
 
   const handlePress = useCallback(
     (key: keyof DhikrState, index: number) => {
       const current = counts[key];
-
-      if (current >= MAX_COUNT) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        Alert.alert(
-          "Dhikr Complete",
-          `You have completed ${MAX_COUNT} ${key === "subhanAllah" ? "SubhanAllah" : key === "alhamdulillah" ? "Alhamdulillah" : "Allahu Akbar"}.\n\nTap Reset to start again.`,
-          [
-            { text: "Reset This", onPress: () => setCounts((prev) => ({ ...prev, [key]: 0 })) },
-            { text: "Keep Going", style: "cancel" },
-          ]
-        );
-        return;
-      }
-
       const newCount = current + 1;
-
       const useND = Platform.OS !== "web";
+
       Animated.sequence([
         Animated.timing(scaleAnims[index]!, { toValue: 0.93, duration: 80, useNativeDriver: useND }),
         Animated.spring(scaleAnims[index]!, { toValue: 1, tension: 200, friction: 8, useNativeDriver: useND }),
       ]).start();
 
       if (newCount === MAX_COUNT) {
+        // Auto-reset at 33: flash the completion badge then roll back to 0
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Animated.sequence([
-          Animated.timing(completionAnims[index]!, { toValue: 1, duration: 300, useNativeDriver: useND }),
-          Animated.delay(1500),
+          Animated.timing(completionAnims[index]!, { toValue: 1, duration: 250, useNativeDriver: useND }),
+          Animated.delay(700),
           Animated.timing(completionAnims[index]!, { toValue: 0, duration: 300, useNativeDriver: useND }),
         ]).start();
+        // Show 33 momentarily then reset
+        setCounts((prev) => ({ ...prev, [key]: MAX_COUNT }));
+        const timer = setTimeout(() => {
+          setCounts((prev) => ({ ...prev, [key]: 0 }));
+        }, 950);
+        // Store timer ref so it can be cleared on unmount
+        timersRef.current.push(timer);
       } else {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setCounts((prev) => ({ ...prev, [key]: newCount }));
       }
-
-      setCounts((prev) => ({ ...prev, [key]: newCount }));
       setSessionTotal((t) => t + 1);
     },
     [counts, scaleAnims, completionAnims]
@@ -214,20 +214,18 @@ export default function DhikrScreen() {
                   />
                 </View>
 
-                {isComplete && (
-                  <Animated.View
-                    style={[
-                      styles.completeBadge,
-                      {
-                        backgroundColor: btnColor,
-                        opacity: completionAnims[i],
-                      },
-                    ]}
-                  >
-                    <Ionicons name="checkmark" size={12} color="#fff" />
-                    <Text style={[styles.completeBadgeText, { fontFamily: "Inter_600SemiBold" }]}>Complete</Text>
-                  </Animated.View>
-                )}
+                <Animated.View
+                  style={[
+                    styles.completeBadge,
+                    {
+                      backgroundColor: btnColor,
+                      opacity: completionAnims[i],
+                    },
+                  ]}
+                >
+                  <Ionicons name="checkmark" size={12} color="#fff" />
+                  <Text style={[styles.completeBadgeText, { fontFamily: "Inter_600SemiBold" }]}>33 ✓</Text>
+                </Animated.View>
               </Pressable>
             </Animated.View>
           );

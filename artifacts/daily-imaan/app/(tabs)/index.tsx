@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  AppState,
   Platform,
   Pressable,
   ScrollView,
@@ -70,6 +71,29 @@ export default function HomeScreen() {
       schedulePrayerNotifications(prayerTimes);
     }
   }, [prayerTimes]);
+
+  // Refresh ayah when app returns to foreground (e.g. after midnight)
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        setAyah(getTodayAyah(state.settings.ayatOrder));
+      }
+    });
+    return () => sub.remove();
+  }, [state.settings.ayatOrder]);
+
+  // Write widget payload to shared storage whenever ayah changes
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const payload = JSON.stringify({
+      arabicText: ayah.arabicText,
+      englishText: ayah.englishText.slice(0, 140),
+      surahRef: `${ayah.surahNameEnglish} ${ayah.surahId}:${ayah.ayahNumber}`,
+    });
+    import("@react-native-async-storage/async-storage").then(({ default: AS }) => {
+      AS.setItem("@widget_ayat", payload).catch(() => undefined);
+    });
+  }, [ayah]);
 
   useEffect(() => {
     return () => {

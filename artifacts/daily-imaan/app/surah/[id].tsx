@@ -21,6 +21,7 @@ import type { DimensionValue } from "react-native";
 import colors from "@/constants/colors";
 import { SURAHS, getSurahById } from "@/data/surahsData";
 import { getQuranSurah } from "@/data/quranFull";
+import { SURAH_THEMES } from "@/data/surahThemes";
 
 interface ParsedAyah {
   number: number;
@@ -261,15 +262,25 @@ export default function SurahDetailScreen() {
           renderItem={renderAyah}
           contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 20 }]}
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={() =>
-            surahId !== 9 ? (
-              <View style={[styles.bismillah, { backgroundColor: C.card }]}>
-                <Text style={[styles.bismillahText, { color: C.primary }]}>
-                  بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-                </Text>
-              </View>
-            ) : null
-          }
+          ListHeaderComponent={() => (
+            <View style={styles.listHeader}>
+              {surahId !== 9 && (
+                <View style={[styles.bismillah, { backgroundColor: C.card }]}>
+                  <Text style={[styles.bismillahText, { color: C.primary }]}>
+                    بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+                  </Text>
+                </View>
+              )}
+              {SURAH_THEMES[surahId] ? (
+                <View style={[styles.themeCard, { backgroundColor: C.secondary, borderLeftColor: C.primary }]}>
+                  <Ionicons name="bulb-outline" size={14} color={C.primary} />
+                  <Text style={[styles.themeText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    {SURAH_THEMES[surahId]}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          )}
         />
       )}
     </View>
@@ -295,6 +306,9 @@ const styles = StyleSheet.create({
   englishAyah: { fontSize: 14, lineHeight: 22 },
   playBtn: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   playBtnText: { fontSize: 12 },
+  listHeader: { gap: 8 },
+  themeCard: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginHorizontal: 16, marginBottom: 4, padding: 12, borderRadius: 10, borderLeftWidth: 3 },
+  themeText: { flex: 1, fontSize: 13, lineHeight: 20 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16 },
   loadingText: { fontSize: 15 },
   errorText: { fontSize: 15, textAlign: "center", paddingHorizontal: 32 },

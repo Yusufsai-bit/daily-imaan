@@ -14,9 +14,19 @@
       "backgroundColor": "#1A6B4A"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Daily Imaan needs your location to calculate accurate prayer times.",
+        "NSUserNotificationUsageDescription": "Daily Imaan sends daily Ayat reminders and prayer time alerts."
+      }
     },
-    "android": {},
+    "android": {
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
@@ -28,7 +38,21 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#1A6B4A",
+          "sounds": []
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Daily Imaan needs your location to calculate accurate prayer times."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
