@@ -156,19 +156,31 @@ export default function SettingsScreen() {
 
   const handlePickerChange = useCallback(
     (event: DateTimePickerEvent, date?: Date) => {
-      // Android: dialog auto-dismisses after any interaction; iOS: stays mounted.
+      // Android: the dialog is modal — it auto-dismisses after any interaction
+      // and only fires once with the final value, so commit immediately on "set".
+      // iOS: spinner mode fires onChange on every wheel movement; we MUST NOT
+      // commit here, otherwise users would silently add multiple reminders just
+      // by scrolling. We only update the staged value; commit happens on "Done".
       if (Platform.OS === "android") {
         setPickerVisible(false);
+        if (event.type !== "set" || !date) return;
+        const hh = String(date.getHours()).padStart(2, "0");
+        const mm = String(date.getMinutes()).padStart(2, "0");
+        void commitNewTime(`${hh}:${mm}`);
+        return;
       }
-      if (event.type !== "set" || !date) return;
-      const hh = String(date.getHours()).padStart(2, "0");
-      const mm = String(date.getMinutes()).padStart(2, "0");
-      const time = `${hh}:${mm}`;
-      setPickerValue(date);
-      void commitNewTime(time);
+      // iOS: just stage the value; do not commit.
+      if (date) setPickerValue(date);
     },
     [commitNewTime]
   );
+
+  const handleIosPickerDone = useCallback(() => {
+    const hh = String(pickerValue.getHours()).padStart(2, "0");
+    const mm = String(pickerValue.getMinutes()).padStart(2, "0");
+    setPickerVisible(false);
+    void commitNewTime(`${hh}:${mm}`);
+  }, [pickerValue, commitNewTime]);
 
   const openPicker = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -502,6 +514,21 @@ export default function SettingsScreen() {
               <Text
                 maxFontSizeMultiplier={1.4}
                 style={[styles.iosPickerBtnText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+              >
+                Cancel
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleIosPickerDone}
+              {...a11yButton("Add reminder at selected time")}
+              style={({ pressed }) => [
+                styles.iosPickerBtn,
+                { backgroundColor: C.primary, opacity: pressed ? 0.7 : 1, marginLeft: 8 },
+              ]}
+            >
+              <Text
+                maxFontSizeMultiplier={1.4}
+                style={[styles.iosPickerBtnText, { color: "#fff", fontFamily: "Inter_600SemiBold" }]}
               >
                 Done
               </Text>

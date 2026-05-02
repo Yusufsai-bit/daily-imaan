@@ -57,12 +57,16 @@ export function a11ySelectable(
   hint?: string,
   role: Role = "radio",
 ): AccessibilityProps {
+  // For `radio` role, screen readers expect `checked` state (selected is for tabs/cells).
+  // For other roles (tab, menuitem, etc.), `selected` is the correct semantic.
+  const state =
+    role === "radio" ? { checked: isSelected } : { selected: isSelected };
   return {
     accessible: true,
     accessibilityRole: role,
     accessibilityLabel: label,
     accessibilityHint: hint,
-    accessibilityState: { selected: isSelected },
+    accessibilityState: state,
   };
 }
 
