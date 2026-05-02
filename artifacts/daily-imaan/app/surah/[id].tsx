@@ -23,7 +23,7 @@ import * as Linking from "expo-linking";
 import colors from "@/constants/colors";
 import { useApp } from "@/context/AppContext";
 import { SURAHS, getSurahById } from "@/data/surahsData";
-import { getQuranSurah } from "@/data/quranFull";
+import { getQuranSurah, QURAN_TRANSLATION_LABEL } from "@/data/quranFull";
 
 interface ParsedAyah {
   number: number;
@@ -300,6 +300,15 @@ export default function SurahDetailScreen() {
                   </Text>
                 </View>
               )}
+              {/* Translator attribution. The English text on every ayah row
+                  comes verbatim from this translation, fetched from the
+                  Quran.com Foundation API. */}
+              <View style={[styles.translatorBadge, { backgroundColor: C.muted }]}>
+                <Ionicons name="language-outline" size={12} color={C.mutedForeground} />
+                <Text style={[styles.translatorText, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  Translation: {QURAN_TRANSLATION_LABEL}
+                </Text>
+              </View>
               {/* Link to authoritative scholarly info about this surah on Quran.com.
                   We do NOT include any in-app summary or theme description, since
                   any paraphrased description would be unsourced commentary. */}
@@ -350,6 +359,8 @@ const styles = StyleSheet.create({
   bookmarkBtn: { width: 30, height: 30, alignItems: "center", justifyContent: "center", borderRadius: 8 },
   listHeader: { gap: 8 },
   themeCard: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginHorizontal: 16, marginBottom: 4, padding: 12, borderRadius: 10, borderLeftWidth: 3 },
+  translatorBadge: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", marginHorizontal: 16, marginTop: 8, marginBottom: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
+  translatorText: { fontSize: 11 },
   themeText: { flex: 1, fontSize: 13, lineHeight: 20 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16 },
   loadingText: { fontSize: 15 },
