@@ -7,44 +7,6 @@ import type { PrayerSoundSettings } from "@/context/AppContext";
 
 const AYAT_NOTIF_IDS_KEY = "@daily_imaan_ayat_notif_ids";
 
-/**
- * Cluster-aware truncation. Arabic combines a base letter with multiple
- * combining marks (harakāt, shaddah, sukūn) and a naive `string.slice`
- * routinely splits one off, leaving an orphaned diacritic. We segment by
- * grapheme cluster (Intl.Segmenter on Hermes ≥ 0.74) and fall back to walking
- * back past combining marks when Segmenter is unavailable (older runtimes).
- */
-function truncateClusters(text: string, maxClusters: number): string {
-  if (!text) return text;
-  try {
-    const SegmenterCtor = (Intl as unknown as {
-      Segmenter?: new (locale: string, opts: { granularity: "grapheme" }) =>
-        { segment: (s: string) => Iterable<{ segment: string }> };
-    }).Segmenter;
-    if (SegmenterCtor) {
-      const seg = new SegmenterCtor("ar", { granularity: "grapheme" });
-      const out: string[] = [];
-      for (const s of seg.segment(text)) {
-        out.push(s.segment);
-        if (out.length > maxClusters) {
-          out.pop();
-          return out.join("") + "…";
-        }
-      }
-      return text;
-    }
-  } catch {
-    // fall through to regex-based fallback
-  }
-  if (text.length <= maxClusters) return text;
-  // Arabic combining marks: harakāt, tanwīn, shaddah, sukūn, dagger alif,
-  // Quranic annotation signs.
-  const COMBINING = /[\u064B-\u065F\u0670\u06D6-\u06ED]/;
-  let cut = maxClusters;
-  while (cut > 0 && COMBINING.test(text[cut] ?? "")) cut--;
-  return text.slice(0, cut) + "…";
-}
-
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -92,32 +54,29 @@ async function saveAyatNotifIds(ids: string[]): Promise<void> {
 /**
  * Schedule daily Ayat-of-the-Day notifications at the given times.
  *
- * The notification body includes the Arabic text followed by a short English
- * snippet so the user can read the ayah directly from the lock screen.
+ * The body is a generic prompt — never the verse text itself — so the
+ * notification never goes stale across days. (A DAILY trigger fires the
+ * same body forever; embedding ayah text here would show yesterday's ayah
+ * if the user did not foreground the app to trigger a reschedule.)
  *
- * Notification IDs are stored in AsyncStorage so they can be individually
- * cancelled whenever the user updates their reminder schedule.
+ * The user reads today's actual verse by opening the app from the
+ * notification; the verse is computed fresh at that point.
  *
- * @param times          Array of "HH:MM" strings
- * @param arabicText     Full Arabic text of today's ayah
- * @param englishText    Full English translation (will be truncated)
- * @param surahRef       Human-readable reference, e.g. "Al-Baqarah 2:255"
- * @param ayahId         Global ayah ID embedded in the notification payload
+ * Notification IDs are persisted to AsyncStorage so they can be
+ * individually cancelled when the user updates the reminder schedule.
  */
 export async function scheduleAyatNotifications(
-  times: string[],
-  arabicText: string,
-  englishText: string,
-  surahRef: string,
-  ayahId: number
+  times: string[]
 ): Promise<void> {
   if (Platform.OS === "web") return;
   try {
+    // Read action is dismiss-only (does not foreground the app). Tapping
+    // the notification body itself still opens the app via the OS default.
     await Notifications.setNotificationCategoryAsync("daily_ayat", [
       {
         identifier: "read",
-        buttonTitle: "Read",
-        options: { opensAppToForeground: true },
+        buttonTitle: "Mark as Read",
+        options: { opensAppToForeground: false },
       },
     ]);
 
@@ -149,13 +108,8 @@ export async function scheduleAyatNotifications(
       return;
     }
 
-    // Build the notification body: Arabic line + English snippet + reference.
-    // Arabic uses combining diacritics — naive .slice() can break a glyph
-    // mid-cluster. truncateClusters segments by grapheme so the visible
-    // letter is never split.
-    const arabicShort = truncateClusters(arabicText, 80);
-    const englishShort = truncateClusters(englishText, 100);
-    const body = `${arabicShort}\n"${englishShort}" — ${surahRef}`;
+    // Generic, evergreen body — never goes stale.
+    const body = "Your verse for today is ready. Tap to read.";
 
     // Schedule a notification for each configured time and collect the IDs.
     const newIds: string[] = [];
@@ -168,7 +122,6 @@ export async function scheduleAyatNotifications(
           title: "Daily Imaan",
           body,
           categoryIdentifier: "daily_ayat",
-          data: { ayahId },
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -186,6 +139,7 @@ export async function scheduleAyatNotifications(
     if (__DEV__) console.warn("[DailyImaan] scheduleAyatNotifications failed:", err);
   }
 }
+
 
 /** Default fallback if no settings are passed (matches AppContext defaults). */
 const DEFAULT_PRAYER_SOUND_ENABLED: PrayerSoundSettings = {

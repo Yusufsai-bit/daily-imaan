@@ -47,53 +47,47 @@ function AppEffects() {
     requestNotificationPermission();
   }, []);
 
-  // Handle notification tap or "Read" action.
+  // Handle notification tap or "Mark as Read" action.
+  //
+  // Today's ayah is computed FRESH from current settings at interaction
+  // time (not read from a payload), because a DAILY-trigger notification
+  // would otherwise carry whichever ayahId was current the day it was
+  // scheduled — wrong on day N.
+  //
+  // Default tap (notification body) opens the app to Home so the user can
+  // read the verse. The "Mark as Read" action is dismiss-only: it credits
+  // the streak in the background without yanking the user into the app.
+  //
   // Guarded by `loaded` so streak/read-count mutations only run against
   // fully-restored state and never race with the AsyncStorage hydration.
   useEffect(() => {
     if (Platform.OS === "web") return;
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       if (!loaded) return;
-      const data = response.notification.request.content.data as { ayahId?: number } | null;
-      if (data?.ayahId) {
-        markAyahRead(data.ayahId);
-      }
+      const todayAyah = getTodayAyah(state.settings.ayatOrder);
+      const ayahId = getGlobalId(todayAyah.surahId, todayAyah.ayahNumber);
+      markAyahRead(ayahId);
       incrementStreak();
-      const action = response.actionIdentifier;
-      if (
-        action === "read" ||
-        action === Notifications.DEFAULT_ACTION_IDENTIFIER
-      ) {
+      if (response.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
         router.navigate("/");
       }
     });
     return () => sub.remove();
-  }, [loaded, incrementStreak, markAyahRead]);
+  }, [loaded, incrementStreak, markAyahRead, state.settings.ayatOrder]);
 
-  // Helper: schedule notifications for today's ayah using the current settings.
-  // Extracted so it can be called both on settings change and on foreground resume.
+  // Schedule daily ayat reminders at the configured times. The body is an
+  // evergreen prompt (handled inside `scheduleAyatNotifications`) so the
+  // notification text never goes stale; today's actual verse is computed
+  // when the user opens the app from the notification.
   const rescheduleAyatNotifs = useCallback(() => {
     if (Platform.OS === "web") return;
-    const { notificationTimes, ayatOrder } = state.settings;
-    const todayAyah = getTodayAyah(ayatOrder);
-    const surahRef = `${todayAyah.surahNameEnglish} ${todayAyah.surahId}:${todayAyah.ayahNumber}`;
-    const ayahId = getGlobalId(todayAyah.surahId, todayAyah.ayahNumber);
-    scheduleAyatNotifications(
-      notificationTimes,
-      todayAyah.arabicText,
-      todayAyah.englishText,
-      surahRef,
-      ayahId
-    );
-  }, [state.settings]);
+    scheduleAyatNotifications(state.settings.notificationTimes);
+  }, [state.settings.notificationTimes]);
 
-  // Re-schedule ayat notifications whenever the time list or ayat order changes.
-  // The body includes both Arabic text and an English snippet so the user can
-  // read the ayah from the lock screen without opening the app.
-  // ayahId is embedded in the notification payload so "Read" taps can persist it.
+  // Re-schedule whenever the user changes their reminder times.
   useEffect(() => {
     rescheduleAyatNotifs();
-  }, [state.settings.notificationTimes, state.settings.ayatOrder]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state.settings.notificationTimes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // When the app returns to the foreground, reschedule with today's ayah.
   // Without this, a user who doesn't change settings would continue receiving

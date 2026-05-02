@@ -148,3 +148,12 @@ These are intentional and not bugs, but you may want to call them out in your re
 - **iOS widget:** not yet shipped. The Android widget is.
 - **App icon:** uses the same `icon.png` for the main icon, the adaptive icon foreground, and the splash. Replacing with purpose-built artwork (1024×1024 main, padded foreground for Android adaptive, separate splash logo) will make the install experience feel more polished.
 - **No backend:** by design. Every operation is local or directly hits a public Quran/prayer-times API.
+
+## Deliberate v1 product decisions
+
+These are choices, not bugs — flagged here so a future reviewer or task does not accidentally "fix" them.
+
+- **Daily ayat are drawn from a curated rotation (~75 vetted verses), not from the full 6,236-ayah dataset.** This is intentional: a "gentle, no guilt" daily app should not surface, say, a verse about hellfire on a hard day. The full Qur'an dataset is bundled offline and used by the Surah / Bookmarks screens; daily delivery uses the curated list. The store description ("drawn from a curated rotation of the Qur'an") reflects this honestly. If you want this to change later, treat it as a separate product task.
+- **Tafsir / context is fetched verbatim on demand from Quran.com (Ibn Kathir, Abridged), not bundled.** This is required by the brief: ZERO AI-generated commentary on Islamic content. Authoring 6,236 one-line contexts in-house would either require significant scholar-vetted writing or violate the brief; on-demand verbatim Ibn Kathir is the v1 solution. First load per ayah requires a network round-trip; subsequent reads are served from an LRU AsyncStorage cache.
+- **Notifications use a generic body, not the verse text.** Embedding the verse in the body would go stale across days because a DAILY trigger fires the same payload forever. Today's verse is computed fresh when the user opens the app from the notification.
+- **"Mark as Read" notification action is dismiss-only** (does not foreground the app); tapping the body itself opens the app to read the verse.
