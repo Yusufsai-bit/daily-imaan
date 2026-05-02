@@ -54,3 +54,16 @@ account, Sentry DSN, hosted Privacy Policy URL, store metadata) is in
 `artifacts/daily-imaan/LAUNCH_CHECKLIST.md`. Reference docs alongside it:
 `PRIVACY_POLICY.md` (hostable), `STORE_LISTING.md` (copy/keywords/screenshots),
 and `PRIVACY_NUTRITION_LABELS.md` (Apple App Privacy + Google Data Safety).
+
+## Brand guide
+
+Brand identity (colors, typography, voice, components) lives in two places:
+
+- **Engineering reference:** `artifacts/daily-imaan/BRAND_GUIDE.md` — tokens,
+  hex codes, type scale, `expo-font` snippet, voice rules.
+- **Visual sheet (canvas):** `artifacts/mockup-sandbox/src/components/mockups/daily-imaan-brand/BrandGuide.tsx`,
+  rendered as the "Daily Imaan — Brand Guide" iframe on the canvas.
+
+Fonts (Google Fonts only): **Lora** (display / English verse), **Inter** (body / UI),
+**Amiri** (Arabic / Qur'anic text only — Khaled Hosny's classical naskh, the
+typographic standard for Qur'an rendering on the web).

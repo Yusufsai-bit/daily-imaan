@@ -330,6 +330,12 @@ export function BrandGuide() {
                 فَإِنَّ مَعَ ٱلْعُسْرِ يُسْرًا ۝ إِنَّ مَعَ ٱلْعُسْرِ يُسْرًا
               </div>
               <div
+                className="font-['Inter'] text-[11px] tracking-[0.18em] uppercase mt-3"
+                style={{ color: COLORS.stone.hex }}
+              >
+                Display specimen — production size on mobile is 28 / 56 (see scale below)
+              </div>
+              <div
                 className="font-['Lora'] italic text-[16px] leading-[1.55] mt-6 max-w-[640px]"
                 style={{ color: COLORS.stone.hex }}
               >
