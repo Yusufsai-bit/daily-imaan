@@ -21,6 +21,7 @@ import { useApp } from "@/context/AppContext";
 import { FEATURED_AYAT, FeaturedAyah, getTodayAyah } from "@/data/featuredAyat";
 import { SURAHS } from "@/data/surahsData";
 import { usePrayerTimes } from "@/hooks/usePrayerTimes";
+import { schedulePrayerNotifications } from "@/hooks/useNotifications";
 import colors from "@/constants/colors";
 
 function getGlobalAyahNumber(surahId: number, ayahNumber: number): number {
@@ -62,6 +63,13 @@ export default function HomeScreen() {
     ]).start();
     incrementStreak();
   }, [ayah.id]);
+
+  // Schedule prayer-time notifications whenever today's prayer times load/change
+  useEffect(() => {
+    if (prayerTimes) {
+      schedulePrayerNotifications(prayerTimes);
+    }
+  }, [prayerTimes]);
 
   useEffect(() => {
     return () => {

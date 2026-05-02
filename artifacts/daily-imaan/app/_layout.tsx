@@ -18,19 +18,18 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider, useApp } from "@/context/AppContext";
 import { getTodayAyah } from "@/data/featuredAyat";
-import { scheduleNotifications } from "@/hooks/useNotifications";
+import { scheduleAyatNotifications } from "@/hooks/useNotifications";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
-function NotificationHandler() {
+function AppEffects() {
   const { state, incrementStreak } = useApp();
 
+  // Handle notification tap or "Read" action
   useEffect(() => {
     if (Platform.OS === "web") return;
-
-    // Handle notification tap / action ("Read" button)
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       incrementStreak();
       const action = response.actionIdentifier;
@@ -41,19 +40,18 @@ function NotificationHandler() {
         router.navigate("/");
       }
     });
-
     return () => sub.remove();
   }, [incrementStreak]);
 
-  // Re-schedule whenever notification times change
+  // Re-schedule ayat notifications whenever the time list or ayat order changes
   useEffect(() => {
     const { notificationTimes, ayatOrder } = state.settings;
     const todayAyah = getTodayAyah(ayatOrder);
-    const shortText = `"${todayAyah.englishText.slice(0, 120)}${todayAyah.englishText.length > 120 ? "…" : ""}" — ${todayAyah.surahNameEnglish} ${todayAyah.surahId}:${todayAyah.ayahNumber}`;
-    scheduleNotifications(notificationTimes, shortText);
+    const body = `"${todayAyah.englishText.slice(0, 120)}${todayAyah.englishText.length > 120 ? "…" : ""}" — ${todayAyah.surahNameEnglish} ${todayAyah.surahId}:${todayAyah.ayahNumber}`;
+    scheduleAyatNotifications(notificationTimes, body);
   }, [state.settings.notificationTimes, state.settings.ayatOrder]);
 
-  // Sync dark mode with Appearance API
+  // Sync manual dark mode override with the OS Appearance API
   useEffect(() => {
     if (Platform.OS === "web") return;
     Appearance.setColorScheme(state.settings.darkMode ? "dark" : "light");
@@ -95,7 +93,7 @@ export default function RootLayout() {
           <GestureHandlerRootView style={{ flex: 1 }}>
             <KeyboardProvider>
               <AppProvider>
-                <NotificationHandler />
+                <AppEffects />
                 <RootLayoutNav />
               </AppProvider>
             </KeyboardProvider>
