@@ -59,6 +59,6 @@
   "dependencies": {
     "expo-av": "^16.0.8",
     "expo-notifications": "^0.32.17",
-    "expo-sensors": "^55.0.13"
+    "expo-sensors": "^15.0.8"
   }
 }

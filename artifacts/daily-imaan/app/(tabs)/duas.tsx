@@ -16,11 +16,13 @@ import {
 } from "react-native";
 
 import colors from "@/constants/colors";
+import { useApp } from "@/context/AppContext";
 import { DUA_CATEGORIES, DUAS, Dua } from "@/data/duasData";
 
 function DuaCard({ dua, isDark, C }: { dua: Dua; isDark: boolean; C: (typeof colors)["light"] }) {
   const [expanded, setExpanded] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const { markDeedDone } = useApp();
 
   const toggle = () => {
     const useND = Platform.OS !== "web";
@@ -29,6 +31,9 @@ function DuaCard({ dua, isDark, C }: { dua: Dua; isDark: boolean; C: (typeof col
       Animated.timing(scaleAnim, { toValue: 1, duration: 80, useNativeDriver: useND }),
     ]).start();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Auto-link "Made Dua" intention the first time the user opens any
+    // dua. markDeedDone is idempotent — never undoes a manual uncheck.
+    if (!expanded) markDeedDone("dua");
     setExpanded(!expanded);
   };
 

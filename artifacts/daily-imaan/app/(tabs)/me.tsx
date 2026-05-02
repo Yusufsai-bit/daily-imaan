@@ -71,11 +71,25 @@ export default function MeScreen() {
         </Pressable>
       </View>
 
-      {/* Stats Row — soft, gain-only metrics. No "best" or "broken" framing. */}
+      {/* Stats Row — soft, gain-only metrics. No "best" or "broken" framing.
+          The hero metric ("Days with Allah") gets a wider card and larger
+          number so the soft streak feels primary; secondary stats are
+          tappable to take the user to their full lists. */}
       <View style={styles.statsRow}>
-        <View style={[styles.statCard, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
-          <Ionicons name="leaf" size={26} color={C.primary} />
-          <Text style={[styles.statNumber, { color: C.foreground, fontFamily: "Inter_700Bold" }]}>
+        <View
+          style={[
+            styles.statCard,
+            styles.statCardHero,
+            { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" },
+          ]}
+        >
+          <Ionicons name="leaf" size={30} color={C.primary} />
+          <Text
+            style={[
+              styles.statNumberHero,
+              { color: C.foreground, fontFamily: "Inter_700Bold" },
+            ]}
+          >
             {streak.count}
           </Text>
           <Text style={[styles.statLabel, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
@@ -93,7 +107,17 @@ export default function MeScreen() {
           </Text>
         </View>
 
-        <View style={[styles.statCard, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/bookmarks" as never);
+          }}
+          accessibilityLabel={`View ${bookmarks.length} saved verses`}
+          style={({ pressed }) => [
+            styles.statCard,
+            { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000", opacity: pressed ? 0.85 : 1 },
+          ]}
+        >
           <Ionicons name="bookmark" size={26} color={C.primary} />
           <Text style={[styles.statNumber, { color: C.foreground, fontFamily: "Inter_700Bold" }]}>
             {bookmarks.length}
@@ -101,7 +125,7 @@ export default function MeScreen() {
           <Text style={[styles.statLabel, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
             Saved
           </Text>
-        </View>
+        </Pressable>
       </View>
       <Text style={[styles.streakNote, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
         Days with Allah only ever goes up. Periods, illness, travel, and rest never break it.
@@ -274,6 +298,10 @@ export default function MeScreen() {
           </Pressable>
 
           <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/bookmarks" as never);
+            }}
             style={({ pressed }) => [styles.linkRow, { borderBottomColor: C.border, borderBottomWidth: 0, opacity: pressed ? 0.7 : 1 }]}
           >
             <Ionicons name="bookmark-outline" size={20} color={C.primary} />
@@ -299,7 +327,11 @@ const styles = StyleSheet.create({
     flex: 1, borderRadius: 14, padding: 14, alignItems: "center", gap: 4,
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
+  // Wider hero card for the primary "Days with Allah" metric — communicates
+  // importance without changing colour weight.
+  statCardHero: { flex: 1.4, paddingVertical: 18 },
   statNumber: { fontSize: 24, letterSpacing: -0.5 },
+  statNumberHero: { fontSize: 36, letterSpacing: -1 },
   statLabel: { fontSize: 11, textAlign: "center" },
   streakNote: { fontSize: 11, lineHeight: 16, textAlign: "center", marginTop: -14, paddingHorizontal: 16, fontStyle: "italic" },
   section: { gap: 12 },

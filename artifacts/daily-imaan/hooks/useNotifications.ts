@@ -7,6 +7,44 @@ import type { PrayerSoundSettings } from "@/context/AppContext";
 
 const AYAT_NOTIF_IDS_KEY = "@daily_imaan_ayat_notif_ids";
 
+/**
+ * Cluster-aware truncation. Arabic combines a base letter with multiple
+ * combining marks (harakāt, shaddah, sukūn) and a naive `string.slice`
+ * routinely splits one off, leaving an orphaned diacritic. We segment by
+ * grapheme cluster (Intl.Segmenter on Hermes ≥ 0.74) and fall back to walking
+ * back past combining marks when Segmenter is unavailable (older runtimes).
+ */
+function truncateClusters(text: string, maxClusters: number): string {
+  if (!text) return text;
+  try {
+    const SegmenterCtor = (Intl as unknown as {
+      Segmenter?: new (locale: string, opts: { granularity: "grapheme" }) =>
+        { segment: (s: string) => Iterable<{ segment: string }> };
+    }).Segmenter;
+    if (SegmenterCtor) {
+      const seg = new SegmenterCtor("ar", { granularity: "grapheme" });
+      const out: string[] = [];
+      for (const s of seg.segment(text)) {
+        out.push(s.segment);
+        if (out.length > maxClusters) {
+          out.pop();
+          return out.join("") + "…";
+        }
+      }
+      return text;
+    }
+  } catch {
+    // fall through to regex-based fallback
+  }
+  if (text.length <= maxClusters) return text;
+  // Arabic combining marks: harakāt, tanwīn, shaddah, sukūn, dagger alif,
+  // Quranic annotation signs.
+  const COMBINING = /[\u064B-\u065F\u0670\u06D6-\u06ED]/;
+  let cut = maxClusters;
+  while (cut > 0 && COMBINING.test(text[cut] ?? "")) cut--;
+  return text.slice(0, cut) + "…";
+}
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -112,12 +150,11 @@ export async function scheduleAyatNotifications(
     }
 
     // Build the notification body: Arabic line + English snippet + reference.
-    const arabicShort = arabicText.length > 80
-      ? arabicText.slice(0, 77) + "…"
-      : arabicText;
-    const englishShort = englishText.length > 100
-      ? englishText.slice(0, 97) + "…"
-      : englishText;
+    // Arabic uses combining diacritics — naive .slice() can break a glyph
+    // mid-cluster. truncateClusters segments by grapheme so the visible
+    // letter is never split.
+    const arabicShort = truncateClusters(arabicText, 80);
+    const englishShort = truncateClusters(englishText, 100);
     const body = `${arabicShort}\n"${englishShort}" — ${surahRef}`;
 
     // Schedule a notification for each configured time and collect the IDs.

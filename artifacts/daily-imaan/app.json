@@ -15,12 +15,14 @@
     },
     "ios": {
       "supportsTablet": false,
+      "bundleIdentifier": "com.dailyimaan.app",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Daily Imaan needs your location to calculate accurate prayer times.",
         "NSUserNotificationUsageDescription": "Daily Imaan sends daily Ayat reminders and prayer time alerts."
       }
     },
     "android": {
+      "package": "com.dailyimaan.app",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "RECEIVE_BOOT_COMPLETED",

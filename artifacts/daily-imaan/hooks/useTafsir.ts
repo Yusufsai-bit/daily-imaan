@@ -14,11 +14,77 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const TAFSIR_ID = 169; // Ibn Kathir (Abridged) — English, served by Quran.com
 const CACHE_PREFIX = "@tafsir_v1_";
 const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 90; // 90 days
+const CACHE_INDEX_KEY = "@tafsir_v1_index";
+/**
+ * LRU cap so the tafsir cache never grows without bound. Each entry is
+ * typically 1–4 KB, so 200 entries ≈ 0.5 MB — comfortable for AsyncStorage
+ * while still covering a heavy reading session of multiple surahs.
+ */
+const CACHE_MAX_ENTRIES = 200;
 
 interface CacheEntry {
   text: string;
   source: string;
   fetchedAt: number;
+}
+
+/**
+ * Reads the LRU index (most-recently-used at the end). Tolerates a missing
+ * or corrupted index by returning an empty list.
+ */
+async function readIndex(): Promise<string[]> {
+  try {
+    const raw = await AsyncStorage.getItem(CACHE_INDEX_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter((k) => typeof k === "string");
+    }
+  } catch {
+    // ignore — treat as empty
+  }
+  return [];
+}
+
+/**
+ * Persist a tafsir entry under `cacheKey` and update the LRU index. If the
+ * cap is exceeded, evict oldest entries (front of the list) until we're back
+ * under the cap.
+ */
+async function writeWithLRU(cacheKey: string, entry: CacheEntry): Promise<void> {
+  try {
+    await AsyncStorage.setItem(cacheKey, JSON.stringify(entry));
+    const idx = await readIndex();
+    const filtered = idx.filter((k) => k !== cacheKey);
+    filtered.push(cacheKey);
+    while (filtered.length > CACHE_MAX_ENTRIES) {
+      const evict = filtered.shift();
+      if (evict) {
+        try {
+          await AsyncStorage.removeItem(evict);
+        } catch {
+          // ignore individual eviction failure
+        }
+      }
+    }
+    await AsyncStorage.setItem(CACHE_INDEX_KEY, JSON.stringify(filtered));
+  } catch {
+    // ignore storage errors entirely — tafsir still served from memory
+  }
+}
+
+/**
+ * Mark an existing entry as recently-used by moving its key to the end of
+ * the index. Best-effort; index writes never block the hook.
+ */
+async function touchIndex(cacheKey: string): Promise<void> {
+  try {
+    const idx = await readIndex();
+    const without = idx.filter((k) => k !== cacheKey);
+    without.push(cacheKey);
+    await AsyncStorage.setItem(CACHE_INDEX_KEY, JSON.stringify(without));
+  } catch {
+    // ignore
+  }
 }
 
 /** Minimal HTML→plain-text conversion that preserves paragraph structure. */
@@ -90,6 +156,8 @@ export function useTafsir(
                 error: null,
               });
             }
+            // Mark as recently used so the LRU eviction picks colder entries.
+            touchIndex(cacheKey);
             return;
           }
         }
@@ -117,17 +185,13 @@ export function useTafsir(
           setState({ text: cleanText, source, loading: false, error: null });
         }
 
-        // Best-effort cache write.
-        try {
-          const entry: CacheEntry = {
-            text: cleanText,
-            source,
-            fetchedAt: Date.now(),
-          };
-          await AsyncStorage.setItem(cacheKey, JSON.stringify(entry));
-        } catch {
-          // Ignore storage errors.
-        }
+        // Best-effort cache write with LRU eviction.
+        const entry: CacheEntry = {
+          text: cleanText,
+          source,
+          fetchedAt: Date.now(),
+        };
+        writeWithLRU(cacheKey, entry);
       } catch (e) {
         if (!cancelled) {
           setState({

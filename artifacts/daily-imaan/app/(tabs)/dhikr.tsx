@@ -15,6 +15,7 @@ import type { DimensionValue } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import colors from "@/constants/colors";
+import { useApp } from "@/context/AppContext";
 
 interface DhikrState {
   subhanAllah: number;
@@ -57,6 +58,7 @@ export default function DhikrScreen() {
   const isDark = scheme === "dark";
   const C = isDark ? colors.dark : colors.light;
   const insets = useSafeAreaInsets();
+  const { markDeedDone } = useApp();
 
   const [counts, setCounts] = useState<DhikrState>({
     subhanAllah: 0,
@@ -87,7 +89,10 @@ export default function DhikrScreen() {
       ]).start();
 
       if (newCount === max) {
-        // Auto-reset at the dhikr's target count, then roll back to 0
+        // Auto-reset at the dhikr's target count, then roll back to 0.
+        // Auto-link the "Completed Dhikr" intention — markDeedDone is
+        // idempotent and never undoes a manual check.
+        markDeedDone("dhikr");
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Animated.sequence([
           Animated.timing(completionAnims[index]!, { toValue: 1, duration: 250, useNativeDriver: useND }),
@@ -105,7 +110,7 @@ export default function DhikrScreen() {
       }
       setSessionTotal((t) => t + 1);
     },
-    [counts, scaleAnims, completionAnims]
+    [counts, scaleAnims, completionAnims, markDeedDone]
   );
 
   const handleReset = useCallback(() => {
@@ -147,11 +152,13 @@ export default function DhikrScreen() {
         </Pressable>
       </View>
 
-      {/* Info card */}
+      {/* Info card — full hadith text, no truncation. Source: Sahih Muslim 597,
+          Book 5 (The Book of the Mosques and Places of Prayer), Chapter on
+          remembrance after prayer. */}
       <View style={[styles.infoCard, { backgroundColor: C.card, borderColor: C.border }]}>
         <Ionicons name="information-circle-outline" size={16} color={C.mutedForeground} />
         <Text style={[styles.infoText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-          The Prophet ﷺ said: "Whoever says SubhanAllah 33 times, Alhamdulillah 33 times, and Allahu Akbar 34 times after prayer..." (Muslim)
+          Abu Hurayrah (raḍiy Allāhu ʿanhu) reported that the Messenger of Allah ﷺ said: "Whoever glorifies Allah (SubhanAllah) thirty-three times after every prayer, and praises Allah (Alhamdulillah) thirty-three times, and magnifies Allah (Allahu Akbar) thirty-three times — that is ninety-nine — and completes the hundred by saying 'La ilaha illa Allah, wahdahu la sharika lah, lahul-mulku wa lahul-hamdu wa huwa ʿala kulli shay'in qadeer' — his sins will be forgiven even if they are like the foam of the sea." (Sahih Muslim 597)
         </Text>
       </View>
 

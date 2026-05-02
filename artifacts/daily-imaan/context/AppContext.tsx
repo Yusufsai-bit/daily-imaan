@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
+import { DEFAULT_RECITER_ID } from "@/constants/reciters";
+
 export interface PrayerSoundSettings {
   Fajr: boolean;
   Dhuhr: boolean;
@@ -23,6 +25,11 @@ export interface AppSettings {
    * sound. A bundled adhan recitation requires a licensed audio asset.
    */
   prayerSoundEnabled: PrayerSoundSettings;
+  /**
+   * Audio reciter for ayah playback. Stored as the alquran.cloud edition
+   * code (e.g. "ar.alafasy"). See constants/reciters.ts for the catalogue.
+   */
+  reciter: string;
 }
 
 export interface StreakData {
@@ -31,12 +38,28 @@ export interface StreakData {
   longestStreak: number;
 }
 
+/**
+ * Last position the user was reading in the Mushaf, surfaced on the Home
+ * screen as a "Continue reading" card. Updated whenever the surah detail
+ * screen mounts. Only the surah is tracked (not the scroll offset) because
+ * the user typically resumes near the start.
+ */
+export interface LastReadPosition {
+  surahId: number;
+  ayahNumber: number;
+  surahName: string;
+  updatedAt: number;
+}
+
 export interface AppState {
+  /** Schema version for future migrations. Bumped on breaking field changes. */
+  version: number;
   bookmarks: number[];
   streak: StreakData;
   goodDeeds: Record<string, string[]>;
   settings: AppSettings;
   readAyatIds: number[];
+  lastReadPosition: LastReadPosition | null;
 }
 
 interface AppContextType {
@@ -45,14 +68,24 @@ interface AppContextType {
   isBookmarked: (ayahId: number) => boolean;
   markAyahRead: (ayahId: number) => void;
   toggleDeed: (deedId: string) => void;
+  /**
+   * Idempotent — adds the deed to today's list if missing, never removes.
+   * Use for auto-linking from in-app actions (Read Quran, Made Dua,
+   * Completed Dhikr) so we never undo a user's manual check.
+   */
+  markDeedDone: (deedId: string) => void;
   isDeedChecked: (deedId: string) => boolean;
   getTodayDeeds: () => string[];
   updateSettings: (settings: Partial<AppSettings>) => void;
   incrementStreak: () => void;
+  setLastReadPosition: (pos: LastReadPosition) => void;
   loaded: boolean;
 }
 
+const CURRENT_STATE_VERSION = 1;
+
 const DEFAULT_STATE: AppState = {
+  version: CURRENT_STATE_VERSION,
   bookmarks: [],
   streak: { count: 0, lastActiveDate: "", longestStreak: 0 },
   goodDeeds: {},
@@ -69,8 +102,10 @@ const DEFAULT_STATE: AppState = {
       Maghrib: true,
       Isha: true,
     },
+    reciter: DEFAULT_RECITER_ID,
   },
   readAyatIds: [],
+  lastReadPosition: null,
 };
 
 const STORAGE_KEY = "@daily_imaan_state";
@@ -104,6 +139,32 @@ function pruneGoodDeeds(
   return result;
 }
 
+/**
+ * Apply migrations for any state shape older than CURRENT_STATE_VERSION.
+ * Each migration is additive — we never delete user data. Returns saved state
+ * with all required fields populated to defaults so older clients can keep
+ * their bookmarks, streak, and intentions intact across upgrades.
+ */
+function migrateState(saved: Partial<AppState>): AppState {
+  // v0 → v1: introduces `version`, `lastReadPosition`, `settings.reciter`.
+  // The merge below covers all current fields. When future migrations are
+  // needed, branch on `saved.version` here.
+  return {
+    ...DEFAULT_STATE,
+    ...saved,
+    settings: { ...DEFAULT_STATE.settings, ...(saved.settings ?? {}) },
+    streak: { ...DEFAULT_STATE.streak, ...(saved.streak ?? {}) },
+    bookmarks: Array.isArray(saved.bookmarks) ? saved.bookmarks : [],
+    readAyatIds: Array.isArray(saved.readAyatIds) ? saved.readAyatIds : [],
+    goodDeeds:
+      typeof saved.goodDeeds === "object" && saved.goodDeeds !== null
+        ? saved.goodDeeds
+        : {},
+    lastReadPosition: saved.lastReadPosition ?? null,
+    version: CURRENT_STATE_VERSION,
+  };
+}
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>(DEFAULT_STATE);
   const [loaded, setLoaded] = useState(false);
@@ -113,8 +174,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
-          const saved: AppState = JSON.parse(raw);
-          setState({ ...DEFAULT_STATE, ...saved, settings: { ...DEFAULT_STATE.settings, ...saved.settings } });
+          const saved = JSON.parse(raw) as Partial<AppState>;
+          setState(migrateState(saved));
         }
       } catch {
         // use defaults
@@ -213,7 +274,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         };
 
         // Soft streak — increment "Days with Allah" once per day on any deed.
-        // Never decrements. Missing days, illness, periods, travel: no penalty.
         if (!todayDeeds.includes(deedId)) {
           const { streak } = prev;
           if (streak.lastActiveDate !== today) {
@@ -224,6 +284,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               longestStreak: newCount,
             };
           }
+        }
+        return newState;
+      });
+    },
+    [updateState]
+  );
+
+  /**
+   * Add a deed to today's list if not already present. Never removes — used
+   * for auto-linking from in-app actions (e.g. opening a dua, completing a
+   * dhikr round, scrolling a surah). Bumps the soft streak the first time
+   * any deed is added today.
+   */
+  const markDeedDone = useCallback(
+    (deedId: string) => {
+      const today = getTodayKey();
+      updateState((prev) => {
+        const todayDeeds = prev.goodDeeds[today] ?? [];
+        if (todayDeeds.includes(deedId)) return prev;
+        const newState: AppState = {
+          ...prev,
+          goodDeeds: { ...prev.goodDeeds, [today]: [...todayDeeds, deedId] },
+        };
+        const { streak } = prev;
+        if (streak.lastActiveDate !== today) {
+          const newCount = streak.count + 1;
+          newState.streak = {
+            count: newCount,
+            lastActiveDate: today,
+            longestStreak: newCount,
+          };
         }
         return newState;
       });
@@ -254,6 +345,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [updateState]
   );
 
+  const setLastReadPosition = useCallback(
+    (pos: LastReadPosition) => {
+      updateState((prev) => {
+        // Skip the write if the position is unchanged — avoids storage churn
+        // when the surah detail screen re-renders.
+        const cur = prev.lastReadPosition;
+        if (
+          cur &&
+          cur.surahId === pos.surahId &&
+          cur.ayahNumber === pos.ayahNumber
+        ) {
+          return prev;
+        }
+        return { ...prev, lastReadPosition: pos };
+      });
+    },
+    [updateState]
+  );
+
   return (
     <AppContext.Provider
       value={{
@@ -262,10 +372,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         isBookmarked,
         markAyahRead,
         toggleDeed,
+        markDeedDone,
         isDeedChecked,
         getTodayDeeds,
         updateSettings,
         incrementStreak,
+        setLastReadPosition,
         loaded,
       }}
     >

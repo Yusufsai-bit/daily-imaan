@@ -1,0 +1,175 @@
+import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import React, { useMemo } from "react";
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  View,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+
+import colors from "@/constants/colors";
+import { useApp } from "@/context/AppContext";
+import { SURAHS } from "@/data/surahsData";
+import { getQuranSurah } from "@/data/quranFull";
+
+interface BookmarkRow {
+  globalId: number;
+  surahId: number;
+  surahName: string;
+  surahNameEnglish: string;
+  ayahNumber: number;
+  arabic: string;
+  english: string;
+}
+
+/**
+ * Resolves stored bookmark IDs into surah + ayah info using bundled data.
+ * Defensive de-dup in case earlier client versions persisted duplicates.
+ * Sort by surah then ayah for stable display order.
+ */
+function buildRows(globalIds: number[]): BookmarkRow[] {
+  const unique = Array.from(new Set(globalIds));
+  const rows: BookmarkRow[] = [];
+  for (const globalId of unique) {
+    const surah = SURAHS.find(
+      (s) => globalId >= s.startingAyah && globalId < s.startingAyah + s.ayahCount
+    );
+    if (!surah) continue;
+    const ayahNumber = globalId - surah.startingAyah + 1;
+    const surahData = getQuranSurah(surah.id);
+    const ayah = surahData?.ayahs.find((a) => a.n === ayahNumber);
+    rows.push({
+      globalId,
+      surahId: surah.id,
+      surahName: surah.name,
+      surahNameEnglish: surah.nameEnglish,
+      ayahNumber,
+      arabic: ayah?.a ?? "",
+      english: ayah?.e ?? "",
+    });
+  }
+  rows.sort((a, b) =>
+    a.surahId !== b.surahId ? a.surahId - b.surahId : a.ayahNumber - b.ayahNumber
+  );
+  return rows;
+}
+
+export default function BookmarksScreen() {
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
+  const C = isDark ? colors.dark : colors.light;
+  const insets = useSafeAreaInsets();
+
+  const { state, toggleBookmark } = useApp();
+  const rows = useMemo(() => buildRows(state.bookmarks), [state.bookmarks]);
+
+  return (
+    <View style={[styles.container, { backgroundColor: C.background }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: C.primary }]}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="arrow-back" size={22} color="#fff" />
+        </Pressable>
+        <View style={styles.headerCenter}>
+          <Text style={[styles.title, { fontFamily: "Inter_700Bold" }]}>Saved Ayat</Text>
+          <Text style={[styles.subtitle, { fontFamily: "Inter_400Regular" }]}>
+            {rows.length} {rows.length === 1 ? "verse" : "verses"} bookmarked
+          </Text>
+        </View>
+        <View style={{ width: 40 }} />
+      </View>
+
+      {rows.length === 0 ? (
+        <View style={styles.empty}>
+          <Ionicons name="bookmark-outline" size={56} color={C.mutedForeground} />
+          <Text style={[styles.emptyTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
+            Nothing saved yet
+          </Text>
+          <Text style={[styles.emptyText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            Tap the bookmark icon next to any ayah to keep it here for later.
+          </Text>
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 20 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          {rows.map((row) => (
+            <Pressable
+              key={row.globalId}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push(`/surah/${row.surahId}` as never);
+              }}
+              accessibilityLabel={`Open ${row.surahNameEnglish} verse ${row.ayahNumber}`}
+              style={({ pressed }) => [
+                styles.row,
+                { backgroundColor: C.card, borderColor: C.border, opacity: pressed ? 0.85 : 1 },
+              ]}
+            >
+              <View style={styles.rowHeader}>
+                <View style={[styles.surahBadge, { backgroundColor: C.secondary }]}>
+                  <Text style={[styles.surahBadgeText, { color: C.primary, fontFamily: "Inter_600SemiBold" }]}>
+                    {row.surahNameEnglish} · {row.surahId}:{row.ayahNumber}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    toggleBookmark(row.globalId);
+                  }}
+                  hitSlop={10}
+                  accessibilityLabel="Remove bookmark"
+                  style={({ pressed }) => [styles.removeBtn, { opacity: pressed ? 0.5 : 1 }]}
+                >
+                  <Ionicons name="bookmark" size={18} color="#C8933C" />
+                </Pressable>
+              </View>
+              {row.arabic ? (
+                <Text style={[styles.arabic, { color: C.foreground }]} numberOfLines={3}>
+                  {row.arabic}
+                </Text>
+              ) : null}
+              {row.english ? (
+                <Text
+                  style={[styles.english, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+                  numberOfLines={3}
+                >
+                  {row.english}
+                </Text>
+              ) : null}
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  header: { paddingBottom: 16, paddingHorizontal: 16, flexDirection: "row", alignItems: "center" },
+  backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  headerCenter: { flex: 1, alignItems: "center", gap: 2 },
+  title: { color: "#fff", fontSize: 18 },
+  subtitle: { color: "rgba(255,255,255,0.75)", fontSize: 12 },
+  empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingHorizontal: 40 },
+  emptyTitle: { fontSize: 17 },
+  emptyText: { fontSize: 14, lineHeight: 20, textAlign: "center" },
+  list: { padding: 16, gap: 12 },
+  row: { borderRadius: 14, padding: 14, gap: 10, borderWidth: StyleSheet.hairlineWidth },
+  rowHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  surahBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  surahBadgeText: { fontSize: 12 },
+  removeBtn: { padding: 4 },
+  arabic: { fontSize: 19, lineHeight: 36, textAlign: "right", writingDirection: "rtl" },
+  english: { fontSize: 14, lineHeight: 22 },
+});

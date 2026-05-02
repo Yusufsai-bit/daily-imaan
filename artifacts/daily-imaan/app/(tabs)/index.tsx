@@ -133,7 +133,9 @@ export default function HomeScreen() {
       setAudioLoading(true);
       await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
       const globalNum = getGlobalAyahNumber(ayah.surahId, ayah.ayahNumber);
-      const url = `https://cdn.alquran.cloud/media/audio/ayah/ar.alafasy/${globalNum}`;
+      // Use the reciter the user picked in Settings (catalogue lives in
+      // constants/reciters.ts). Defaults to Al-Afasy on a fresh install.
+      const url = `https://cdn.alquran.cloud/media/audio/ayah/${state.settings.reciter}/${globalNum}`;
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: url },
         { shouldPlay: true }
@@ -150,12 +152,18 @@ export default function HomeScreen() {
     } finally {
       setAudioLoading(false);
     }
-  }, [isPlaying, sound, ayah]);
+  }, [isPlaying, sound, ayah, state.settings.reciter]);
+
+  // IMPORTANT: featuredAyat[].id is a list-local index (1..N over the
+  // curated list), NOT a global Quran ayah number. Bookmarks must use the
+  // global ayah number so they resolve consistently in Bookmarks and the
+  // Surah screen. See data/featuredAyat.ts for the curated entries.
+  const globalAyahId = getGlobalAyahNumber(ayah.surahId, ayah.ayahNumber);
 
   const handleBookmark = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    toggleBookmark(ayah.id);
-  }, [ayah.id, toggleBookmark]);
+    toggleBookmark(globalAyahId);
+  }, [globalAyahId, toggleBookmark]);
 
   const handleShare = useCallback(async () => {
     try {
@@ -186,7 +194,7 @@ export default function HomeScreen() {
     setAyah(FEATURED_AYAT[randomIndex]!);
   }, [sound, fadeAnim, scaleAnim]);
 
-  const bookmarked = isBookmarked(ayah.id);
+  const bookmarked = isBookmarked(globalAyahId);
 
   const prayerNames = prayerTimes
     ? Object.entries(prayerTimes).filter(([k]) => k !== "Sunrise")
@@ -213,11 +221,31 @@ export default function HomeScreen() {
             </Text>
           )}
         </View>
-        <View style={[styles.streakBadge, { backgroundColor: C.secondary }]}>
-          <Ionicons name="leaf" size={16} color={C.primary} />
-          <Text style={[styles.streakText, { color: C.foreground, fontFamily: "Inter_700Bold" }]}>
-            {state.streak.count}
-          </Text>
+        <View style={styles.headerActions}>
+          {/* Qibla quick action — small icon button so the most-used tool is
+              always one tap away from the home screen. */}
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/qibla" as never);
+            }}
+            accessibilityLabel="Open Qibla compass"
+            style={({ pressed }) => [
+              styles.qiblaQuick,
+              { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Ionicons name="compass-outline" size={18} color={C.primary} />
+          </Pressable>
+          <View
+            style={[styles.streakBadge, { backgroundColor: C.secondary }]}
+            accessibilityLabel={`${state.streak.count} days with Allah`}
+          >
+            <Ionicons name="leaf" size={16} color={C.primary} />
+            <Text style={[styles.streakText, { color: C.foreground, fontFamily: "Inter_700Bold" }]}>
+              {state.streak.count}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -229,6 +257,36 @@ export default function HomeScreen() {
             Next: {nextPrayer.name} · {nextPrayer.time}
           </Text>
         </View>
+      )}
+
+      {/* Continue reading — surfaces only after the user has opened a surah,
+          so first-time users aren't shown an empty card. Tracks the last
+          surah opened (see context/AppContext.tsx → setLastReadPosition). */}
+      {state.lastReadPosition && (
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push(`/surah/${state.lastReadPosition!.surahId}` as never);
+          }}
+          accessibilityLabel={`Continue reading ${state.lastReadPosition.surahName}`}
+          style={({ pressed }) => [
+            styles.continueCard,
+            { backgroundColor: C.card, borderColor: C.border, opacity: pressed ? 0.85 : 1 },
+          ]}
+        >
+          <View style={[styles.continueIcon, { backgroundColor: C.secondary }]}>
+            <Feather name="book-open" size={18} color={C.primary} />
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={[styles.continueLabel, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              Continue reading
+            </Text>
+            <Text style={[styles.continueTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              {state.lastReadPosition.surahName}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={C.mutedForeground} />
+        </Pressable>
       )}
 
       {/* Section label */}
@@ -482,8 +540,17 @@ const styles = StyleSheet.create({
   appTitle: { fontSize: 26, letterSpacing: -0.5 },
   dateText: { fontSize: 13, marginTop: 2 },
   hijriText: { fontSize: 12, marginTop: 2, letterSpacing: 0.2 },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  qiblaQuick: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   streakBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   streakText: { fontSize: 16 },
+  continueCard: {
+    flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  continueIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  continueLabel: { fontSize: 11, letterSpacing: 0.5, textTransform: "uppercase" },
+  continueTitle: { fontSize: 15 },
   prayerBanner: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
   prayerBannerText: { color: "#fff", fontSize: 13 },
   sectionLabel: { fontSize: 11, letterSpacing: 1.2, marginBottom: -4 },

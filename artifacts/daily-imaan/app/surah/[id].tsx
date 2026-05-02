@@ -1,6 +1,6 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Audio } from "expo-av";
 import * as Haptics from "expo-haptics";
+import * as Linking from "expo-linking";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -16,14 +16,12 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import type { DimensionValue } from "react-native";
-
-import * as Linking from "expo-linking";
 
 import colors from "@/constants/colors";
 import { useApp } from "@/context/AppContext";
 import { SURAHS, getSurahById } from "@/data/surahsData";
 import { getQuranSurah, QURAN_TRANSLATION_LABEL } from "@/data/quranFull";
+import { useTafsir } from "@/hooks/useTafsir";
 
 interface ParsedAyah {
   number: number;
@@ -32,7 +30,75 @@ interface ParsedAyah {
   english: string;
 }
 
-const CACHE_PREFIX = "@surah_cache_";
+/**
+ * Inline tafsir row for a single ayah. Hosting the hook in a child component
+ * keeps the network request scoped to the ayah the user actually expanded —
+ * we never issue 286 fetches when scrolling Al-Baqarah.
+ */
+function AyahTafsir({
+  surahId,
+  ayahNumber,
+  C,
+  isDark,
+}: {
+  surahId: number;
+  ayahNumber: number;
+  C: (typeof colors)["light"];
+  isDark: boolean;
+}) {
+  const tafsir = useTafsir(surahId, ayahNumber, true);
+  return (
+    <View
+      style={[
+        styles.tafsirBox,
+        {
+          backgroundColor: isDark ? "rgba(45,191,127,0.08)" : "rgba(26,107,74,0.06)",
+          borderLeftColor: C.primary,
+        },
+      ]}
+    >
+      {tafsir.loading && (
+        <View style={styles.tafsirLoading}>
+          <ActivityIndicator color={C.primary} size="small" />
+          <Text style={[styles.tafsirLoadingText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            Loading tafsir…
+          </Text>
+        </View>
+      )}
+      {tafsir.error && !tafsir.loading && (
+        <Pressable
+          onPress={() => {
+            const url = `https://quran.com/${surahId}/${ayahNumber}/tafsirs`;
+            Linking.openURL(url).catch(() => undefined);
+          }}
+        >
+          <Text style={[styles.tafsirErrorText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            Couldn't load tafsir. Tap to read it on Quran.com.
+          </Text>
+        </Pressable>
+      )}
+      {tafsir.text && !tafsir.loading && (
+        <>
+          <Text style={[styles.tafsirText, { color: C.foreground, fontFamily: "Inter_400Regular" }]}>
+            {tafsir.text}
+          </Text>
+          <Pressable
+            onPress={() => {
+              const url = `https://quran.com/${surahId}/${ayahNumber}/tafsirs`;
+              Linking.openURL(url).catch(() => undefined);
+            }}
+            style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}
+          >
+            <Text style={[styles.tafsirSourceText, { color: C.primary, fontFamily: "Inter_500Medium" }]}>
+              {tafsir.source}
+            </Text>
+            <Ionicons name="open-outline" size={11} color={C.primary} />
+          </Pressable>
+        </>
+      )}
+    </View>
+  );
+}
 
 export default function SurahDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -44,13 +110,14 @@ export default function SurahDetailScreen() {
   const C = isDark ? colors.dark : colors.light;
   const insets = useSafeAreaInsets();
 
-  const { toggleBookmark, isBookmarked } = useApp();
+  const { state, toggleBookmark, isBookmarked, setLastReadPosition, markDeedDone, markAyahRead } = useApp();
 
   const [ayat, setAyat] = useState<ParsedAyah[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [playingAyah, setPlayingAyah] = useState<number | null>(null);
+  const [openTafsir, setOpenTafsir] = useState<number | null>(null);
   const soundRef = useRef<Audio.Sound | null>(null);
+  const reciter = state.settings.reciter;
 
   useEffect(() => {
     return () => {
@@ -58,70 +125,39 @@ export default function SurahDetailScreen() {
     };
   }, []);
 
+  // Load surah from bundled data and update Continue Reading + intentions.
+  // The full Saheeh International + Uthmani text is shipped in quranFull.ts
+  // (see data/quranFull.ts) so this is a synchronous, offline lookup.
   useEffect(() => {
-    if (!surahId) return;
-    loadSurah();
-  }, [surahId]);
-
-  const loadSurah = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    // 1. Try local bundled data first (always works offline)
-    const localData = getQuranSurah(surahId);
-    if (localData) {
-      setAyat(
-        localData.ayahs.map((a) => ({
-          number: (surah?.startingAyah ?? 1) + a.n - 1,
-          numberInSurah: a.n,
-          arabic: a.a,
-          english: a.e,
-        }))
-      );
+    if (!surahId || !surah) {
       setLoading(false);
       return;
     }
-
-    // 2. Try AsyncStorage cache
-    const cacheKey = `${CACHE_PREFIX}${surahId}`;
-    try {
-      const cached = await AsyncStorage.getItem(cacheKey);
-      if (cached) {
-        setAyat(JSON.parse(cached));
-        setLoading(false);
-        return;
-      }
-    } catch {
-      // ignore cache errors
-    }
-
-    // 3. Fetch from API as last resort
-    try {
-      const res = await fetch(
-        `https://api.alquran.cloud/v1/surah/${surahId}/editions/quran-uthmani,en.asad`
-      );
-      const json = (await res.json()) as {
-        code: number;
-        data: { ayahs: { number: number; numberInSurah: number; text: string }[] }[];
-      };
-      if (json.code !== 200 || !json.data) throw new Error("API error");
-
-      const arabic = json.data[0]?.ayahs ?? [];
-      const english = json.data[1]?.ayahs ?? [];
-      const parsed: ParsedAyah[] = arabic.map((a, i) => ({
-        number: a.number,
-        numberInSurah: a.numberInSurah,
-        arabic: a.text,
-        english: english[i]?.text ?? "",
+    const localData = getQuranSurah(surahId);
+    if (localData) {
+      const parsed = localData.ayahs.map((a) => ({
+        number: surah.startingAyah + a.n - 1,
+        numberInSurah: a.n,
+        arabic: a.a,
+        english: a.e,
       }));
       setAyat(parsed);
-      await AsyncStorage.setItem(cacheKey, JSON.stringify(parsed));
-    } catch {
-      setError("Could not load surah. Check your connection and try again.");
-    } finally {
-      setLoading(false);
+      // Update "Continue reading" position to the start of this surah on
+      // mount. Tracking actual scroll offset would add a lot of complexity
+      // for marginal benefit — first-ayah of the most recent surah is a
+      // sensible resume point.
+      setLastReadPosition({
+        surahId,
+        ayahNumber: 1,
+        surahName: surah.nameEnglish,
+        updatedAt: Date.now(),
+      });
+      // Auto-link the "Read Quran" intention. markDeedDone is idempotent —
+      // it never undoes a manual check.
+      markDeedDone("quran");
     }
-  }, [surahId, surah]);
+    setLoading(false);
+  }, [surahId, surah, setLastReadPosition, markDeedDone]);
 
   const playAyah = useCallback(
     async (ayah: ParsedAyah) => {
@@ -143,7 +179,7 @@ export default function SurahDetailScreen() {
         const surahData = SURAHS.find((s) => s.id === surahId);
         const globalNum = (surahData?.startingAyah ?? 1) + ayah.numberInSurah - 1;
         const { sound } = await Audio.Sound.createAsync(
-          { uri: `https://cdn.alquran.cloud/media/audio/ayah/ar.alafasy/${globalNum}` },
+          { uri: `https://cdn.alquran.cloud/media/audio/ayah/${reciter}/${globalNum}` },
           { shouldPlay: true }
         );
         soundRef.current = sound;
@@ -152,17 +188,22 @@ export default function SurahDetailScreen() {
             setPlayingAyah(null);
           }
         });
+        // Mark the ayah as "read" the moment the user actively engages with
+        // it via audio — explicit signal, less aggressive than marking on
+        // scroll into view.
+        markAyahRead(ayah.number);
       } catch {
         setPlayingAyah(null);
         Alert.alert("Audio Error", "Could not load audio.");
       }
     },
-    [playingAyah, surahId]
+    [playingAyah, surahId, reciter, markAyahRead]
   );
 
   const renderAyah = ({ item }: { item: ParsedAyah }) => {
     const isPlaying = playingAyah === item.numberInSurah;
     const bookmarked = isBookmarked(item.number);
+    const tafsirOpen = openTafsir === item.numberInSurah;
     return (
       <View
         style={[
@@ -172,15 +213,18 @@ export default function SurahDetailScreen() {
         ]}
       >
         <View style={[styles.ayahBadge, { backgroundColor: bookmarked ? C.primary : C.secondary }]}>
-          <Text style={[styles.ayahNumber, { color: bookmarked ? "#fff" : C.primary, fontFamily: "Inter_600SemiBold" }]}>
+          <Text
+            style={[
+              styles.ayahNumber,
+              { color: bookmarked ? "#fff" : C.primary, fontFamily: "Inter_600SemiBold" },
+            ]}
+          >
             {item.numberInSurah}
           </Text>
         </View>
 
         <View style={styles.ayahContent}>
-          <Text style={[styles.arabicAyah, { color: C.foreground }]}>
-            {item.arabic}
-          </Text>
+          <Text style={[styles.arabicAyah, { color: C.foreground }]}>{item.arabic}</Text>
           <Text style={[styles.englishAyah, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
             {item.english}
           </Text>
@@ -192,8 +236,9 @@ export default function SurahDetailScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   playAyah(item);
                 }}
+                accessibilityLabel={isPlaying ? "Pause recitation" : "Play recitation"}
                 style={({ pressed }) => [
-                  styles.playBtn,
+                  styles.iconBtn,
                   { backgroundColor: isPlaying ? C.primary : C.muted, opacity: pressed ? 0.7 : 1 },
                 ]}
               >
@@ -204,7 +249,7 @@ export default function SurahDetailScreen() {
                 />
                 <Text
                   style={[
-                    styles.playBtnText,
+                    styles.iconBtnText,
                     { color: isPlaying ? "#fff" : C.mutedForeground, fontFamily: "Inter_500Medium" },
                   ]}
                 >
@@ -212,11 +257,39 @@ export default function SurahDetailScreen() {
                 </Text>
               </Pressable>
             )}
+
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setOpenTafsir(tafsirOpen ? null : item.numberInSurah);
+              }}
+              accessibilityLabel={tafsirOpen ? "Hide tafsir" : "Show tafsir"}
+              style={({ pressed }) => [
+                styles.iconBtn,
+                { backgroundColor: tafsirOpen ? C.secondary : C.muted, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Ionicons
+                name={tafsirOpen ? "chevron-up" : "book-outline"}
+                size={12}
+                color={tafsirOpen ? C.primary : C.mutedForeground}
+              />
+              <Text
+                style={[
+                  styles.iconBtnText,
+                  { color: tafsirOpen ? C.primary : C.mutedForeground, fontFamily: "Inter_500Medium" },
+                ]}
+              >
+                Tafsir
+              </Text>
+            </Pressable>
+
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 toggleBookmark(item.number);
               }}
+              accessibilityLabel={bookmarked ? "Remove bookmark" : "Bookmark this ayah"}
               style={({ pressed }) => [
                 styles.bookmarkBtn,
                 { backgroundColor: bookmarked ? "#C8933C20" : C.muted, opacity: pressed ? 0.7 : 1 },
@@ -229,6 +302,15 @@ export default function SurahDetailScreen() {
               />
             </Pressable>
           </View>
+
+          {tafsirOpen && (
+            <AyahTafsir
+              surahId={surahId}
+              ayahNumber={item.numberInSurah}
+              C={C}
+              isDark={isDark}
+            />
+          )}
         </View>
       </View>
     );
@@ -246,10 +328,10 @@ export default function SurahDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: C.background }]}>
-      {/* Custom header */}
       <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: C.primary }]}>
         <Pressable
           onPress={() => router.back()}
+          accessibilityLabel="Go back"
           style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
         >
           <Ionicons name="arrow-back" size={22} color="#fff" />
@@ -268,21 +350,15 @@ export default function SurahDetailScreen() {
         <View style={styles.center}>
           <ActivityIndicator size="large" color={C.primary} />
           <Text style={[styles.loadingText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            Loading surah...
+            Loading surah…
           </Text>
         </View>
-      ) : error ? (
+      ) : ayat.length === 0 ? (
         <View style={styles.center}>
           <Ionicons name="cloud-offline-outline" size={48} color={C.mutedForeground} />
           <Text style={[styles.errorText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            {error}
+            Could not load this surah.
           </Text>
-          <Pressable
-            onPress={loadSurah}
-            style={[styles.retryBtn, { backgroundColor: C.primary }]}
-          >
-            <Text style={[styles.retryText, { fontFamily: "Inter_600SemiBold" }]}>Retry</Text>
-          </Pressable>
         </View>
       ) : (
         <FlatList
@@ -301,24 +377,21 @@ export default function SurahDetailScreen() {
                 </View>
               )}
               {/* Translator attribution. The English text on every ayah row
-                  comes verbatim from this translation, fetched from the
-                  Quran.com Foundation API. */}
+                  is verbatim from this translation, served by the Quran.com
+                  Foundation API. */}
               <View style={[styles.translatorBadge, { backgroundColor: C.muted }]}>
                 <Ionicons name="language-outline" size={12} color={C.mutedForeground} />
                 <Text style={[styles.translatorText, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                   Translation: {QURAN_TRANSLATION_LABEL}
                 </Text>
               </View>
-              {/* Link to authoritative scholarly info about this surah on Quran.com.
-                  We do NOT include any in-app summary or theme description, since
-                  any paraphrased description would be unsourced commentary. */}
+              {/* Link to authoritative scholarly info on Quran.com. We never
+                  include any in-app summary or theme description, since any
+                  paraphrased description would be unsourced commentary. */}
               <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  const url = `https://quran.com/${surahId}/info`;
-                  Linking.openURL(url).catch(() => {
-                    Alert.alert("Could not open browser", "Please visit quran.com to read about this surah.");
-                  });
+                  Linking.openURL(`https://quran.com/${surahId}/info`).catch(() => undefined);
                 }}
                 style={[styles.themeCard, { backgroundColor: C.secondary, borderLeftColor: C.primary }]}
               >
@@ -347,24 +420,83 @@ const styles = StyleSheet.create({
   bismillah: { padding: 20, alignItems: "center", marginBottom: 4 },
   bismillahText: { fontSize: 24, lineHeight: 44 },
   list: { paddingTop: 8 },
-  ayahRow: { flexDirection: "row", gap: 12, paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth },
-  ayahBadge: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 6 },
+  ayahRow: {
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  ayahBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    marginTop: 6,
+  },
   ayahNumber: { fontSize: 12 },
   ayahContent: { flex: 1, gap: 10 },
   arabicAyah: { fontSize: 22, lineHeight: 42, textAlign: "right", writingDirection: "rtl" },
   englishAyah: { fontSize: 14, lineHeight: 22 },
-  ayahActions: { flexDirection: "row", alignItems: "center", gap: 8 },
-  playBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  playBtnText: { fontSize: 12 },
-  bookmarkBtn: { width: 30, height: 30, alignItems: "center", justifyContent: "center", borderRadius: 8 },
+  ayahActions: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  iconBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  iconBtnText: { fontSize: 12 },
+  bookmarkBtn: {
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+  },
   listHeader: { gap: 8 },
-  themeCard: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginHorizontal: 16, marginBottom: 4, padding: 12, borderRadius: 10, borderLeftWidth: 3 },
-  translatorBadge: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", marginHorizontal: 16, marginTop: 8, marginBottom: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
+  themeCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 4,
+    padding: 12,
+    borderRadius: 10,
+    borderLeftWidth: 3,
+  },
+  translatorBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
   translatorText: { fontSize: 11 },
   themeText: { flex: 1, fontSize: 13, lineHeight: 20 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16 },
   loadingText: { fontSize: 15 },
   errorText: { fontSize: 15, textAlign: "center", paddingHorizontal: 32 },
-  retryBtn: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10 },
-  retryText: { color: "#fff", fontSize: 15 },
+  tafsirBox: {
+    borderLeftWidth: 3,
+    paddingLeft: 12,
+    paddingRight: 4,
+    paddingVertical: 10,
+    borderRadius: 4,
+    gap: 8,
+    marginTop: 4,
+  },
+  tafsirText: { fontSize: 13, lineHeight: 21 },
+  tafsirSourceText: { fontSize: 11, letterSpacing: 0.2 },
+  tafsirLoading: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 4 },
+  tafsirLoadingText: { fontSize: 13 },
+  tafsirErrorText: { fontSize: 13, lineHeight: 20 },
 });

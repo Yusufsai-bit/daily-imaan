@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { DimensionValue } from "react-native";
 
 import colors from "@/constants/colors";
+import { RECITERS } from "@/constants/reciters";
 import { useApp, type PrayerSoundSettings } from "@/context/AppContext";
 import { requestNotificationPermission } from "@/hooks/useNotifications";
 
@@ -152,6 +153,14 @@ export default function SettingsScreen() {
       });
     },
     [settings.prayerSoundEnabled, updateSettings]
+  );
+
+  const handleReciterSelect = useCallback(
+    (id: string) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      updateSettings({ reciter: id });
+    },
+    [updateSettings]
   );
 
   return (
@@ -459,6 +468,46 @@ export default function SettingsScreen() {
         </Text>
       </View>
 
+      {/* Reciter — chooses the qari for ayah audio playback throughout the app */}
+      <View style={styles.section}>
+        <View style={{ gap: 2, marginBottom: 8 }}>
+          <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+            RECITER
+          </Text>
+          <Text style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            Choose the qari for Quran audio. Used everywhere ayat are played.
+          </Text>
+        </View>
+        <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+          {RECITERS.map((reciter, i) => (
+            <Pressable
+              key={reciter.id}
+              onPress={() => handleReciterSelect(reciter.id)}
+              accessibilityLabel={`Select ${reciter.name}`}
+              style={({ pressed }) => [
+                styles.optionRow,
+                i < RECITERS.length - 1
+                  ? { borderBottomColor: C.border }
+                  : { borderBottomWidth: 0 },
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <View style={styles.optionContent}>
+                <Text style={[styles.optionTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {reciter.name}
+                </Text>
+                <Text style={[styles.optionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {reciter.country} · {reciter.style}
+                </Text>
+              </View>
+              {settings.reciter === reciter.id && (
+                <Ionicons name="checkmark-circle" size={20} color={C.primary} />
+              )}
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
       {/* About — Sources */}
       <View style={styles.section}>
         <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
@@ -476,7 +525,7 @@ export default function SettingsScreen() {
             {"\n"}
             Du'as: sunnah-attested, with the primary hadith collection cited under each one (Bukhari, Muslim, Abu Dawud, Tirmidhi, etc.).
             {"\n"}
-            Audio recitation: Mishary al-Afasy (via alquran.cloud).
+            Audio recitation: chosen reciter via alquran.cloud (catalogue includes Al-Afasy, Al-Husary, Al-Minshawi, Al-Sudais, Al-Shatri, Al-Ghamdi).
             {"\n"}
             Prayer times: Aladhan API.
             {"\n\n"}
