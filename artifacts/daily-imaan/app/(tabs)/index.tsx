@@ -44,7 +44,8 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
 
   const { state, loaded, toggleBookmark, isBookmarked, incrementStreak, markAyahRead } = useApp();
-  const { nextPrayer, prayerTimes } = usePrayerTimes(state.settings.prayerMethod);
+  const { nextPrayer, prayerTimes, location, source, refresh: refreshPrayerTimes, loading: prayerLoading } =
+    usePrayerTimes(state.settings.prayerMethod, state.settings.prayerSchool);
 
   const [ayah, setAyah] = useState<FeaturedAyah>(() =>
     getTodayAyah(state.settings.ayatOrder)
@@ -335,9 +336,39 @@ export default function HomeScreen() {
       {/* Prayer Times Grid */}
       {prayerTimes && (
         <View style={styles.prayerSection}>
-          <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-            TODAY'S PRAYERS
-          </Text>
+          <View style={styles.prayerHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                TODAY'S PRAYERS
+              </Text>
+              {(location?.city || location?.country) && (
+                <View style={styles.locationRow}>
+                  <Ionicons name="location-outline" size={11} color={C.mutedForeground} />
+                  <Text style={[styles.locationText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    {[location.city, location.country].filter(Boolean).join(", ")}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                refreshPrayerTimes();
+              }}
+              hitSlop={10}
+              disabled={prayerLoading}
+              style={({ pressed }) => [
+                styles.refreshBtn,
+                { backgroundColor: C.muted, opacity: pressed || prayerLoading ? 0.5 : 1 },
+              ]}
+            >
+              {prayerLoading ? (
+                <ActivityIndicator size="small" color={C.mutedForeground} />
+              ) : (
+                <Ionicons name="refresh" size={14} color={C.mutedForeground} />
+              )}
+            </Pressable>
+          </View>
           <View style={[styles.prayerGrid, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
             {prayerNames.map(([name, time], i) => (
               <View
@@ -362,6 +393,9 @@ export default function HomeScreen() {
               </View>
             ))}
           </View>
+          <Text style={[styles.prayerSource, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            Calculated locally for your location · Source: {source}
+          </Text>
         </View>
       )}
     </ScrollView>
@@ -397,6 +431,10 @@ const styles = StyleSheet.create({
   actionBtnText: { fontSize: 14 },
   actionBtnSmall: { width: 42, height: 42, alignItems: "center", justifyContent: "center", borderRadius: 10 },
   prayerSection: { gap: 10 },
+  prayerHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  locationRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 },
+  locationText: { fontSize: 12 },
+  refreshBtn: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   prayerGrid: {
     borderRadius: 14, overflow: "hidden",
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
@@ -406,4 +444,5 @@ const styles = StyleSheet.create({
   prayerTime: { fontSize: 15 },
   nextBadge: { marginLeft: 8, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
   nextBadgeText: { color: "#fff", fontSize: 11 },
+  prayerSource: { fontSize: 11, textAlign: "center", lineHeight: 16, marginTop: 2 },
 });

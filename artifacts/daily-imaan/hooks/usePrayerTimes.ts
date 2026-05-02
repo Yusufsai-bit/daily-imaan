@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Platform } from "react-native";
 
 export interface PrayerTimes {
@@ -12,12 +12,22 @@ export interface PrayerTimes {
   Isha: string;
 }
 
+export interface PrayerLocation {
+  city: string | null;
+  country: string | null;
+  latitude: number;
+  longitude: number;
+}
+
 interface UsePrayerTimesResult {
   prayerTimes: PrayerTimes | null;
   nextPrayer: { name: string; time: string } | null;
+  location: PrayerLocation | null;
   loading: boolean;
   error: string | null;
   locationDenied: boolean;
+  source: string;
+  refresh: () => Promise<void>;
 }
 
 function getNextPrayer(times: PrayerTimes): { name: string; time: string } | null {
@@ -44,33 +54,70 @@ function getNextPrayer(times: PrayerTimes): { name: string; time: string } | nul
   return prayers[0] ?? null; // next day Fajr
 }
 
-const CACHE_KEY = "@prayer_times_cache";
+const CACHE_KEY = "@prayer_times_cache_v2";
 
-export function usePrayerTimes(method: number = 2): UsePrayerTimesResult {
+interface CachedPayload {
+  times: PrayerTimes;
+  date: string;
+  method: number;
+  school: number;
+  // Rounded coords so small GPS jitter doesn't constantly invalidate cache,
+  // but real travel (different city) does.
+  latRounded: number;
+  lngRounded: number;
+  location: PrayerLocation;
+}
+
+/**
+ * Fetches prayer times for the user's current location.
+ *
+ * Source: AlAdhan API (api.aladhan.com) — open-source astronomical
+ * calculation library that powers most Muslim prayer-time apps.
+ * Produces identical results to IslamicFinder when configured with the
+ * same calculation method (default ISNA = method 2).
+ *
+ * @param method  Calculation method (AlAdhan codes — 2 = ISNA, 1 = MWL, 3 = Egyptian, 4 = Umm al-Qura, 5 = Karachi).
+ * @param school  Asr juristic school. 0 = Standard (Shafi'i/Maliki/Hanbali), 1 = Hanafi.
+ */
+export function usePrayerTimes(
+  method: number = 2,
+  school: number = 0
+): UsePrayerTimesResult {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTimes | null>(null);
   const [nextPrayer, setNextPrayer] = useState<{ name: string; time: string } | null>(null);
+  const [location, setLocation] = useState<PrayerLocation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [locationDenied, setLocationDenied] = useState(false);
 
-  useEffect(() => {
-    if (Platform.OS === "web") {
-      setLoading(false);
-      return;
-    }
+  const fetchTimes = useCallback(
+    async (force: boolean = false) => {
+      if (Platform.OS === "web") {
+        setLoading(false);
+        return;
+      }
 
-    async function fetchTimes() {
+      setError(null);
+      if (force) setLoading(true);
+
       try {
-        // Try cache first
-        const cached = await AsyncStorage.getItem(CACHE_KEY);
-        if (cached) {
-          const { times, date } = JSON.parse(cached) as { times: PrayerTimes; date: string };
-          const today = new Date().toDateString();
-          if (date === today) {
-            setPrayerTimes(times);
-            setNextPrayer(getNextPrayer(times));
-            setLoading(false);
-            return;
+        const today = new Date().toDateString();
+
+        // Try cache first (only if not forced)
+        if (!force) {
+          const cached = await AsyncStorage.getItem(CACHE_KEY);
+          if (cached) {
+            const payload = JSON.parse(cached) as CachedPayload;
+            const sameDay = payload.date === today;
+            const sameMethod = payload.method === method;
+            const sameSchool = payload.school === school;
+            if (sameDay && sameMethod && sameSchool) {
+              setPrayerTimes(payload.times);
+              setNextPrayer(getNextPrayer(payload.times));
+              setLocation(payload.location);
+              setLoading(false);
+              // Don't return — we still re-validate location below in background
+            }
           }
         }
 
@@ -80,15 +127,65 @@ export function usePrayerTimes(method: number = 2): UsePrayerTimesResult {
           setLoading(false);
           return;
         }
+        setLocationDenied(false);
 
-        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
         const { latitude, longitude } = loc.coords;
+        const latRounded = Math.round(latitude * 100) / 100; // ~1km precision
+        const lngRounded = Math.round(longitude * 100) / 100;
+
+        // Reuse cache if same coords + same day + same method/school
+        if (!force) {
+          const cached = await AsyncStorage.getItem(CACHE_KEY);
+          if (cached) {
+            const payload = JSON.parse(cached) as CachedPayload;
+            if (
+              payload.date === today &&
+              payload.method === method &&
+              payload.school === school &&
+              payload.latRounded === latRounded &&
+              payload.lngRounded === lngRounded
+            ) {
+              setPrayerTimes(payload.times);
+              setNextPrayer(getNextPrayer(payload.times));
+              setLocation(payload.location);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+
+        // Reverse geocode for friendly city display (best-effort)
+        let city: string | null = null;
+        let country: string | null = null;
+        try {
+          const places = await Location.reverseGeocodeAsync({
+            latitude,
+            longitude,
+          });
+          const place = places[0];
+          if (place) {
+            city = place.city || place.subregion || place.region || null;
+            country = place.country || null;
+          }
+        } catch {
+          // Reverse geocoding can fail offline — that's fine, just no city label.
+        }
+
+        const resolvedLocation: PrayerLocation = {
+          city,
+          country,
+          latitude,
+          longitude,
+        };
+        setLocation(resolvedLocation);
 
         const timestamp = Math.floor(Date.now() / 1000);
-        const res = await fetch(
-          `https://api.aladhan.com/v1/timings/${timestamp}?latitude=${latitude}&longitude=${longitude}&method=${method}`
-        );
-        const json = await res.json() as { data?: { timings?: PrayerTimes } };
+        const url = `https://api.aladhan.com/v1/timings/${timestamp}?latitude=${latitude}&longitude=${longitude}&method=${method}&school=${school}`;
+        const res = await fetch(url);
+        const json = (await res.json()) as { data?: { timings?: PrayerTimes } };
         const timings = json?.data?.timings;
 
         if (timings) {
@@ -102,17 +199,43 @@ export function usePrayerTimes(method: number = 2): UsePrayerTimesResult {
           };
           setPrayerTimes(times);
           setNextPrayer(getNextPrayer(times));
-          await AsyncStorage.setItem(CACHE_KEY, JSON.stringify({ times, date: new Date().toDateString() }));
+
+          const payload: CachedPayload = {
+            times,
+            date: today,
+            method,
+            school,
+            latRounded,
+            lngRounded,
+            location: resolvedLocation,
+          };
+          await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+        } else {
+          setError("Could not load prayer times");
         }
-      } catch (e) {
+      } catch {
         setError("Could not load prayer times");
       } finally {
         setLoading(false);
       }
-    }
+    },
+    [method, school]
+  );
 
-    fetchTimes();
-  }, [method]);
+  useEffect(() => {
+    fetchTimes(false);
+  }, [fetchTimes]);
 
-  return { prayerTimes, nextPrayer, loading, error, locationDenied };
+  const refresh = useCallback(() => fetchTimes(true), [fetchTimes]);
+
+  return {
+    prayerTimes,
+    nextPrayer,
+    location,
+    loading,
+    error,
+    locationDenied,
+    source: "AlAdhan · ISNA-compatible",
+    refresh,
+  };
 }

@@ -5,6 +5,8 @@ export interface AppSettings {
   ayatOrder: "sequential" | "random";
   notificationTimes: string[];
   prayerMethod: number;
+  /** Asr juristic school. 0 = Standard (Shafi'i/Maliki/Hanbali), 1 = Hanafi. */
+  prayerSchool: number;
   darkMode: boolean;
 }
 
@@ -43,6 +45,7 @@ const DEFAULT_STATE: AppState = {
     ayatOrder: "sequential",
     notificationTimes: ["07:00", "13:00", "18:00"],
     prayerMethod: 2,
+    prayerSchool: 0,
     darkMode: false,
   },
   readAyatIds: [],

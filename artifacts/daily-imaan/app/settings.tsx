@@ -136,6 +136,14 @@ export default function SettingsScreen() {
     [updateSettings]
   );
 
+  const handleSchoolSelect = useCallback(
+    (id: number) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      updateSettings({ prayerSchool: id });
+    },
+    [updateSettings]
+  );
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: C.background }]}
@@ -325,9 +333,14 @@ export default function SettingsScreen() {
 
       {/* Prayer Method */}
       <View style={styles.section}>
-        <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-          PRAYER CALCULATION METHOD
-        </Text>
+        <View style={{ gap: 2, marginBottom: 8 }}>
+          <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+            PRAYER CALCULATION METHOD
+          </Text>
+          <Text style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            Affects Fajr and Isha angles. ISNA matches IslamicFinder's default.
+          </Text>
+        </View>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
           {PRAYER_METHODS.map((method, i) => (
             <Pressable
@@ -346,6 +359,48 @@ export default function SettingsScreen() {
                 {method.label}
               </Text>
               {settings.prayerMethod === method.id && (
+                <Ionicons name="checkmark-circle" size={20} color={C.primary} />
+              )}
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      {/* Asr Juristic School */}
+      <View style={styles.section}>
+        <View style={{ gap: 2, marginBottom: 8 }}>
+          <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+            ASR JURISTIC SCHOOL
+          </Text>
+          <Text style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            Hanafi Asr starts later (when shadow = 2× object). Standard follows Shafi'i, Maliki, Hanbali (shadow = 1×).
+          </Text>
+        </View>
+        <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+          {[
+            { id: 0, label: "Standard", desc: "Shafi'i · Maliki · Hanbali" },
+            { id: 1, label: "Hanafi", desc: "Shadow length 2×" },
+          ].map((s, i, arr) => (
+            <Pressable
+              key={s.id}
+              onPress={() => handleSchoolSelect(s.id)}
+              style={({ pressed }) => [
+                styles.optionRow,
+                i < arr.length - 1
+                  ? { borderBottomColor: C.border }
+                  : { borderBottomWidth: 0 },
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <View style={styles.optionContent}>
+                <Text style={[styles.optionTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {s.label}
+                </Text>
+                <Text style={[styles.optionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {s.desc}
+                </Text>
+              </View>
+              {settings.prayerSchool === s.id && (
                 <Ionicons name="checkmark-circle" size={20} color={C.primary} />
               )}
             </Pressable>
