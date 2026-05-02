@@ -1,8 +1,11 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
 import type { PrayerTimes } from "@/hooks/usePrayerTimes";
 import type { PrayerSoundSettings } from "@/context/AppContext";
+
+const AYAT_NOTIF_IDS_KEY = "@daily_imaan_ayat_notif_ids";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -23,9 +26,51 @@ export async function requestNotificationPermission(): Promise<boolean> {
   return status === "granted";
 }
 
+/**
+ * Read the stored ayat notification IDs from AsyncStorage.
+ */
+async function loadAyatNotifIds(): Promise<string[]> {
+  try {
+    const raw = await AsyncStorage.getItem(AYAT_NOTIF_IDS_KEY);
+    if (raw) return JSON.parse(raw) as string[];
+  } catch {
+    // ignore
+  }
+  return [];
+}
+
+/**
+ * Persist the given notification IDs to AsyncStorage so they can be
+ * individually cancelled the next time the user updates their schedule.
+ */
+async function saveAyatNotifIds(ids: string[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(AYAT_NOTIF_IDS_KEY, JSON.stringify(ids));
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Schedule daily Ayat-of-the-Day notifications at the given times.
+ *
+ * The notification body includes the Arabic text followed by a short English
+ * snippet so the user can read the ayah directly from the lock screen.
+ *
+ * Notification IDs are stored in AsyncStorage so they can be individually
+ * cancelled whenever the user updates their reminder schedule.
+ *
+ * @param times          Array of "HH:MM" strings
+ * @param arabicText     Full Arabic text of today's ayah
+ * @param englishText    Full English translation (will be truncated)
+ * @param surahRef       Human-readable reference, e.g. "Al-Baqarah 2:255"
+ * @param ayahId         Global ayah ID embedded in the notification payload
+ */
 export async function scheduleAyatNotifications(
   times: string[],
-  todayAyatText: string,
+  arabicText: string,
+  englishText: string,
+  surahRef: string,
   ayahId: number
 ): Promise<void> {
   if (Platform.OS === "web") return;
@@ -38,24 +83,54 @@ export async function scheduleAyatNotifications(
       },
     ]);
 
-    // Cancel only existing ayat notifications before re-scheduling
-    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    for (const n of scheduled) {
-      if (n.content.categoryIdentifier === "daily_ayat") {
-        await Notifications.cancelScheduledNotificationAsync(n.identifier);
+    // Cancel previously scheduled ayat notifications using their stored IDs.
+    const storedIds = await loadAyatNotifIds();
+    for (const id of storedIds) {
+      try {
+        await Notifications.cancelScheduledNotificationAsync(id);
+      } catch {
+        // Notification may have already fired or been cleared; continue.
       }
     }
 
+    // Fallback: also cancel any remaining ayat notifications by category,
+    // in case IDs were lost (e.g. app data cleared).
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    for (const n of scheduled) {
+      if (n.content.categoryIdentifier === "daily_ayat") {
+        try {
+          await Notifications.cancelScheduledNotificationAsync(n.identifier);
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    if (times.length === 0) {
+      await saveAyatNotifIds([]);
+      return;
+    }
+
+    // Build the notification body: Arabic line + English snippet + reference.
+    const arabicShort = arabicText.length > 80
+      ? arabicText.slice(0, 77) + "…"
+      : arabicText;
+    const englishShort = englishText.length > 100
+      ? englishText.slice(0, 97) + "…"
+      : englishText;
+    const body = `${arabicShort}\n"${englishShort}" — ${surahRef}`;
+
+    // Schedule a notification for each configured time and collect the IDs.
+    const newIds: string[] = [];
     for (const time of times) {
       const parts = time.split(":");
       const hour = parseInt(parts[0] ?? "7");
       const minute = parseInt(parts[1] ?? "0");
-      await Notifications.scheduleNotificationAsync({
+      const id = await Notifications.scheduleNotificationAsync({
         content: {
           title: "Daily Imaan",
-          body: todayAyatText,
+          body,
           categoryIdentifier: "daily_ayat",
-          // ayahId is stored so tapping "Read" can mark the correct ayah as read
           data: { ayahId },
         },
         trigger: {
@@ -64,9 +139,14 @@ export async function scheduleAyatNotifications(
           minute,
         },
       });
+      newIds.push(id);
     }
-  } catch {
-    // Notifications may not work in all environments
+
+    // Persist the new IDs so they can be cancelled on the next reschedule.
+    await saveAyatNotifIds(newIds);
+  } catch (err) {
+    // Notifications may not work in all environments (e.g. Expo Go simulator).
+    if (__DEV__) console.warn("[DailyImaan] scheduleAyatNotifications failed:", err);
   }
 }
 
@@ -147,6 +227,7 @@ export async function cancelAllNotifications(): Promise<void> {
   if (Platform.OS === "web") return;
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
+    await saveAyatNotifIds([]);
   } catch {
     // ignore
   }

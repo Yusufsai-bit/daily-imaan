@@ -9,8 +9,8 @@ import * as Notifications from "expo-notifications";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
-import { Appearance, Platform } from "react-native";
+import React, { useCallback, useEffect, useRef } from "react";
+import { AppState, Appearance, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -65,15 +65,47 @@ function AppEffects() {
     return () => sub.remove();
   }, [loaded, incrementStreak, markAyahRead]);
 
-  // Re-schedule ayat notifications whenever the time list or ayat order changes.
-  // ayahId is embedded in the notification payload so "Read" taps can persist it.
-  useEffect(() => {
+  // Helper: schedule notifications for today's ayah using the current settings.
+  // Extracted so it can be called both on settings change and on foreground resume.
+  const rescheduleAyatNotifs = useCallback(() => {
+    if (Platform.OS === "web") return;
     const { notificationTimes, ayatOrder } = state.settings;
     const todayAyah = getTodayAyah(ayatOrder);
-    const body = `"${todayAyah.englishText.slice(0, 120)}${todayAyah.englishText.length > 120 ? "…" : ""}" — ${todayAyah.surahNameEnglish} ${todayAyah.surahId}:${todayAyah.ayahNumber}`;
+    const surahRef = `${todayAyah.surahNameEnglish} ${todayAyah.surahId}:${todayAyah.ayahNumber}`;
     const ayahId = getGlobalId(todayAyah.surahId, todayAyah.ayahNumber);
-    scheduleAyatNotifications(notificationTimes, body, ayahId);
-  }, [state.settings.notificationTimes, state.settings.ayatOrder]);
+    scheduleAyatNotifications(
+      notificationTimes,
+      todayAyah.arabicText,
+      todayAyah.englishText,
+      surahRef,
+      ayahId
+    );
+  }, [state.settings]);
+
+  // Re-schedule ayat notifications whenever the time list or ayat order changes.
+  // The body includes both Arabic text and an English snippet so the user can
+  // read the ayah from the lock screen without opening the app.
+  // ayahId is embedded in the notification payload so "Read" taps can persist it.
+  useEffect(() => {
+    rescheduleAyatNotifs();
+  }, [state.settings.notificationTimes, state.settings.ayatOrder]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When the app returns to the foreground, reschedule with today's ayah.
+  // Without this, a user who doesn't change settings would continue receiving
+  // the body text from whenever the notifications were last scheduled
+  // (potentially from a previous day).
+  const lastRescheduleDateRef = useRef<string>("");
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const sub = AppState.addEventListener("change", (nextState) => {
+      if (nextState !== "active") return;
+      const today = new Date().toISOString().slice(0, 10);
+      if (lastRescheduleDateRef.current === today) return;
+      lastRescheduleDateRef.current = today;
+      rescheduleAyatNotifs();
+    });
+    return () => sub.remove();
+  }, [rescheduleAyatNotifs]);
 
   // Sync manual dark mode override with the OS Appearance API
   useEffect(() => {
