@@ -239,9 +239,14 @@ export default function SettingsScreen() {
 
       {/* Notification Times */}
       <View style={styles.section}>
-        <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-          DAILY REMINDERS
-        </Text>
+        <View style={{ gap: 2, marginBottom: 8 }}>
+          <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+            DAILY REMINDERS
+          </Text>
+          <Text style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            Gentle nudges — no guilt, just a moment with Allah
+          </Text>
+        </View>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
           {settings.notificationTimes.length === 0 ? (
             <View style={styles.emptyRow}>
@@ -365,6 +370,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 20 },
   section: { gap: 10 },
   sectionLabel: { fontSize: 11, letterSpacing: 1 },
+  sectionDesc: { fontSize: 12, lineHeight: 18, marginTop: 2 },
   card: {
     borderRadius: 14, overflow: "hidden",
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,

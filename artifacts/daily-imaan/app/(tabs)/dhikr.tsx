@@ -22,14 +22,13 @@ interface DhikrState {
   allahuAkbar: number;
 }
 
-const MAX_COUNT = 33;
-
 const DHIKR_CONFIG = [
   {
     key: "subhanAllah" as keyof DhikrState,
     arabic: "سُبْحَانَ اللَّهِ",
     english: "SubhanAllah",
     meaning: "Glory be to Allah",
+    max: 33,
     color: "#1A6B4A",
     darkColor: "#2DBF7F",
   },
@@ -38,6 +37,7 @@ const DHIKR_CONFIG = [
     arabic: "الْحَمْدُ لِلَّهِ",
     english: "Alhamdulillah",
     meaning: "Praise be to Allah",
+    max: 33,
     color: "#C8933C",
     darkColor: "#E0A84A",
   },
@@ -46,6 +46,7 @@ const DHIKR_CONFIG = [
     arabic: "اللَّهُ أَكْبَرُ",
     english: "Allahu Akbar",
     meaning: "Allah is the Greatest",
+    max: 34,
     color: "#4A6B1A",
     darkColor: "#7FBF2D",
   },
@@ -75,7 +76,7 @@ export default function DhikrScreen() {
   }, []);
 
   const handlePress = useCallback(
-    (key: keyof DhikrState, index: number) => {
+    (key: keyof DhikrState, index: number, max: number) => {
       const current = counts[key];
       const newCount = current + 1;
       const useND = Platform.OS !== "web";
@@ -85,20 +86,18 @@ export default function DhikrScreen() {
         Animated.spring(scaleAnims[index]!, { toValue: 1, tension: 200, friction: 8, useNativeDriver: useND }),
       ]).start();
 
-      if (newCount === MAX_COUNT) {
-        // Auto-reset at 33: flash the completion badge then roll back to 0
+      if (newCount === max) {
+        // Auto-reset at the dhikr's target count, then roll back to 0
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Animated.sequence([
           Animated.timing(completionAnims[index]!, { toValue: 1, duration: 250, useNativeDriver: useND }),
           Animated.delay(700),
           Animated.timing(completionAnims[index]!, { toValue: 0, duration: 300, useNativeDriver: useND }),
         ]).start();
-        // Show 33 momentarily then reset
-        setCounts((prev) => ({ ...prev, [key]: MAX_COUNT }));
+        setCounts((prev) => ({ ...prev, [key]: max }));
         const timer = setTimeout(() => {
           setCounts((prev) => ({ ...prev, [key]: 0 }));
         }, 950);
-        // Store timer ref so it can be cleared on unmount
         timersRef.current.push(timer);
       } else {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -160,8 +159,8 @@ export default function DhikrScreen() {
       <View style={[styles.dhikrGrid, { paddingBottom: insets.bottom + 100 }]}>
         {DHIKR_CONFIG.map((dhikr, i) => {
           const count = counts[dhikr.key];
-          const progress = count / MAX_COUNT;
-          const isComplete = count >= MAX_COUNT;
+          const progress = count / dhikr.max;
+          const isComplete = count >= dhikr.max;
           const btnColor = isDark ? dhikr.darkColor : dhikr.color;
 
           return (
@@ -170,7 +169,7 @@ export default function DhikrScreen() {
               style={[{ transform: [{ scale: scaleAnims[i]! }] }, styles.dhikrItem]}
             >
               <Pressable
-                onPress={() => handlePress(dhikr.key, i)}
+                onPress={() => handlePress(dhikr.key, i, dhikr.max)}
                 style={[
                   styles.dhikrBtn,
                   {
@@ -187,7 +186,7 @@ export default function DhikrScreen() {
                     {count}
                   </Text>
                   <Text style={[styles.dhikrMax, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                    /{MAX_COUNT}
+                    /{dhikr.max}
                   </Text>
                 </View>
 
@@ -224,7 +223,7 @@ export default function DhikrScreen() {
                   ]}
                 >
                   <Ionicons name="checkmark" size={12} color="#fff" />
-                  <Text style={[styles.completeBadgeText, { fontFamily: "Inter_600SemiBold" }]}>33 ✓</Text>
+                  <Text style={[styles.completeBadgeText, { fontFamily: "Inter_600SemiBold" }]}>{dhikr.max} ✓</Text>
                 </Animated.View>
               </Pressable>
             </Animated.View>

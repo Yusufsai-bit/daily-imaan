@@ -107,26 +107,45 @@ export default function MeScreen() {
       {/* Daily Deeds */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
-            Today's Good Deeds
-          </Text>
-          <Text style={[styles.sectionCount, { color: C.primary, fontFamily: "Inter_600SemiBold" }]}>
-            {checked}/{GOOD_DEEDS.length}
-          </Text>
+          <View style={{ gap: 2 }}>
+            <Text style={[styles.sectionTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              Today's Intentions
+            </Text>
+            <Text style={[styles.sectionSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              Quiet accountability · resets each day
+            </Text>
+          </View>
+          {checked > 0 && (
+            <Text style={[styles.sectionCount, { color: C.primary, fontFamily: "Inter_600SemiBold" }]}>
+              {checked}/{GOOD_DEEDS.length}
+            </Text>
+          )}
         </View>
 
-        {/* Progress bar */}
-        <View style={[styles.progressBg, { backgroundColor: C.muted }]}>
-          <View
-            style={[
-              styles.progressFill,
-              {
-                backgroundColor: C.primary,
-                width: `${Math.round(progress * 100)}%` as DimensionValue,
-              },
-            ]}
-          />
-        </View>
+        {/* Progress bar — only shown once something is checked */}
+        {checked > 0 && (
+          <View style={[styles.progressBg, { backgroundColor: C.muted }]}>
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  backgroundColor: C.primary,
+                  width: `${Math.round(progress * 100)}%` as DimensionValue,
+                },
+              ]}
+            />
+          </View>
+        )}
+
+        {/* Gentle completion message — only when all done */}
+        {checked === GOOD_DEEDS.length && (
+          <View style={[styles.completionBanner, { backgroundColor: isDark ? "rgba(45,191,127,0.10)" : "rgba(26,107,74,0.07)", borderColor: C.primary + "30" }]}>
+            <Text style={{ fontSize: 18 }}>🌿</Text>
+            <Text style={[styles.completionText, { color: C.primary, fontFamily: "Inter_500Medium" }]}>
+              MashaAllah — may Allah accept your deeds today.
+            </Text>
+          </View>
+        )}
 
         {/* Deeds List */}
         <View style={[styles.deedsList, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
@@ -228,10 +247,13 @@ const styles = StyleSheet.create({
   statNumber: { fontSize: 24, letterSpacing: -0.5 },
   statLabel: { fontSize: 11, textAlign: "center" },
   section: { gap: 12 },
-  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  sectionHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
   sectionTitle: { fontSize: 17 },
-  sectionCount: { fontSize: 15 },
-  progressBg: { height: 6, borderRadius: 3, overflow: "hidden" },
+  sectionSub: { fontSize: 12 },
+  sectionCount: { fontSize: 15, marginTop: 2 },
+  completionBanner: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, borderWidth: 1 },
+  completionText: { flex: 1, fontSize: 14, lineHeight: 20 },
+  progressBg: { height: 5, borderRadius: 3, overflow: "hidden" },
   progressFill: { height: "100%", borderRadius: 3 },
   deedsList: {
     borderRadius: 14, overflow: "hidden",

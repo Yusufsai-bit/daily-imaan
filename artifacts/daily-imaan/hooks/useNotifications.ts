@@ -112,8 +112,8 @@ export async function schedulePrayerNotifications(
       // refresh with updated exact times (via usePrayerTimes + AppState listener).
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: `${prayer.name} Time`,
-          body: `It's time for ${prayer.name} prayer.`,
+          title: `${prayer.name} 🤲`,
+          body: "Take a moment to remember Allah.",
           categoryIdentifier: "prayer_time",
         },
         trigger: {
