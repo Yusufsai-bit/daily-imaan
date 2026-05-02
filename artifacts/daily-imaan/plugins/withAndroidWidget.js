@@ -61,9 +61,12 @@ function withWidgetFiles(config) {
         path.join(javaDir, "DailyAyatAppWidget.kt"),
         `package com.dailyimaan
 
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.widget.RemoteViews
 
 class DailyAyatAppWidget : AppWidgetProvider() {
@@ -83,11 +86,20 @@ class DailyAyatAppWidget : AppWidgetProvider() {
     ) ?: ""
     val surahRef = prefs.getString("widget_surah_ref", "Al-Fatihah 1:1") ?: ""
 
+    val launchIntent = Intent(Intent.ACTION_VIEW, Uri.parse("daily-imaan://")).apply {
+      addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+    }
+    val pendingIntent = PendingIntent.getActivity(
+      context, 0, launchIntent,
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
     for (id in appWidgetIds) {
       val views = RemoteViews(context.packageName, R.layout.daily_ayat_widget)
       views.setTextViewText(R.id.widget_arabic, arabic)
       views.setTextViewText(R.id.widget_english, "\\u201c$english\\u201d")
       views.setTextViewText(R.id.widget_surah, surahRef)
+      views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
       appWidgetManager.updateAppWidget(id, views)
     }
   }
@@ -120,6 +132,7 @@ class DailyAyatAppWidget : AppWidgetProvider() {
         path.join(layoutDir, "daily_ayat_widget.xml"),
         `<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"

@@ -76,6 +76,8 @@ struct DailyAyatWidgetEntryView: View {
             }
             .padding()
         }
+        // Tapping the widget opens the Daily Imaan app to the Home tab.
+        .widgetURL(URL(string: "daily-imaan://")!)
     }
 }
 
