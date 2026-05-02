@@ -104,6 +104,44 @@ export default function MeScreen() {
         </View>
       </View>
 
+      {/* I am feeling... — gentle entry to Quran/Sunnah comfort */}
+      <Pressable
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push("/feeling" as never);
+        }}
+        style={({ pressed }) => [
+          styles.feelingCard,
+          {
+            backgroundColor: C.card,
+            shadowColor: isDark ? "#000" : "#1A6B4A",
+            opacity: pressed ? 0.9 : 1,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.feelingIcon,
+            {
+              backgroundColor: isDark
+                ? "rgba(45,191,127,0.15)"
+                : "rgba(26,107,74,0.08)",
+            },
+          ]}
+        >
+          <Ionicons name="heart-outline" size={20} color={C.primary} />
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={[styles.feelingTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
+            I am feeling...
+          </Text>
+          <Text style={[styles.feelingSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            Find a verse or dua for your heart
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={C.mutedForeground} />
+      </Pressable>
+
       {/* Daily Deeds */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
@@ -269,4 +307,24 @@ const styles = StyleSheet.create({
   },
   linkRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   linkText: { fontSize: 15 },
+  feelingCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  feelingIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  feelingTitle: { fontSize: 15 },
+  feelingSub: { fontSize: 12, lineHeight: 17 },
 });
