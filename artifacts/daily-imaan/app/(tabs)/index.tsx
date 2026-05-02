@@ -332,41 +332,6 @@ export default function HomeScreen() {
         </View>
       </Animated.View>
 
-      {/* Pick My Mood */}
-      <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-        PICK MY MOOD
-      </Text>
-      <Pressable
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push("/mood");
-        }}
-        style={({ pressed }) => [
-          styles.moodCard,
-          { backgroundColor: C.card, opacity: pressed ? 0.88 : 1, shadowColor: isDark ? "#000" : "#1A6B4A" },
-        ]}
-      >
-        <View style={styles.moodCardLeft}>
-          <Text style={styles.moodCardEmoji}>💭</Text>
-          <View style={styles.moodCardText}>
-            <Text style={[styles.moodCardTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
-              How are you feeling?
-            </Text>
-            <Text style={[styles.moodCardSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              Get a relevant ayah + dua for your mood
-            </Text>
-          </View>
-        </View>
-        <View style={styles.moodPillRow}>
-          {["😓", "🙏", "💪"].map((e) => (
-            <View key={e} style={[styles.moodPillChip, { backgroundColor: C.secondary }]}>
-              <Text style={{ fontSize: 14 }}>{e}</Text>
-            </View>
-          ))}
-          <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} />
-        </View>
-      </Pressable>
-
       {/* Prayer Times Grid */}
       {prayerTimes && (
         <View style={styles.prayerSection}>
@@ -441,15 +406,4 @@ const styles = StyleSheet.create({
   prayerTime: { fontSize: 15 },
   nextBadge: { marginLeft: 8, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
   nextBadgeText: { color: "#fff", fontSize: 11 },
-  moodCard: {
-    borderRadius: 16, padding: 16, gap: 12,
-    shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 3,
-  },
-  moodCardLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-  moodCardEmoji: { fontSize: 28 },
-  moodCardText: { flex: 1, gap: 2 },
-  moodCardTitle: { fontSize: 16 },
-  moodCardSub: { fontSize: 13, lineHeight: 18 },
-  moodPillRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  moodPillChip: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
 });
