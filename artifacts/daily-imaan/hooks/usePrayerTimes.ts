@@ -19,10 +19,19 @@ export interface PrayerLocation {
   longitude: number;
 }
 
+export interface HijriDate {
+  day: string;
+  monthEn: string;
+  monthAr: string;
+  year: string;
+  formatted: string; // e.g. "12 Shawwāl 1447"
+}
+
 interface UsePrayerTimesResult {
   prayerTimes: PrayerTimes | null;
   nextPrayer: { name: string; time: string } | null;
   location: PrayerLocation | null;
+  hijri: HijriDate | null;
   loading: boolean;
   error: string | null;
   locationDenied: boolean;
@@ -66,6 +75,7 @@ interface CachedPayload {
   latRounded: number;
   lngRounded: number;
   location: PrayerLocation;
+  hijri: HijriDate | null;
 }
 
 /**
@@ -86,6 +96,7 @@ export function usePrayerTimes(
   const [prayerTimes, setPrayerTimes] = useState<PrayerTimes | null>(null);
   const [nextPrayer, setNextPrayer] = useState<{ name: string; time: string } | null>(null);
   const [location, setLocation] = useState<PrayerLocation | null>(null);
+  const [hijri, setHijri] = useState<HijriDate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [locationDenied, setLocationDenied] = useState(false);
@@ -115,6 +126,7 @@ export function usePrayerTimes(
               setPrayerTimes(payload.times);
               setNextPrayer(getNextPrayer(payload.times));
               setLocation(payload.location);
+              if (payload.hijri) setHijri(payload.hijri);
               setLoading(false);
               // Don't return — we still re-validate location below in background
             }
@@ -151,6 +163,7 @@ export function usePrayerTimes(
               setPrayerTimes(payload.times);
               setNextPrayer(getNextPrayer(payload.times));
               setLocation(payload.location);
+              if (payload.hijri) setHijri(payload.hijri);
               setLoading(false);
               return;
             }
@@ -185,7 +198,18 @@ export function usePrayerTimes(
         const timestamp = Math.floor(Date.now() / 1000);
         const url = `https://api.aladhan.com/v1/timings/${timestamp}?latitude=${latitude}&longitude=${longitude}&method=${method}&school=${school}`;
         const res = await fetch(url);
-        const json = (await res.json()) as { data?: { timings?: PrayerTimes } };
+        const json = (await res.json()) as {
+          data?: {
+            timings?: PrayerTimes;
+            date?: {
+              hijri?: {
+                day?: string;
+                month?: { en?: string; ar?: string };
+                year?: string;
+              };
+            };
+          };
+        };
         const timings = json?.data?.timings;
 
         if (timings) {
@@ -200,6 +224,19 @@ export function usePrayerTimes(
           setPrayerTimes(times);
           setNextPrayer(getNextPrayer(times));
 
+          let resolvedHijri: HijriDate | null = null;
+          const h = json?.data?.date?.hijri;
+          if (h && h.day && h.month?.en && h.year) {
+            resolvedHijri = {
+              day: h.day,
+              monthEn: h.month.en,
+              monthAr: h.month.ar ?? "",
+              year: h.year,
+              formatted: `${h.day} ${h.month.en} ${h.year} AH`,
+            };
+            setHijri(resolvedHijri);
+          }
+
           const payload: CachedPayload = {
             times,
             date: today,
@@ -208,6 +245,7 @@ export function usePrayerTimes(
             latRounded,
             lngRounded,
             location: resolvedLocation,
+            hijri: resolvedHijri,
           };
           await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(payload));
         } else {
@@ -232,6 +270,7 @@ export function usePrayerTimes(
     prayerTimes,
     nextPrayer,
     location,
+    hijri,
     loading,
     error,
     locationDenied,

@@ -91,6 +91,7 @@ function RootLayoutNav() {
       <Stack.Screen name="surah/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="feeling" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="qibla" options={{ headerShown: false, presentation: "card" }} />
     </Stack>
   );
 }

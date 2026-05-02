@@ -128,25 +128,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [updateState]
   );
 
+  // Soft streak — counts total "Days with Allah", never decrements.
+  // No punishment for missed days, illness, menstruation, travel, or rest.
+  // The number only ever goes up.
   const incrementStreak = useCallback(() => {
     const today = getTodayKey();
     updateState((prev) => {
       const { streak } = prev;
       if (streak.lastActiveDate === today) return prev;
 
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
-
-      const wasYesterday = streak.lastActiveDate === yesterdayKey;
-      const newCount = wasYesterday ? streak.count + 1 : 1;
-
+      const newCount = streak.count + 1;
       return {
         ...prev,
         streak: {
           count: newCount,
           lastActiveDate: today,
-          longestStreak: Math.max(newCount, streak.longestStreak),
+          longestStreak: newCount,
         },
       };
     });
@@ -166,19 +163,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           goodDeeds: { ...prev.goodDeeds, [today]: newDeeds },
         };
 
-        // Increment streak when any deed is checked
+        // Soft streak — increment "Days with Allah" once per day on any deed.
+        // Never decrements. Missing days, illness, periods, travel: no penalty.
         if (!todayDeeds.includes(deedId)) {
           const { streak } = prev;
           if (streak.lastActiveDate !== today) {
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
-            const wasYesterday = streak.lastActiveDate === yesterdayKey;
-            const newCount = wasYesterday ? streak.count + 1 : 1;
+            const newCount = streak.count + 1;
             newState.streak = {
               count: newCount,
               lastActiveDate: today,
-              longestStreak: Math.max(newCount, streak.longestStreak),
+              longestStreak: newCount,
             };
           }
         }

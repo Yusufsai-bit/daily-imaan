@@ -36,7 +36,7 @@ export default function MeScreen() {
   const insets = useSafeAreaInsets();
 
   const { state, toggleDeed, isDeedChecked } = useApp();
-  const { streak, bookmarks } = state;
+  const { streak, bookmarks, readAyatIds } = state;
 
   const checked = GOOD_DEEDS.filter((d) => isDeedChecked(d.id)).length;
   const progress = checked / GOOD_DEEDS.length;
@@ -71,30 +71,30 @@ export default function MeScreen() {
         </Pressable>
       </View>
 
-      {/* Stats Row */}
+      {/* Stats Row — soft, gain-only metrics. No "best" or "broken" framing. */}
       <View style={styles.statsRow}>
         <View style={[styles.statCard, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
-          <Ionicons name="flame" size={28} color="#E8553E" />
+          <Ionicons name="leaf" size={26} color={C.primary} />
           <Text style={[styles.statNumber, { color: C.foreground, fontFamily: "Inter_700Bold" }]}>
             {streak.count}
           </Text>
           <Text style={[styles.statLabel, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            Day Streak
+            Days with Allah
           </Text>
         </View>
 
         <View style={[styles.statCard, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
-          <Ionicons name="trophy-outline" size={28} color="#C8933C" />
+          <Ionicons name="book-outline" size={26} color="#C8933C" />
           <Text style={[styles.statNumber, { color: C.foreground, fontFamily: "Inter_700Bold" }]}>
-            {streak.longestStreak}
+            {readAyatIds.length}
           </Text>
           <Text style={[styles.statLabel, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            Best Streak
+            Verses Read
           </Text>
         </View>
 
         <View style={[styles.statCard, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
-          <Ionicons name="bookmark" size={28} color={C.primary} />
+          <Ionicons name="bookmark" size={26} color={C.primary} />
           <Text style={[styles.statNumber, { color: C.foreground, fontFamily: "Inter_700Bold" }]}>
             {bookmarks.length}
           </Text>
@@ -103,6 +103,9 @@ export default function MeScreen() {
           </Text>
         </View>
       </View>
+      <Text style={[styles.streakNote, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+        Days with Allah only ever goes up. Periods, illness, travel, and rest never break it.
+      </Text>
 
       {/* I am feeling... — gentle entry to Quran/Sunnah comfort */}
       <Pressable
@@ -246,6 +249,20 @@ export default function MeScreen() {
         </Text>
         <View style={[styles.linksList, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
           <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/qibla" as never);
+            }}
+            style={({ pressed }) => [styles.linkRow, { borderBottomColor: C.border, opacity: pressed ? 0.7 : 1 }]}
+          >
+            <Ionicons name="compass-outline" size={20} color={C.primary} />
+            <Text style={[styles.linkText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
+              Qibla Compass
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} style={{ marginLeft: "auto" }} />
+          </Pressable>
+
+          <Pressable
             onPress={() => router.push("/settings" as never)}
             style={({ pressed }) => [styles.linkRow, { borderBottomColor: C.border, opacity: pressed ? 0.7 : 1 }]}
           >
@@ -257,7 +274,7 @@ export default function MeScreen() {
           </Pressable>
 
           <Pressable
-            style={({ pressed }) => [styles.linkRow, { borderBottomColor: C.border, opacity: pressed ? 0.7 : 1 }]}
+            style={({ pressed }) => [styles.linkRow, { borderBottomColor: C.border, borderBottomWidth: 0, opacity: pressed ? 0.7 : 1 }]}
           >
             <Ionicons name="bookmark-outline" size={20} color={C.primary} />
             <Text style={[styles.linkText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
@@ -284,6 +301,7 @@ const styles = StyleSheet.create({
   },
   statNumber: { fontSize: 24, letterSpacing: -0.5 },
   statLabel: { fontSize: 11, textAlign: "center" },
+  streakNote: { fontSize: 11, lineHeight: 16, textAlign: "center", marginTop: -14, paddingHorizontal: 16, fontStyle: "italic" },
   section: { gap: 12 },
   sectionHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
   sectionTitle: { fontSize: 17 },

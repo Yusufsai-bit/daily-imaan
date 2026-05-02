@@ -44,7 +44,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
 
   const { state, loaded, toggleBookmark, isBookmarked, incrementStreak, markAyahRead } = useApp();
-  const { nextPrayer, prayerTimes, location, source, refresh: refreshPrayerTimes, loading: prayerLoading } =
+  const { nextPrayer, prayerTimes, location, hijri, source, refresh: refreshPrayerTimes, loading: prayerLoading } =
     usePrayerTimes(state.settings.prayerMethod, state.settings.prayerSchool);
 
   const [ayah, setAyah] = useState<FeaturedAyah>(() =>
@@ -203,9 +203,14 @@ export default function HomeScreen() {
           <Text style={[styles.dateText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
             {formatDate()}
           </Text>
+          {hijri && (
+            <Text style={[styles.hijriText, { color: C.primary, fontFamily: "Inter_500Medium" }]}>
+              {hijri.formatted}
+            </Text>
+          )}
         </View>
         <View style={[styles.streakBadge, { backgroundColor: C.secondary }]}>
-          <Ionicons name="flame" size={18} color="#E8553E" />
+          <Ionicons name="leaf" size={16} color={C.primary} />
           <Text style={[styles.streakText, { color: C.foreground, fontFamily: "Inter_700Bold" }]}>
             {state.streak.count}
           </Text>
@@ -248,6 +253,9 @@ export default function HomeScreen() {
           {/* English translation */}
           <Text style={[styles.englishText, { color: C.foreground, fontFamily: "Inter_400Regular" }]}>
             "{ayah.englishText}"
+          </Text>
+          <Text style={[styles.translationCredit, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            Translation: Saheeh International
           </Text>
 
           {/* Explanation toggle */}
@@ -408,6 +416,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
   appTitle: { fontSize: 26, letterSpacing: -0.5 },
   dateText: { fontSize: 13, marginTop: 2 },
+  hijriText: { fontSize: 12, marginTop: 2, letterSpacing: 0.2 },
   streakBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   streakText: { fontSize: 16 },
   prayerBanner: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
@@ -422,6 +431,7 @@ const styles = StyleSheet.create({
   arabicText: { fontSize: 28, lineHeight: 52, textAlign: "right", writingDirection: "rtl" },
   divider: { height: 1, marginVertical: 2 },
   englishText: { fontSize: 16, lineHeight: 26, color: "#374151" },
+  translationCredit: { fontSize: 10, letterSpacing: 0.3, marginTop: -6 },
   explanationToggle: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
   explanationToggleText: { fontSize: 13 },
   explanationBox: { borderLeftWidth: 3, paddingLeft: 12, paddingVertical: 8, borderRadius: 4 },
