@@ -42,7 +42,7 @@ export default function HomeScreen() {
   const C = isDark ? colors.dark : colors.light;
   const insets = useSafeAreaInsets();
 
-  const { state, toggleBookmark, isBookmarked, incrementStreak } = useApp();
+  const { state, loaded, toggleBookmark, isBookmarked, incrementStreak, markAyahRead } = useApp();
   const { nextPrayer, prayerTimes } = usePrayerTimes(state.settings.prayerMethod);
 
   const [ayah, setAyah] = useState<FeaturedAyah>(() =>
@@ -62,8 +62,12 @@ export default function HomeScreen() {
       Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: useND }),
       Animated.spring(scaleAnim, { toValue: 1, tension: 80, friction: 8, useNativeDriver: useND }),
     ]).start();
+    // Gate streak increment and read-marking on loaded so they never race with
+    // AsyncStorage hydration on cold launch.
+    if (!loaded) return;
     incrementStreak();
-  }, [ayah.id]);
+    markAyahRead(getGlobalAyahNumber(ayah.surahId, ayah.ayahNumber));
+  }, [ayah.id, loaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Schedule prayer-time notifications whenever today's prayer times load/change
   useEffect(() => {

@@ -21,7 +21,8 @@ export async function requestNotificationPermission(): Promise<boolean> {
 
 export async function scheduleAyatNotifications(
   times: string[],
-  todayAyatText: string
+  todayAyatText: string,
+  ayahId: number
 ): Promise<void> {
   if (Platform.OS === "web") return;
   try {
@@ -33,7 +34,7 @@ export async function scheduleAyatNotifications(
       },
     ]);
 
-    // Cancel only existing ayat notifications by identifier prefix; we'll re-add them
+    // Cancel only existing ayat notifications before re-scheduling
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
     for (const n of scheduled) {
       if (n.content.categoryIdentifier === "daily_ayat") {
@@ -50,6 +51,8 @@ export async function scheduleAyatNotifications(
           title: "Daily Imaan",
           body: todayAyatText,
           categoryIdentifier: "daily_ayat",
+          // ayahId is stored so tapping "Read" can mark the correct ayah as read
+          data: { ayahId },
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -104,19 +107,21 @@ export async function schedulePrayerNotifications(
       const prayerDate = new Date(now);
       prayerDate.setHours(hour, minute, 0, 0);
 
-      if (prayerDate > now) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: `${prayer.name} Time`,
-            body: `It's time for ${prayer.name} prayer.`,
-            categoryIdentifier: "prayer_time",
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: prayerDate,
-          },
-        });
-      }
+      // Use DAILY trigger so the reminder fires every day at the same time.
+      // Prayer times shift only ~1 min/day; the app reschedules on each foreground
+      // refresh with updated exact times (via usePrayerTimes + AppState listener).
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `${prayer.name} Time`,
+          body: `It's time for ${prayer.name} prayer.`,
+          categoryIdentifier: "prayer_time",
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour,
+          minute,
+        },
+      });
     }
   } catch {
     // Notifications may not work in all environments
