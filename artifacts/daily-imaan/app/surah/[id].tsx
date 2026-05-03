@@ -402,22 +402,6 @@ export default function SurahDetailScreen() {
                   Translation: {QURAN_TRANSLATION_LABEL}
                 </Text>
               </View>
-              {/* Link to authoritative scholarly info on Quran.com. We never
-                  include any in-app summary or theme description, since any
-                  paraphrased description would be unsourced commentary. */}
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  Linking.openURL(`https://quran.com/${surahId}/info`).catch(() => undefined);
-                }}
-                style={[styles.themeCard, { backgroundColor: C.secondary, borderLeftColor: C.primary }]}
-              >
-                <Ionicons name="information-circle-outline" size={14} color={C.primary} />
-                <Text style={[styles.themeText, { color: C.primary, fontFamily: "Inter_500Medium" }]}>
-                  Read about this surah on Quran.com
-                </Text>
-                <Ionicons name="open-outline" size={12} color={C.primary} />
-              </Pressable>
             </View>
           )}
         />
@@ -475,16 +459,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   listHeader: { gap: 8 },
-  themeCard: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    marginHorizontal: 16,
-    marginBottom: 4,
-    padding: 12,
-    borderRadius: 10,
-    borderLeftWidth: 3,
-  },
   translatorBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -498,7 +472,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   translatorText: { fontSize: 11 },
-  themeText: { flex: 1, fontSize: 13, lineHeight: 20 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16 },
   loadingText: { fontSize: 15 },
   errorText: { fontSize: 15, textAlign: "center", paddingHorizontal: 32 },
