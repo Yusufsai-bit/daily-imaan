@@ -141,6 +141,10 @@ export function useTafsir(
 
     setState({ text: null, source: null, loading: true, error: null });
 
+    // Track an expired-but-readable cache entry so we can serve it as a stale
+    // fallback if the network fetch fails (offline reading scenario).
+    let staleCached: CacheEntry | null = null;
+
     (async () => {
       // 1. Try cache first.
       try {
@@ -160,6 +164,8 @@ export function useTafsir(
             touchIndex(cacheKey);
             return;
           }
+          // Expired but parseable — keep it as the offline fallback.
+          if (parsed?.text) staleCached = parsed;
         }
       } catch {
         // Ignore malformed cache and fall through to network fetch.
@@ -194,12 +200,23 @@ export function useTafsir(
         writeWithLRU(cacheKey, entry);
       } catch (e) {
         if (!cancelled) {
-          setState({
-            text: null,
-            source: null,
-            loading: false,
-            error: e instanceof Error ? e.message : "Could not load tafsir",
-          });
+          // Offline / network error: serve the expired cache entry if we have
+          // one. Better to read 91-day-old verbatim Ibn Kathir than nothing.
+          if (staleCached) {
+            setState({
+              text: staleCached.text,
+              source: staleCached.source ? `${staleCached.source} · cached` : null,
+              loading: false,
+              error: null,
+            });
+          } else {
+            setState({
+              text: null,
+              source: null,
+              loading: false,
+              error: e instanceof Error ? e.message : "Could not load tafsir",
+            });
+          }
         }
       }
     })();

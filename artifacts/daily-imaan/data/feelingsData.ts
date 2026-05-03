@@ -37,7 +37,7 @@ export interface FeelingEntry {
       subtitle: "When the heart is restless",
       ayah: {
         arabic: "ٱلَّذِينَ ءَامَنُوا۟ وَتَطْمَئِنُّ قُلُوبُهُم بِذِكْرِ ٱللَّهِ ۗ أَلَا بِذِكْرِ ٱللَّهِ تَطْمَئِنُّ ٱلْقُلُوبُ",
-        english: "Those who have believed and whose hearts are assured by the remembrance of Allāh. Unquestionably, by the remembrance of Allāh hearts are assured.\"",
+        english: "Those who have believed and whose hearts are assured by the remembrance of Allāh. Unquestionably, by the remembrance of Allāh hearts are assured.",
         reference: "Surah Ar-Ra'd 13:28",
       },
       dua: {
@@ -75,7 +75,7 @@ export interface FeelingEntry {
       subtitle: "When you wish to thank Allah",
       ayah: {
         arabic: "وَإِذْ تَأَذَّنَ رَبُّكُمْ لَئِن شَكَرْتُمْ لَأَزِيدَنَّكُمْ ۖ وَلَئِن كَفَرْتُمْ إِنَّ عَذَابِى لَشَدِيدٌ",
-        english: "And [remember] when your Lord proclaimed, 'If you are grateful, I will surely increase you [in favor]; but if you deny, indeed, My punishment is severe.'\"",
+        english: "And [remember] when your Lord proclaimed, 'If you are grateful, I will surely increase you [in favor]; but if you deny, indeed, My punishment is severe.'",
         reference: "Surah Ibrahim 14:7",
       },
       dua: {
@@ -135,13 +135,11 @@ export interface FeelingEntry {
         reference: "Surah Al-Fatihah 1:6",
       },
       dua: {
-      arabic:
-        "اللَّهُمَّ أَرِنَا الْحَقَّ حَقًّا وَارْزُقْنَا اتِّبَاعَهُ، وَأَرِنَا الْبَاطِلَ بَاطِلًا وَارْزُقْنَا اجْتِنَابَهُ",
-      transliteration:
-        "Allahumma arinal-haqqa haqqan warzuqnat-tiba'ah, wa arinal-batila batilan warzuqnaj-tinabah",
+      arabic: "اللَّهُمَّ اهْدِنِي وَسَدِّدْنِي",
+      transliteration: "Allahumma ihdini wa saddidni",
       english:
-        "O Allah, show us the truth as truth and grant us its following, and show us falsehood as falsehood and grant us its avoidance.",
-      source: "A well-known supplication of the righteous",
+        "O Allah, guide me and make me steadfast.",
+      source: "Sahih Muslim 2725 — narrated by 'Ali ibn Abi Talib (رضي الله عنه)",
     },
     },
   {

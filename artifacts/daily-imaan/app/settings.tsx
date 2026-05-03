@@ -1043,6 +1043,33 @@ export default function SettingsScreen() {
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/about" as never);
+            }}
+            {...a11yButton("About Daily Imaan", "Opens the welcome and sources screen")}
+            style={({ pressed }) => [
+              styles.optionRow,
+              { opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <View style={styles.optionContent}>
+              <Text
+                maxFontSizeMultiplier={1.6}
+                style={[styles.optionTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+              >
+                About Daily Imaan
+              </Text>
+              <Text
+                maxFontSizeMultiplier={1.6}
+                style={[styles.optionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+              >
+                Why this app exists and where the words come from
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={C.mutedForeground} {...a11yDecorative} />
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push("/privacy" as never);
             }}
             {...a11yButton("Privacy Policy", "Opens the in-app privacy policy")}

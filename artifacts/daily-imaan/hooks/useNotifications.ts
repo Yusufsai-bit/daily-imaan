@@ -93,6 +93,14 @@ export async function scheduleAyatNotifications(times: string[]): Promise<void> 
       return;
     }
 
+    // Lazily request permission only when the user has actually opted in to a
+    // reminder — never at app launch, per Apple HIG and Play Store guidance.
+    const granted = await requestNotificationPermission();
+    if (!granted) {
+      await saveAyatNotifIds([]);
+      return;
+    }
+
     const body = "Your verse for today is ready. Tap to read.";
     const newIds: string[] = [];
     for (const time of times) {
@@ -223,6 +231,12 @@ export async function scheduleHadithNotification(
     }
 
     if (!enabled) return;
+
+    // Lazy permission request — only when the user has actually enabled the
+    // hadith reminder. Silently no-op if denied so the toggle still appears
+    // ON in Settings (the user can re-enable in iOS/Android system settings).
+    const granted = await requestNotificationPermission();
+    if (!granted) return;
 
     const parts = time.split(":");
     const hour = parseInt(parts[0] ?? "20");

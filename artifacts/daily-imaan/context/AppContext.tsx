@@ -100,6 +100,12 @@ export interface AppState {
   settings: AppSettings;
   readAyatIds: number[];
   lastReadPosition: LastReadPosition | null;
+  /**
+   * First-launch welcome screen flag. False until the user has seen the
+   * welcome / sources / privacy intro and tapped "Begin". Stored at the
+   * top level (not in settings) so it cannot be reset by a settings reset.
+   */
+  welcomeSeen: boolean;
 }
 
 interface AppContextType {
@@ -121,6 +127,8 @@ interface AppContextType {
   updateSettings: (settings: Partial<AppSettings>) => void;
   incrementStreak: () => void;
   setLastReadPosition: (pos: LastReadPosition) => void;
+  /** Mark the first-launch welcome flow as completed. Idempotent. */
+  setWelcomeSeen: () => void;
   loaded: boolean;
 }
 
@@ -155,6 +163,7 @@ const DEFAULT_STATE: AppState = {
   },
   readAyatIds: [],
   lastReadPosition: null,
+  welcomeSeen: false,
 };
 
 const STORAGE_KEY = "@daily_imaan_state";
@@ -211,6 +220,7 @@ function migrateState(saved: Partial<AppState>): AppState {
         ? saved.goodDeeds
         : {},
     lastReadPosition: saved.lastReadPosition ?? null,
+    welcomeSeen: typeof saved.welcomeSeen === "boolean" ? saved.welcomeSeen : false,
     version: CURRENT_STATE_VERSION,
   };
 }
@@ -412,6 +422,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [updateState]
   );
 
+  const setWelcomeSeen = useCallback(() => {
+    updateState((prev) => (prev.welcomeSeen ? prev : { ...prev, welcomeSeen: true }));
+  }, [updateState]);
+
   const setLastReadPosition = useCallback(
     (pos: LastReadPosition) => {
       updateState((prev) => {
@@ -447,6 +461,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updateSettings,
         incrementStreak,
         setLastReadPosition,
+        setWelcomeSeen,
         loaded,
       }}
     >

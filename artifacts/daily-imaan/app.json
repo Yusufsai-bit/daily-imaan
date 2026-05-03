@@ -70,7 +70,8 @@
       [
         "@bacons/apple-targets",
         {
-          "appleTeamId": "XXXXXXXXXX"
+          "_comment": "REQUIRED FOR APP STORE BUILDS — replace with your 10-character Apple Developer Team ID before running `eas build --profile production --platform ios`. Find it at https://developer.apple.com/account → Membership.",
+          "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID"
         }
       ],
       "./plugins/withAndroidWidget.js",

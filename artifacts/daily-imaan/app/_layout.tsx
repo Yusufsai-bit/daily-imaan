@@ -11,7 +11,7 @@ import {
 } from "@expo-google-fonts/amiri";
 import * as Notifications from "expo-notifications";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { router, Stack } from "expo-router";
+import { router, Stack, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useCallback, useEffect, useRef } from "react";
 import { AppState, Appearance, Platform } from "react-native";
@@ -24,7 +24,6 @@ import { AppProvider, useApp } from "@/context/AppContext";
 import { getTodayAyah } from "@/data/featuredAyat";
 import { SURAHS } from "@/data/surahsData";
 import {
-  requestNotificationPermission,
   scheduleAyatNotifications,
   scheduleHadithNotification,
 } from "@/hooks/useNotifications";
@@ -48,12 +47,29 @@ const queryClient = new QueryClient();
 
 function AppEffects() {
   const { state, loaded, incrementStreak, markAyahRead } = useApp();
+  const segments = useSegments();
 
-  // Request notification permission at startup so default reminders can fire
+  // Notification permission is requested LAZILY — only when the user actually
+  // enables a reminder toggle. The schedule* functions in useNotifications.ts
+  // call requestNotificationPermission() themselves before scheduling. This
+  // avoids the App Store rejection risk of a permission prompt on first launch.
+
+  // First-launch welcome routing. Once AppContext has hydrated, send the user
+  // to the welcome screen if they have not yet seen it. The redirect only
+  // fires from the home tab group so a deep-link (e.g. tapping a notification
+  // that opens /surah/2/255) is not hijacked into the welcome modal — those
+  // routes will surface welcome the next time the user returns to home.
   useEffect(() => {
-    if (Platform.OS === "web") return;
-    requestNotificationPermission();
-  }, []);
+    if (!loaded) return;
+    if (state.welcomeSeen) return;
+    // Only auto-redirect from the home tab group or the bare root; never
+    // override other top-level routes (welcome, about, privacy, surah, etc.)
+    // so a deep-link from a tapped notification isn't hijacked.
+    const root = segments[0];
+    const onHome = root === undefined || root === "(tabs)";
+    if (!onHome) return;
+    router.replace("/welcome");
+  }, [loaded, state.welcomeSeen, segments]);
 
   // Compute today's ayah fresh on interaction (DAILY-trigger payloads go stale
   // across days). Default tap opens the app; "Mark as Read" is dismiss-only.
@@ -137,6 +153,8 @@ function RootLayoutNav() {
       <Stack.Screen name="hadith" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="privacy" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="adhkar" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="about" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="welcome" options={{ headerShown: false, presentation: "fullScreenModal", gestureEnabled: false }} />
     </Stack>
   );
 }

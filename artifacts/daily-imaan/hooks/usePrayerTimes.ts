@@ -36,6 +36,12 @@ interface UsePrayerTimesResult {
   error: string | null;
   locationDenied: boolean;
   source: string;
+  /**
+   * True when the prayer times being shown are from a previous day's cache,
+   * served as a fallback because location/network is currently unavailable.
+   * UI can surface a "Showing last known times" banner.
+   */
+  isStale: boolean;
   refresh: () => Promise<void>;
 }
 
@@ -100,6 +106,30 @@ export function usePrayerTimes(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [locationDenied, setLocationDenied] = useState(false);
+  const [isStale, setIsStale] = useState(false);
+
+  /**
+   * Best-effort: hydrate prayer times from any cache entry matching the
+   * user's calculation method/school, even if it's from an earlier day or
+   * a slightly different location. Returns true when something was loaded
+   * so the caller can show stale UI instead of an empty state.
+   */
+  const loadAnyCacheAsStale = useCallback(async (): Promise<boolean> => {
+    try {
+      const cached = await AsyncStorage.getItem(CACHE_KEY);
+      if (!cached) return false;
+      const payload = JSON.parse(cached) as CachedPayload;
+      if (!payload?.times) return false;
+      setPrayerTimes(payload.times);
+      setNextPrayer(getNextPrayer(payload.times));
+      setLocation(payload.location);
+      if (payload.hijri) setHijri(payload.hijri);
+      setIsStale(true);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
 
   const fetchTimes = useCallback(
     async (force: boolean = false) => {
@@ -127,6 +157,7 @@ export function usePrayerTimes(
               setNextPrayer(getNextPrayer(payload.times));
               setLocation(payload.location);
               if (payload.hijri) setHijri(payload.hijri);
+              setIsStale(false);
               setLoading(false);
               // Don't return — we still re-validate location below in background
             }
@@ -136,6 +167,9 @@ export function usePrayerTimes(
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted") {
           setLocationDenied(true);
+          // Fall back to any cached schedule (even from a previous day) so
+          // the UI isn't empty. Marked as stale for the banner.
+          await loadAnyCacheAsStale();
           setLoading(false);
           return;
         }
@@ -164,6 +198,7 @@ export function usePrayerTimes(
               setNextPrayer(getNextPrayer(payload.times));
               setLocation(payload.location);
               if (payload.hijri) setHijri(payload.hijri);
+              setIsStale(false);
               setLoading(false);
               return;
             }
@@ -248,20 +283,45 @@ export function usePrayerTimes(
             hijri: resolvedHijri,
           };
           await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+          setIsStale(false);
         } else {
           setError("Could not load prayer times");
+          await loadAnyCacheAsStale();
         }
       } catch {
         setError("Could not load prayer times");
+        await loadAnyCacheAsStale();
       } finally {
         setLoading(false);
       }
     },
-    [method, school]
+    [method, school, loadAnyCacheAsStale]
   );
 
   useEffect(() => {
     fetchTimes(false);
+  }, [fetchTimes]);
+
+  // Tick the "next prayer" calculation every 60s and force a fresh fetch when
+  // the local date rolls over (midnight crossing or DST transition). Without
+  // this the home screen could keep showing yesterday's "Maghrib in 2h" long
+  // after midnight if the user leaves the app open.
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    let lastDate = new Date().toDateString();
+    const id = setInterval(() => {
+      const today = new Date().toDateString();
+      if (today !== lastDate) {
+        lastDate = today;
+        fetchTimes(true);
+        return;
+      }
+      setPrayerTimes((current) => {
+        if (current) setNextPrayer(getNextPrayer(current));
+        return current;
+      });
+    }, 60_000);
+    return () => clearInterval(id);
   }, [fetchTimes]);
 
   const refresh = useCallback(() => fetchTimes(true), [fetchTimes]);
@@ -275,6 +335,7 @@ export function usePrayerTimes(
     error,
     locationDenied,
     source: "AlAdhan · ISNA-compatible",
+    isStale,
     refresh,
   };
 }
