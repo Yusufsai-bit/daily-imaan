@@ -126,6 +126,16 @@ Every post is **1080 × 1350** px (Instagram portrait 4:5).
 - Footer row is always: left = attribution string (e.g. `Verbatim · Saheeh International`), right = `@dailyimaanapp`. Inter Medium 18pt, muted.
 - **No post number.** No "01/20". No carousel index. Ever.
 
+### Logo usage on posts
+
+The Daily Imaan logo is the profile avatar — viewers already see it next to every post in the feed. Repeating it on the post body is clutter and competes with sacred text. Treat it as off-canvas by default.
+
+- **Cream post bodies (Templates 1, 2, 3 — Qur'an / Hadith / Du'a): no logo image.** Attribution lives entirely in the text footer (`Verbatim · Saheeh International   @dailyimaanapp`).
+- **Sage post bodies (Templates 4, 5 — Reminder / Asma ul-Husna): no logo image.** Same footer rule.
+- **App Feature posts (Template 6) only:** the logo *is* the subject — place `marketing/logo/master/daily-imaan-icon-1024.png` at ~55–65 % of the canvas width, centered above the headline. This is the only template where the logo image appears.
+- **Never** use the logo as a corner watermark or stamp on Quran, Hadith, Du'a, Reminder, or Asma ul-Husna posts.
+- **Wordless 🌙 crescent emoji** may still appear in captions (sparingly), as before — but never inside the rendered post canvas.
+
 ### Theme assignment per template
 
 | # | Template | Theme |
