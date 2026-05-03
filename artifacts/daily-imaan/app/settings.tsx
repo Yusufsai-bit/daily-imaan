@@ -579,8 +579,10 @@ export default function SettingsScreen() {
       </View>
 
       {/* Daily Ayah reminders — master toggle gates the times list below.
-          Lives under the unified REMINDERS section above. */}
-      <View style={styles.section}>
+          Lives under the unified REMINDERS section above. Negative marginTop
+          collapses the parent ScrollView gap so all 3 reminder cards visually
+          flow as one block. */}
+      <View style={[styles.section, { marginTop: -14 }]}>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000", marginBottom: 12 }]}>
           <SettingRow
             icon="notifications-outline"
@@ -781,18 +783,12 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        <Text
-          maxFontSizeMultiplier={1.6}
-          style={[styles.hint, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
-        >
-          You'll receive the Ayat of the Day at each time with a "Read" button to open the app.
-          {Platform.OS !== "web" ? " Requires notification permissions." : ""}
-        </Text>
       </View>
 
       {/* Adhkar reminder — single toggle that schedules two daily nudges
-          (morning 07:00, evening 17:30). Lives under REMINDERS. */}
-      <View style={styles.section}>
+          (morning 07:00, evening 17:30). Lives under REMINDERS. Negative
+          marginTop collapses the parent ScrollView gap. */}
+      <View style={[styles.section, { marginTop: -14 }]}>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
           <SettingRow
             icon="leaf-outline"
@@ -842,14 +838,6 @@ export default function SettingsScreen() {
             style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
           >
             PRAYER CALCULATION METHOD
-          </Text>
-          <Text
-            maxFontSizeMultiplier={1.6}
-            style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
-          >
-            Affects Fajr and Isha angles. Pick the convention your local masjid follows.
-            For Australia, NZ, UK, and most of Europe and Africa, Muslim World League is the
-            common default.
           </Text>
         </View>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>

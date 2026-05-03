@@ -151,7 +151,7 @@ const DEFAULT_STATE: AppState = {
   settings: {
     ayatOrder: "sequential",
     notificationTimes: ["07:00", "13:00", "18:00"],
-    prayerMethod: 2,
+    prayerMethod: 1,
     prayerSchool: 0,
     darkMode: false,
     prayerSoundEnabled: {
