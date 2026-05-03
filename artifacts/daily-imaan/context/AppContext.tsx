@@ -19,10 +19,12 @@ export interface AppSettings {
   prayerSchool: number;
   darkMode: boolean;
   /**
-   * Per-prayer sound toggle for prayer-time notifications.
-   * Fajr defaults to OFF (quiet hours — no household disturbance before sunrise).
-   * Other prayers default to ON. Sound used is the system default notification
-   * sound. A bundled adhan recitation requires a licensed audio asset.
+   * Per-prayer sound toggle for prayer-time notifications. All five prayers
+   * default to ON so users hear an adhan-style nudge at every salah out of
+   * the box; users can mute Fajr (or any other) individually from Settings
+   * if they don't want the pre-sunrise alert. The sound used is the device's
+   * default notification sound — a bundled adhan recitation requires a
+   * licensed audio asset and is tracked as a separate enhancement.
    */
   prayerSoundEnabled: PrayerSoundSettings;
   /**
@@ -155,7 +157,7 @@ const DEFAULT_STATE: AppState = {
     prayerSchool: 0,
     darkMode: false,
     prayerSoundEnabled: {
-      Fajr: false,
+      Fajr: true,
       Dhuhr: true,
       Asr: true,
       Maghrib: true,

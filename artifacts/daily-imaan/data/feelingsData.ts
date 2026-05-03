@@ -47,7 +47,7 @@ export interface FeelingEntry {
         "Allahumma inni a'udhu bika minal-hammi wal-hazan, wa a'udhu bika minal-'ajzi wal-kasal",
       english:
         "O Allah, I seek refuge in You from worry and grief, and I seek refuge in You from helplessness and laziness.",
-      source: "Bukhari (from Anas ibn Malik رضي الله عنه)",
+      source: "Sahih al-Bukhari 6369 — Anas ibn Malik رضي الله عنه",
     },
     },
   {
@@ -66,7 +66,7 @@ export interface FeelingEntry {
         "Allahumma rahmataka arju, fala takilni ila nafsi tarfata 'ayn, wa aslih li sha'ni kullah",
       english:
         "O Allah, I hope for Your mercy, so do not leave me to myself even for the blink of an eye, and rectify all my affairs.",
-      source: "Abu Dawud",
+      source: "Sunan Abi Dawud 5090",
     },
     },
   {
@@ -84,7 +84,7 @@ export interface FeelingEntry {
         "Allahumma a'inni 'ala dhikrika wa shukrika wa husni 'ibadatik",
       english:
         "O Allah, help me to remember You, to thank You, and to worship You in the best manner.",
-      source: "Abu Dawud (from Mu'adh ibn Jabal رضي الله عنه)",
+      source: "Sunan Abi Dawud 1522 — Mu'adh ibn Jabal رضي الله عنه",
     },
     },
   {
@@ -103,7 +103,7 @@ export interface FeelingEntry {
         "Allahumma anta Rabbi la ilaha illa ant, khalaqtani wa ana 'abduk, abu'u laka bini'matika 'alayya, wa abu'u bidhanbi, faghfir li fa-innahu la yaghfirudh-dhunuba illa ant",
       english:
         "O Allah, You are my Lord, none has the right to be worshipped except You. You created me and I am Your servant. I acknowledge Your favor upon me and I acknowledge my sin, so forgive me — for none forgives sins except You.",
-      source: "Sayyid al-Istighfar — Bukhari",
+      source: "Sayyid al-Istighfar — Sahih al-Bukhari 6306",
     },
     },
   {
@@ -122,7 +122,7 @@ export interface FeelingEntry {
         "La ilaha illa anta subhanaka inni kuntu minaz-zalimin",
       english:
         "There is no deity except You; glory be to You. Indeed, I have been of the wrongdoers.",
-      source: "Du'a of Yunus عليه السلام — Quran 21:87",
+      source: "Du'a of Yunus عليه السلام — Surah Al-Anbiya 21:87",
     },
     },
   {
@@ -139,7 +139,7 @@ export interface FeelingEntry {
       transliteration: "Allahumma ihdini wa saddidni",
       english:
         "O Allah, guide me and make me steadfast.",
-      source: "Sahih Muslim 2725 — narrated by 'Ali ibn Abi Talib (رضي الله عنه)",
+      source: "Sahih Muslim 2725 — 'Ali ibn Abi Talib رضي الله عنه",
     },
     },
   {
@@ -156,7 +156,7 @@ export interface FeelingEntry {
       transliteration: "Ya muqallibal-qulub, thabbit qalbi 'ala dinik",
       english:
         "O Turner of hearts, keep my heart firm upon Your religion.",
-      source: "Tirmidhi (the Prophet ﷺ said this often)",
+      source: "Jami at-Tirmidhi 2140 — Anas ibn Malik رضي الله عنه",
     },
     },
   {
@@ -175,7 +175,7 @@ export interface FeelingEntry {
         "Hasbiyallahu la ilaha illa huwa, 'alayhi tawakkaltu, wa huwa Rabbul-'arshil-'azim",
       english:
         "Allah is sufficient for me. None has the right to be worshipped except Him. Upon Him I rely, and He is the Lord of the Magnificent Throne.",
-      source: "Abu Dawud — Quran 9:129",
+      source: "Sunan Abi Dawud 5081 — quoting Surah At-Tawbah 9:129",
     },
     },
 ];
