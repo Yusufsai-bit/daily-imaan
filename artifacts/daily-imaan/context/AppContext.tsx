@@ -62,6 +62,13 @@ export interface AppState {
   /** Schema version for future migrations. Bumped on breaking field changes. */
   version: number;
   bookmarks: number[];
+  /**
+   * Saved hadith IDs (stable string IDs from data/hadithData.ts → DailyHadith.id,
+   * which mirror the canonical sunnah.com reference numbers). Stored separately
+   * from ayah bookmarks because the keyspaces are different and conflating them
+   * would corrupt either list on read.
+   */
+  hadithBookmarks: string[];
   streak: StreakData;
   goodDeeds: Record<string, string[]>;
   settings: AppSettings;
@@ -73,6 +80,8 @@ interface AppContextType {
   state: AppState;
   toggleBookmark: (ayahId: number) => void;
   isBookmarked: (ayahId: number) => boolean;
+  toggleHadithBookmark: (hadithId: string) => void;
+  isHadithBookmarked: (hadithId: string) => boolean;
   markAyahRead: (ayahId: number) => void;
   toggleDeed: (deedId: string) => void;
   /**
@@ -94,6 +103,7 @@ const CURRENT_STATE_VERSION = 1;
 const DEFAULT_STATE: AppState = {
   version: CURRENT_STATE_VERSION,
   bookmarks: [],
+  hadithBookmarks: [],
   streak: { count: 0, lastActiveDate: "", longestStreak: 0 },
   goodDeeds: {},
   settings: {
@@ -163,6 +173,7 @@ function migrateState(saved: Partial<AppState>): AppState {
     settings: { ...DEFAULT_STATE.settings, ...(saved.settings ?? {}) },
     streak: { ...DEFAULT_STATE.streak, ...(saved.streak ?? {}) },
     bookmarks: Array.isArray(saved.bookmarks) ? saved.bookmarks : [],
+    hadithBookmarks: Array.isArray(saved.hadithBookmarks) ? saved.hadithBookmarks : [],
     readAyatIds: Array.isArray(saved.readAyatIds) ? saved.readAyatIds : [],
     goodDeeds:
       typeof saved.goodDeeds === "object" && saved.goodDeeds !== null
@@ -232,6 +243,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const isBookmarked = useCallback(
     (ayahId: number) => state.bookmarks.includes(ayahId),
     [state.bookmarks]
+  );
+
+  const toggleHadithBookmark = useCallback(
+    (hadithId: string) => {
+      updateState((prev) => ({
+        ...prev,
+        hadithBookmarks: prev.hadithBookmarks.includes(hadithId)
+          ? prev.hadithBookmarks.filter((id) => id !== hadithId)
+          : [...prev.hadithBookmarks, hadithId],
+      }));
+    },
+    [updateState]
+  );
+
+  const isHadithBookmarked = useCallback(
+    (hadithId: string) => state.hadithBookmarks.includes(hadithId),
+    [state.hadithBookmarks]
   );
 
   const markAyahRead = useCallback(
@@ -378,6 +406,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         state,
         toggleBookmark,
         isBookmarked,
+        toggleHadithBookmark,
+        isHadithBookmarked,
         markAyahRead,
         toggleDeed,
         markDeedDone,
