@@ -23,9 +23,10 @@ function Header() {
           16 Dhul-Qa&apos;dah 1447 AH
         </div>
       </div>
-      <div className="flex items-center gap-1 px-3 py-1.5 rounded-full" style={{ background: "var(--di-secondary)" }}>
-        <Leaf size={16} style={{ color: "var(--di-primary)" }} />
-        <span className="font-['Inter'] font-bold text-[16px]" style={{ color: "var(--di-fg)" }}>12</span>
+      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ background: "var(--di-secondary)" }}>
+        <Leaf size={15} style={{ color: "var(--di-primary)" }} />
+        <span className="font-['Inter'] font-bold text-[15px]" style={{ color: "var(--di-fg)" }}>12</span>
+        <span className="font-['Inter'] font-medium text-[12px]" style={{ color: "var(--di-muted-fg)" }}>day streak</span>
       </div>
     </div>
   );
