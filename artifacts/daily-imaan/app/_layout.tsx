@@ -26,6 +26,7 @@ import { SURAHS } from "@/data/surahsData";
 import {
   scheduleAyatNotifications,
   scheduleHadithNotification,
+  scheduleAdhkarNotifications,
 } from "@/hooks/useNotifications";
 import {
   initSentry,
@@ -110,6 +111,12 @@ function AppEffects() {
       state.settings.hadithReminderTime
     );
   }, [state.settings.dailyHadithReminderEnabled, state.settings.hadithReminderTime]);
+
+  // Morning + evening adhkar reminders — two daily nudges, default OFF.
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    scheduleAdhkarNotifications(state.settings.adhkarReminderEnabled);
+  }, [state.settings.adhkarReminderEnabled]);
 
   // Reschedule on foreground in case the user revisits after a long absence.
   const lastRescheduleDateRef = useRef<string>("");

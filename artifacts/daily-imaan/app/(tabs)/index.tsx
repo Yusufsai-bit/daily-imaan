@@ -700,12 +700,12 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* HADITH OF THE DAY — same secondary action vocabulary as the Ayat
-          card. No Listen button (no audio recitation in the app yet). */}
-      {state.settings.dailyHadithEnabled && (
-        <>
-          <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-            HADITH OF THE DAY
-          </Text>
+          card. No Listen button (no audio recitation in the app yet).
+          Always rendered: the hadith shortcut is a permanent home tile and
+          is no longer hideable from Settings. */}
+      <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+        HADITH OF THE DAY
+      </Text>
           <View style={[styles.contentCard, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#1A6B4A" }]}>
             <View style={styles.hadithHeaderRow}>
               <View
@@ -781,8 +781,6 @@ export default function HomeScreen() {
               <Ionicons name="chevron-forward" size={16} color={C.primary} {...a11yDecorative} />
             </Pressable>
           </View>
-        </>
-      )}
 
       {/* Feeling hero — soft horizontal gradient, full-opacity chevron. */}
       <Pressable

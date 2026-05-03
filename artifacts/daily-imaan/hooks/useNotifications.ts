@@ -260,6 +260,72 @@ export async function scheduleHadithNotification(
   }
 }
 
+/**
+ * Schedule (or cancel) the morning + evening adhkar reminders. When `enabled`
+ * is false, any existing daily_adhkar notifications are cancelled. Otherwise
+ * two DAILY triggers are created at sensible defaults (07:00 morning, 17:30
+ * evening). Body is generic — when the user opens the app they go to the
+ * adhkar list. Future enhancement: tie times to actual Fajr/Asr.
+ */
+export async function scheduleAdhkarNotifications(enabled: boolean): Promise<void> {
+  if (Platform.OS === "web") return;
+  try {
+    await Notifications.setNotificationCategoryAsync("daily_adhkar", [
+      {
+        identifier: "open",
+        buttonTitle: "Open Adhkar",
+        options: { opensAppToForeground: true },
+      },
+    ]);
+
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    for (const n of scheduled) {
+      if (n.content.categoryIdentifier === "daily_adhkar") {
+        try {
+          await Notifications.cancelScheduledNotificationAsync(n.identifier);
+        } catch {
+          /* already fired or cleared */
+        }
+      }
+    }
+
+    if (!enabled) return;
+
+    const granted = await requestNotificationPermission();
+    if (!granted) return;
+
+    // Morning adhkar — 07:00 local
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Morning Adhkar",
+        body: "Begin your day in Allah's protection.",
+        categoryIdentifier: "daily_adhkar",
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour: 7,
+        minute: 0,
+      },
+    });
+
+    // Evening adhkar — 17:30 local
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Evening Adhkar",
+        body: "Take refuge until Fajr — a few minutes of dhikr.",
+        categoryIdentifier: "daily_adhkar",
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour: 17,
+        minute: 30,
+      },
+    });
+  } catch (err) {
+    if (__DEV__) console.warn("[DailyImaan] scheduleAdhkarNotifications failed:", err);
+  }
+}
+
 export async function cancelAllNotifications(): Promise<void> {
   if (Platform.OS === "web") return;
   try {

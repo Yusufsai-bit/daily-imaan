@@ -33,12 +33,29 @@ import {
   a11yToggle,
 } from "@/components/a11y";
 
+// AlAdhan API method IDs. The list intentionally covers the major regional
+// authorities so users worldwide can pick the convention their local masjid
+// follows. For Australia/NZ, MWL is the most widely used. Adding a country-
+// specific Australian method isn't possible — no AlAdhan ID exists for it.
 const PRAYER_METHODS = [
-  { id: 2, label: "ISNA (North America)" },
-  { id: 1, label: "Muslim World League" },
-  { id: 3, label: "Egyptian General Authority" },
-  { id: 4, label: "Umm Al-Qura (Makkah)" },
-  { id: 5, label: "University of Islamic Sciences" },
+  { id: 1, label: "Muslim World League", hint: "Common default — Australia, NZ, UK, Europe, Africa" },
+  { id: 2, label: "ISNA (North America)", hint: "USA & Canada" },
+  { id: 3, label: "Egyptian General Authority", hint: "Egypt, parts of Africa, Levant" },
+  { id: 4, label: "Umm Al-Qura (Makkah)", hint: "Saudi Arabia" },
+  { id: 5, label: "University of Islamic Sciences, Karachi", hint: "Pakistan, Bangladesh, India, Afghanistan" },
+  { id: 8, label: "Gulf Region", hint: "UAE, Bahrain, Oman" },
+  { id: 9, label: "Kuwait", hint: "Kuwait" },
+  { id: 10, label: "Qatar", hint: "Qatar" },
+  { id: 11, label: "Singapore (MUIS)", hint: "Singapore" },
+  { id: 13, label: "Diyanet (Turkey)", hint: "Türkiye" },
+  { id: 15, label: "Moonsighting Committee", hint: "Global, Shawwal-corrected" },
+  { id: 17, label: "JAKIM (Malaysia)", hint: "Malaysia, parts of SE Asia" },
+  { id: 18, label: "Tunisia", hint: "Tunisia" },
+  { id: 19, label: "Algeria", hint: "Algeria" },
+  { id: 20, label: "KEMENAG (Indonesia)", hint: "Indonesia" },
+  { id: 21, label: "Morocco", hint: "Morocco" },
+  { id: 22, label: "Portugal (Comunidade Islâmica de Lisboa)", hint: "Portugal" },
+  { id: 23, label: "Jordan (Awqaf)", hint: "Jordan" },
 ];
 
 function SettingRow({
@@ -410,39 +427,26 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      {/* Daily Hadith — controls (a) whether the hadith card appears on the
-          home screen, and (b) whether a once-a-day push reminder fires.
-          Hadith content lives in data/hadithData.ts and is verbatim from sunnah.com. */}
+      {/* REMINDERS — single grouped section containing all opt-in nudges:
+          Daily Hadith reminder, Daily Ayah reminder, Morning/Evening Adhkar
+          reminder. Each is a sub-card with its own controls. The hadith
+          shortcut on the home screen is permanent and no longer toggleable. */}
       <View style={styles.section}>
-        <Text
-          maxFontSizeMultiplier={1.4}
-          style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
-        >
-          DAILY HADITH
-        </Text>
+        <View style={{ gap: 2, marginBottom: 8 }}>
+          <Text
+            maxFontSizeMultiplier={1.4}
+            style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+          >
+            REMINDERS
+          </Text>
+          <Text
+            maxFontSizeMultiplier={1.6}
+            style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+          >
+            Gentle nudges — turn on what helps you, leave the rest off
+          </Text>
+        </View>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
-          <SettingRow
-            icon="book-outline"
-            title="Show Daily Hadith"
-            subtitle="Adds a hadith shortcut to your home screen"
-            C={C}
-            right={
-              <Switch
-                value={settings.dailyHadithEnabled}
-                onValueChange={(val) => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  updateSettings({ dailyHadithEnabled: val });
-                }}
-                trackColor={{ false: C.border, true: C.primary }}
-                thumbColor="#fff"
-                {...a11yToggle(
-                  "Daily Hadith",
-                  settings.dailyHadithEnabled,
-                  "Shows or hides the Daily Hadith shortcut on the home screen",
-                )}
-              />
-            }
-          />
           <SettingRow
             icon="notifications-outline"
             title="Daily Hadith reminder"
@@ -574,22 +578,9 @@ export default function SettingsScreen() {
         )}
       </View>
 
-      {/* Daily Ayah reminders — master toggle gates the times list below. */}
+      {/* Daily Ayah reminders — master toggle gates the times list below.
+          Lives under the unified REMINDERS section above. */}
       <View style={styles.section}>
-        <View style={{ gap: 2, marginBottom: 8 }}>
-          <Text
-            maxFontSizeMultiplier={1.4}
-            style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
-          >
-            DAILY AYAH REMINDERS
-          </Text>
-          <Text
-            maxFontSizeMultiplier={1.6}
-            style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
-          >
-            Gentle nudges — no guilt, just a moment with Allah
-          </Text>
-        </View>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000", marginBottom: 12 }]}>
           <SettingRow
             icon="notifications-outline"
@@ -799,6 +790,50 @@ export default function SettingsScreen() {
         </Text>
       </View>
 
+      {/* Adhkar reminder — single toggle that schedules two daily nudges
+          (morning 07:00, evening 17:30). Lives under REMINDERS. */}
+      <View style={styles.section}>
+        <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+          <SettingRow
+            icon="leaf-outline"
+            title="Morning & Evening Adhkar reminder"
+            subtitle={
+              settings.adhkarReminderEnabled
+                ? "Two daily nudges — 7:00 AM and 5:30 PM"
+                : "Off — turn on for morning and evening adhkar reminders"
+            }
+            C={C}
+            last
+            right={
+              <Switch
+                value={settings.adhkarReminderEnabled}
+                onValueChange={async (val) => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  if (val && Platform.OS !== "web") {
+                    const granted = await requestNotificationPermission();
+                    if (!granted) {
+                      Alert.alert(
+                        "Notifications blocked",
+                        "Enable notifications for Daily Imaan in your device settings to receive adhkar reminders."
+                      );
+                      return;
+                    }
+                  }
+                  updateSettings({ adhkarReminderEnabled: val });
+                }}
+                trackColor={{ false: C.border, true: C.primary }}
+                thumbColor="#fff"
+                {...a11yToggle(
+                  "Morning and Evening Adhkar reminder",
+                  settings.adhkarReminderEnabled,
+                  "Schedules a morning nudge at 7am and an evening nudge at 5:30pm",
+                )}
+              />
+            }
+          />
+        </View>
+      </View>
+
       {/* Prayer Method */}
       <View style={styles.section}>
         <View style={{ gap: 2, marginBottom: 8 }}>
@@ -812,7 +847,9 @@ export default function SettingsScreen() {
             maxFontSizeMultiplier={1.6}
             style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
           >
-            Affects Fajr and Isha angles. ISNA matches IslamicFinder's default.
+            Affects Fajr and Isha angles. Pick the convention your local masjid follows.
+            For Australia, NZ, UK, and most of Europe and Africa, Muslim World League is the
+            common default.
           </Text>
         </View>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
@@ -820,7 +857,7 @@ export default function SettingsScreen() {
             <Pressable
               key={method.id}
               onPress={() => handleMethodSelect(method.id)}
-              {...a11ySelectable(method.label, settings.prayerMethod === method.id)}
+              {...a11ySelectable(`${method.label}. ${method.hint}`, settings.prayerMethod === method.id)}
               style={({ pressed }) => [
                 styles.methodRow,
                 i < PRAYER_METHODS.length - 1 && {
@@ -830,12 +867,20 @@ export default function SettingsScreen() {
                 { opacity: pressed ? 0.7 : 1 },
               ]}
             >
-              <Text
-                maxFontSizeMultiplier={1.6}
-                style={[styles.methodLabel, { color: C.foreground, fontFamily: "Inter_400Regular" }]}
-              >
-                {method.label}
-              </Text>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text
+                  maxFontSizeMultiplier={1.6}
+                  style={[styles.methodLabel, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+                >
+                  {method.label}
+                </Text>
+                <Text
+                  maxFontSizeMultiplier={1.6}
+                  style={{ color: C.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 12 }}
+                >
+                  {method.hint}
+                </Text>
+              </View>
               {settings.prayerMethod === method.id && (
                 <Ionicons name="checkmark-circle" size={20} color={C.primary} {...a11yDecorative} />
               )}

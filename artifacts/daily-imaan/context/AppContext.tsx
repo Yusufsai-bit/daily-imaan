@@ -31,13 +31,6 @@ export interface AppSettings {
    */
   reciter: string;
   /**
-   * When true, the home screen surfaces a "Daily Hadith" shortcut that
-   * opens a curated authentic hadith for the day. Defaults to ON. Users
-   * who prefer to keep the home screen Quran-only can hide it from
-   * Settings without affecting any other functionality.
-   */
-  dailyHadithEnabled: boolean;
-  /**
    * Master switch for the daily ayah reminder notification(s). When OFF,
    * `notificationTimes` is ignored at scheduling time and no ayah pushes
    * are scheduled. Defaults to OFF — reminders are an opt-in feature so
@@ -51,6 +44,13 @@ export interface AppSettings {
   dailyHadithReminderEnabled: boolean;
   /** HH:MM (24h) for the daily hadith reminder. Defaults to "20:00". */
   hadithReminderTime: string;
+  /**
+   * Master switch for the morning + evening adhkar reminders. When ON,
+   * two daily nudges are scheduled — morning (07:00) and evening (17:30).
+   * Defaults to OFF. Times are sensible global defaults; future enhancement
+   * can tie them to actual Fajr/Asr from usePrayerTimes.
+   */
+  adhkarReminderEnabled: boolean;
   /**
    * Crash-reporting opt-out. When false, Sentry capture functions early-exit
    * even if Sentry was initialized. Defaults to ON because anonymized stack
@@ -162,10 +162,10 @@ const DEFAULT_STATE: AppState = {
       Isha: true,
     },
     reciter: DEFAULT_RECITER_ID,
-    dailyHadithEnabled: true,
     dailyAyahReminderEnabled: false,
     dailyHadithReminderEnabled: false,
     hadithReminderTime: "20:00",
+    adhkarReminderEnabled: false,
     crashReportsEnabled: true,
     mushafMode: false,
   },
