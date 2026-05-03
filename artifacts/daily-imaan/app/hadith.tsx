@@ -53,7 +53,7 @@ export default function HadithScreen() {
   const handleShare = useCallback(async () => {
     try {
       await Share.share({
-        message: `${hadith.arabicText}\n\n"${hadith.englishText}"\n\n— Narrated by ${hadith.narrator}\n${hadith.collection} ${hadith.reference} (${hadith.grade})\n\nShared via Daily Imaan`,
+        message: `${hadith.arabicText}\n\n"${hadith.englishText}"\n\n— ${hadith.collection} ${hadith.reference}${hadith.grade ? ` (${hadith.grade})` : ""}\n${hadith.bookTitle}\n\nShared via Daily Imaan`,
       });
     } catch {
       // ignore
@@ -96,7 +96,7 @@ export default function HadithScreen() {
           maxFontSizeMultiplier={1.4}
           style={[styles.subtitle, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
         >
-          One sahih hadith a day — verbatim from sunnah.com.
+          One hadith a day from Riyad as-Salihin — verbatim from sunnah.com.
         </Text>
       </View>
 
@@ -128,24 +128,26 @@ export default function HadithScreen() {
           "{hadith.englishText}"
         </Text>
 
-        {/* Attribution */}
+        {/* Chapter / book context within Riyad as-Salihin */}
         <Text
           maxFontSizeMultiplier={1.4}
           style={[styles.narrator, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}
         >
-          Narrated by {hadith.narrator}
+          {hadith.bookTitle}
         </Text>
 
-        {/* Grade chip */}
-        <View style={[styles.gradeChip, { backgroundColor: isDark ? "rgba(45,191,127,0.12)" : "rgba(26,107,74,0.07)" }]}>
-          <Ionicons name="shield-checkmark-outline" size={12} color={C.primary} {...a11yDecorative} />
-          <Text
-            maxFontSizeMultiplier={1.3}
-            style={[styles.gradeText, { color: C.primary, fontFamily: "Inter_500Medium" }]}
-          >
-            Grade: {hadith.grade}
-          </Text>
-        </View>
+        {/* Grade chip — only when sunnah.com publishes a grading for this hadith */}
+        {hadith.grade ? (
+          <View style={[styles.gradeChip, { backgroundColor: isDark ? "rgba(45,191,127,0.12)" : "rgba(26,107,74,0.07)" }]}>
+            <Ionicons name="shield-checkmark-outline" size={12} color={C.primary} {...a11yDecorative} />
+            <Text
+              maxFontSizeMultiplier={1.3}
+              style={[styles.gradeText, { color: C.primary, fontFamily: "Inter_500Medium" }]}
+            >
+              Grade: {hadith.grade}
+            </Text>
+          </View>
+        ) : null}
 
         {/* Source CTA — opens sunnah.com so the user can read the full
             isnad and footnotes. We never paraphrase the hadith ourselves. */}

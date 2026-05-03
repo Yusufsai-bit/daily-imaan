@@ -597,7 +597,7 @@ export default function HomeScreen() {
                   numberOfLines={1}
                   style={[styles.shortcutSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
                 >
-                  {getTodayHadith().collection} · sahih
+                  {getTodayHadith().collection}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} {...a11yDecorative} />
