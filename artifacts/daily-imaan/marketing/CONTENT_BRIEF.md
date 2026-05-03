@@ -93,47 +93,47 @@ Every post is **1080 × 1350** px (Instagram portrait 4:5).
 - **EB Garamond Italic** — English serif body for verses, hadith, du'a translations, reminder fragments
 - **Amiri** — Arabic, always with full Uthmani diacritics, never italicised
 
-### Shared layout (used by all 6 templates)
+### Shared layout (used by all 5 templates)
 
 ```
 ┌──────────────────────────────────────────────┐
-│                                              │  ← top margin ~96px
-│           Daily Imaan                        │  ← wordmark, Inter SemiBold, sage
-│           ───                                │
-│           SUB-LABEL · MUTE                   │  ← Inter Medium, +1.5 tracking, 14pt, muted
+│                                              │  ← top margin ~120px
+│             DAILY  IMAAN                     │  ← wordmark, Inter Bold, UPPERCASE, sage, +6pt tracking
+│                                              │
+│             SUB-LABEL · 50:16                │  ← Inter Medium, UPPERCASE, +4pt tracking, 16pt, dark muted
 │                                              │
 │                                              │
 │         [BODY REGION — varies                │  ← centered, generous whitespace
 │          per template]                       │
 │                                              │
-│              ───                             │  ← short gold rule, ~80px wide, gold
-│                                              │
-│         [Citation / source line]             │  ← Inter Medium, muted
+│              ───                             │  ← short gold rule, ~70px wide, gold
 │                                              │
 │                                              │
 │  ───────────────────────────────────────     │  ← full-width hairline
-│  Verbatim · Saheeh International            @dailyimaanapp │  ← attribution row
+│                                              │
+│            SAHEEH INTERNATIONAL              │  ← source line, Inter SemiBold, UPPERCASE, sage, +3pt tracking
+│            @DAILYIMAANAPP                    │  ← handle, Inter SemiBold, UPPERCASE, dark, +3pt tracking
 └──────────────────────────────────────────────┘
                                                  ← bottom margin ~96px
 ```
 
 **Hard frame rules:**
 
-- Wordmark "Daily Imaan" sits top-center, sage, never larger than 32pt.
-- Sub-label is an all-caps muted string just below the wordmark — it identifies the *kind* of post (`QUR'AN`, `HADITH`, `DU'A`, `REMINDER`, `NAME OF ALLAH`, `THE APP`).
+- Wordmark is always **`DAILY IMAAN`** — uppercase, Inter Bold ~26pt, sage, with generous letter-spacing (~6pt). Never lowercase, never italic, never larger than 28pt.
+- Sub-label is an all-caps dark-muted string just below the wordmark — it identifies the *kind* of post and (where applicable) the citation reference (`QUR'AN · SURAH QAF 50:16`, `HADITH · BUKHARI 1`, `DU'A · WHEN ANXIOUS`, `NAMES OF ALLAH · 1 / 99`, `THE APP · STREAK`).
 - Body region is the visual hero. Maximum margin everywhere — silence is part of the design.
-- Short gold rule (~80px) sits between body and citation. This is the only place gold ever appears, with the single exception of the Hadith grade chip (see template 2).
-- Footer row is always: left = attribution string (e.g. `Verbatim · Saheeh International`), right = `@dailyimaanapp`. Inter Medium 18pt, muted.
+- Short gold rule (~70px) sits between body and the optional citation/transliteration line. This is the only place gold ever appears, with the single exception of the Hadith grade chip (see template 2).
+- Footer is **two centered lines**, stacked: source attribution on top (uppercase tracked sage SemiBold, e.g. `SAHEEH INTERNATIONAL`, `SUNNAH.COM`), the handle `@DAILYIMAANAPP` directly below it (same tracking, dark foreground). The legacy `Verbatim · …` prefix is removed — the source name alone is enough.
 - **No post number.** No "01/20". No carousel index. Ever.
 
 ### Logo usage on posts
 
 The Daily Imaan logo is the profile avatar — viewers already see it next to every post in the feed. Repeating it on the post body is clutter and competes with sacred text. Treat it as off-canvas by default.
 
-- **Cream post bodies (Templates 1, 2, 3 — Qur'an / Hadith / Du'a): no logo image.** Attribution lives entirely in the text footer (`Verbatim · Saheeh International   @dailyimaanapp`).
-- **Sage post bodies (Templates 4, 5 — Reminder / Asma ul-Husna): no logo image.** Same footer rule.
-- **App Feature posts (Template 6) only:** the logo *is* the subject — place `marketing/logo/master/daily-imaan-icon-1024.png` at ~55–65 % of the canvas width, centered above the headline. This is the only template where the logo image appears.
-- **Never** use the logo as a corner watermark or stamp on Quran, Hadith, Du'a, Reminder, or Asma ul-Husna posts.
+- **Cream post bodies (Templates 1, 2, 3 — Qur'an / Hadith / Du'a): no logo image.** Attribution lives entirely in the text footer.
+- **Sage post body (Template 4 — Asma ul-Husna): no logo image.** Same footer rule.
+- **App Feature posts (Template 5) only:** the logo *is* the subject — place `marketing/logo/master/daily-imaan-icon-1024.png` at ~55–65 % of the canvas width, centered above the headline. This is the only template where the logo image appears.
+- **Never** use the logo as a corner watermark or stamp on Qur'an, Hadith, Du'a, or Asma ul-Husna posts.
 - **Wordless 🌙 crescent emoji** may still appear in captions (sparingly), as before — but never inside the rendered post canvas.
 
 ### Theme assignment per template
@@ -143,23 +143,22 @@ The Daily Imaan logo is the profile avatar — viewers already see it next to ev
 | 1 | Qur'an Ayah | Cream `#F2F0EC` |
 | 2 | Hadith | Cream `#F2F0EC` |
 | 3 | Du'a | Cream `#F2F0EC` |
-| 4 | Reminder | Sage `#1A6B4A` (cream foreground inverted) |
-| 5 | Asma ul-Husna | Sage `#1A6B4A` |
-| 6 | App Feature | Sage `#1A6B4A` |
+| 4 | Asma ul-Husna | Sage `#1A6B4A` |
+| 5 | App Feature | Sage `#1A6B4A` |
 
 On sage backgrounds, foreground swaps to cream `#F2F0EC` and muted swaps to a soft sage `#A8C7B8`.
 
 ---
 
-## 5. The 6 templates
+## 5. The 5 templates
 
 ### Template 1 — Qur'an Ayah (cream)
 
 **Sub-label:** `QUR'AN · SURAH [NAME] [C:V]`
 **Body fields:**
-1. Arabic line (Amiri, ~64pt, with diacritics) — required
-2. English translation (EB Garamond Italic, ~30pt, line-height 1.4) — verbatim Saheeh International
-3. Citation line (Inter Medium, ~22pt, muted): `Surah [Name] [c:v] · Saheeh International`
+1. Arabic line (Amiri, ~70pt, with diacritics) — required
+2. English translation (EB Garamond Regular, ~36pt, line-height 1.35) — verbatim Saheeh International. **Not italic.**
+3. Source name appears in the centered footer block (e.g. `SAHEEH INTERNATIONAL`). No inline citation line is needed when the sub-label already carries the surah:ayah reference.
 
 **Sourcing rule:** English text MUST match `quran.com/[surah]/[ayah]/saheeh-international` character-for-character. If unsure, omit the post.
 
@@ -177,12 +176,12 @@ On sage backgrounds, foreground swaps to cream `#F2F0EC` and muted swaps to a so
 
 ### Template 2 — Hadith (cream)
 
-**Sub-label:** `HADITH · [COLLECTION]`
+**Sub-label:** `HADITH · [COLLECTION] [BOOK:NUMBER]` (e.g. `HADITH · BUKHARI 1`)
 **Body fields:**
-1. English hadith text (EB Garamond Italic, ~30pt) — verbatim from the cited collection's standard translation
-2. Narrator line (Inter Italic, ~20pt, muted): `Narrated by [Companion]` — only if the narrator is essential context
-3. Citation line (Inter Medium, ~22pt, muted): `[Collection] [book:number]`
-4. **Grade chip** (Inter SemiBold, ~16pt, gold pill background, dark foreground): `SAHIH` / `HASAN` / `DA'IF` — required
+1. English hadith text (EB Garamond Regular, ~36pt) — verbatim from the cited collection's standard translation. **Not italic.**
+2. Narrator line (Inter, ~20pt, dark muted): `Narrated by [Companion]` — only if the narrator is essential context
+3. **Grade chip** (Inter SemiBold, ~16pt, gold pill background, dark foreground): `SAHIH` / `HASAN` / `DA'IF` — required
+4. Source name `SUNNAH.COM` lives in the centered footer block. The collection + reference is already in the sub-label.
 
 **Sourcing rule:** Text MUST be verifiable at `sunnah.com/[collection slug]/[book]:[number]`. Use only the canonical Saheeh-grade chains unless explicitly publishing a Hasan-graded supplication.
 
@@ -201,12 +200,12 @@ On sage backgrounds, foreground swaps to cream `#F2F0EC` and muted swaps to a so
 
 ### Template 3 — Du'a (cream)
 
-**Sub-label:** `DU'A · [OCCASION OR CATEGORY]`
+**Sub-label:** `DU'A · [OCCASION OR CATEGORY] · [REFERENCE]` (e.g. `DU'A · WHEN ANXIOUS · ALI 'IMRAN 3:173`)
 **Body fields:**
-1. Arabic du'a (Amiri, ~58pt, full diacritics) — required
-2. Transliteration (EB Garamond Italic, ~22pt, muted) — optional but encouraged
-3. English translation (EB Garamond Italic, ~28pt) — verbatim
-4. Citation line (Inter Medium, ~22pt, muted): `[Source] · [Reference]`
+1. Arabic du'a (Amiri, ~64pt, full diacritics) — required
+2. Transliteration (EB Garamond Italic, ~26pt, dark muted) — **always required** (we like the transliteration line; it stays on every du'a post)
+3. English translation (EB Garamond Regular, ~32pt) — verbatim. **Not italic.**
+4. Source name appears in the centered footer block (e.g. `SAHEEH INTERNATIONAL` for Qur'anic du'as, `SUNNAH.COM` for Hisn al-Muslim du'as).
 
 **Sourcing rule:** Du'a must be from the Qur'an or from `sunnah.com` — typically Hisn al-Muslim entries map to a hadith collection. Do not post du'as you cannot trace.
 
@@ -223,43 +222,15 @@ On sage backgrounds, foreground swaps to cream `#F2F0EC` and muted swaps to a so
 
 ---
 
-### Template 4 — Reminder (sage) — **A+B mix**
-
-This template replaces the old "brand voice quote" template. The Reminder template publishes **only short verbatim fragments** of Qur'an or hadith. We do not write reminder copy.
-
-**Sub-label:**
-- For Qur'an fragments: `REMINDER · QUR'AN [C:V]`
-- For hadith fragments: `REMINDER · [COLLECTION SHORT NAME]`
-
-**Body fields:**
-1. The fragment in EB Garamond Italic, ~52pt, cream foreground on sage — verbatim, ≤ 8 English words for Qur'an, ≤ 12 English words for hadith
-2. Citation line (Inter Medium, ~22pt, soft sage muted): `Surah [Name] [c:v] · Saheeh International` OR `[Collection] [book:number]`
-
-**Sourcing rule:** Pull from the candidate bank in §6 OR propose a new fragment that meets the length cap AND has a verifiable URL on `quran.com` (with `/saheeh-international`) or `sunnah.com`. The LLM MUST include the verification URL as a separate field in the Output Schema for new fragments. If the fragment is from the candidate bank, the URL field can be the bank entry's reference number.
-
-**No accent except the gold rule.** No grade chip on Reminders — citation alone carries authority.
-
-**Worked example (Qur'an fragment):**
-- Sub-label: `REMINDER · QUR'AN 57:4`
-- Body: `And He is with you wherever you are.`
-- Citation: `Surah Al-Hadid 57:4 · Saheeh International`
-
-**Worked example (hadith fragment):**
-- Sub-label: `REMINDER · BUKHARI`
-- Body: `Make things easy and do not make them difficult.`
-- Citation: `Sahih al-Bukhari 69`
-
----
-
-### Template 5 — Asma ul-Husna (sage)
+### Template 4 — Asma ul-Husna (sage)
 
 **Sub-label:** `NAMES OF ALLAH · [N] / 99` (e.g. `NAMES OF ALLAH · 14 / 99`)
 
 **Body fields:**
-1. Arabic name (Amiri, ~96pt, cream on sage, with diacritics) — e.g. `ٱلرَّحْمَٰنُ`
-2. Transliteration (Inter SemiBold, ~28pt, +1pt tracking, soft cream): `Ar-Raḥmān`
-3. English meaning (EB Garamond Italic, ~30pt, cream): `The Most Compassionate`
-4. Citation line (Inter Medium, ~22pt, soft sage muted) — the verse where the name is established or first appears prominently: `Surah [Name] [c:v] · Saheeh International`
+1. Arabic name (Amiri, ~140pt, cream on sage, with diacritics) — e.g. `ٱلرَّحْمَٰنُ`
+2. Transliteration (Inter SemiBold, ~32pt, +2pt tracking, soft cream): `Ar-Raḥmān`
+3. English meaning (EB Garamond Regular, ~32pt, cream): `The Most Compassionate`. **Not italic.**
+4. Footer source line (e.g. `SAHEEH INTERNATIONAL`) — no inline citation needed; if you want to anchor the name in a specific verse, add it as a small dark-muted line above the gold rule (Inter Medium ~20pt).
 
 **Sourcing rule:** Use the canonical 99 Names list. The citation is a verse from the Qur'an where the name appears (Saheeh International).
 
@@ -274,17 +245,17 @@ This template replaces the old "brand voice quote" template. The Reminder templa
 
 ---
 
-### Template 6 — App Feature (sage)
+### Template 5 — App Feature (sage) — **the only template with the logo on canvas**
 
 This is the only template that may speak in the brand's own voice — because it is describing the app, not quoting scripture.
 
 **Sub-label:** `THE APP · [FEATURE NAME]` (e.g. `THE APP · STREAK`, `THE APP · DUAS LIBRARY`, `THE APP · TAFSIR`, `THE APP · OFFLINE`)
 
 **Body fields:**
-1. Headline (Inter SemiBold, ~46pt, cream): one short sentence describing the feature — ≤ 60 chars
-2. Sub-line (EB Garamond Italic, ~26pt, soft cream): one supporting sentence — ≤ 100 chars
-3. Optional phone mockup graphic (centered, ~40% width) — used for visual features like Streak or the Duas grid
-4. Footer attribution row (already part of the brand frame) carries the call to mind: `@dailyimaanapp` is sufficient. **No "Download now" CTA.** No app-store badges in the body.
+1. **Logo image** (`marketing/logo/master/daily-imaan-icon-1024.png`) — centered, ~55–65 % of canvas width, sitting above the headline. This is the only template where the logo image appears on canvas.
+2. Headline (Inter SemiBold, ~46pt, cream): one short sentence describing the feature — ≤ 60 chars
+3. Sub-line (EB Garamond Italic, ~28pt, soft cream): one supporting sentence — ≤ 100 chars
+4. Footer carries `@DAILYIMAANAPP` alone (the source line above it can read `A DAILY ISLAMIC COMPANION` or simply be omitted). **No "Download now" CTA.** No app-store badges in the body.
 
 **Voice rules for this template only:**
 - Lowercase-friendly, calm.
@@ -299,47 +270,7 @@ This is the only template that may speak in the brand's own voice — because it
 
 ---
 
-## 6. Reminder candidate bank
-
-Use these for Template 4. Each entry is verified verbatim. New fragments not in this bank must include a verification URL in the Output Schema and pass the same length cap.
-
-### Qur'an fragments (Saheeh International) — ≤ 8 English words
-
-| # | English | Citation | Verify at |
-|---|---|---|---|
-| Q1 | `So remember Me; I will remember you.` | Surah Al-Baqarah 2:152 | quran.com/2/152/saheeh-international |
-| Q2 | `For indeed, with hardship [will be] ease.` | Surah Ash-Sharh 94:6 | quran.com/94/6/saheeh-international |
-| Q3 | `And He is with you wherever you are.` | Surah Al-Hadid 57:4 | quran.com/57/4/saheeh-international |
-| Q4 | `Indeed, my Lord is near and responsive.` | Surah Hud 11:61 | quran.com/11/61/saheeh-international |
-| Q5 | `Allah does not burden a soul beyond that it can bear.` | Surah Al-Baqarah 2:286 | quran.com/2/286/saheeh-international |
-| Q6 | `My Lord, increase me in knowledge.` | Surah Ta-Ha 20:114 | quran.com/20/114/saheeh-international |
-| Q7 | `And to Allah belongs the east and the west.` | Surah Al-Baqarah 2:115 | quran.com/2/115/saheeh-international |
-| Q8 | `In the remembrance of Allah hearts find rest.` | Surah Ar-Ra'd 13:28 | quran.com/13/28/saheeh-international |
-| Q9 | `Sufficient for us is Allah.` | Surah Ali 'Imran 3:173 | quran.com/3/173/saheeh-international |
-| Q10 | `Call upon Me; I will respond to you.` | Surah Ghafir 40:60 | quran.com/40/60/saheeh-international |
-
-> **Note for the LLM:** Some Saheeh International renderings include bracketed words like `[will be]`. Preserve them exactly. The fragments above are short surface-level samples; before publishing, the user (or you) should re-check each entry against quran.com to confirm wording matches their current canonical translation, since editors do refresh translations occasionally.
-
-### Hadith fragments — ≤ 12 English words
-
-| # | English | Citation | Verify at |
-|---|---|---|---|
-| H1 | `Actions are but by intentions.` | Sahih al-Bukhari 1 | sunnah.com/bukhari:1 |
-| H2 | `None of you truly believes until he loves for his brother what he loves for himself.` *(13 words — borderline; use as a 2-line break if visually needed)* | Sahih al-Bukhari 13 | sunnah.com/bukhari:13 |
-| H3 | `Make things easy and do not make them difficult.` | Sahih al-Bukhari 69 | sunnah.com/bukhari:69 |
-| H4 | `The strong is the one who controls himself when angry.` | Sahih al-Bukhari 6114 | sunnah.com/bukhari:6114 |
-| H5 | `Whoever believes in Allah and the Last Day should speak good or remain silent.` | Sahih al-Bukhari 6018 | sunnah.com/bukhari:6018 |
-| H6 | `Cleanliness is half of faith.` | Sahih Muslim 223 | sunnah.com/muslim:223 |
-| H7 | `Your smile for your brother is charity.` | Jami' at-Tirmidhi 1956 | sunnah.com/tirmidhi:1956 |
-| H8 | `The merciful are shown mercy by the Most Merciful.` | Jami' at-Tirmidhi 1924 | sunnah.com/tirmidhi:1924 |
-| H9 | `The best among you are those who have the best manners.` | Sahih al-Bukhari 6035 | sunnah.com/bukhari:6035 |
-| H10 | `Allah is gentle and loves gentleness.` | Sahih Muslim 2593 | sunnah.com/muslim:2593 |
-
-> **Note for the LLM:** English wording on sunnah.com varies slightly across translation editions. Always copy the exact phrasing shown on the linked page. If the live page differs from the bank entry above, the live page wins — flag the diff in your output.
-
----
-
-## 7. Caption voice (the text under the post)
+## 6. Caption voice (the text under the post)
 
 Captions are short, lowercase-friendly, and end in stillness. Often one sentence. Never more than 3 short lines of body, plus one source attribution line, plus a hashtag line of ≤ 3 tags.
 
@@ -347,8 +278,8 @@ Captions are short, lowercase-friendly, and end in stillness. Often one sentence
 
 | Post | Caption |
 |---|---|
-| Surah Al-Baqarah 2:152 | `A single verse. A complete relationship.` `Verbatim from Saheeh International.` `#dailyimaan #quran #saheeh` |
-| Surah Ash-Sharh 94:6 | `Not after. With.` `Verbatim from Saheeh International.` `#dailyimaan #patience #quran` |
+| Surah Al-Baqarah 2:152 | `A single verse. A complete relationship.` `#dailyimaan #quran #saheeh` |
+| Surah Ash-Sharh 94:6 | `Not after. With.` `#dailyimaan #patience #quran` |
 | Surah An-Nisa 4:81 | `Hand it over.` `#dailyimaan #tawakkul #quran` |
 | Surah Ar-Ra'd 13:28 | `When the noise rises, this is the way down.` `#dailyimaan #dhikr #quran` |
 | Surah Az-Zumar 39:53 | `All. Not most.` `#dailyimaan #mercy #quran` |
@@ -365,7 +296,7 @@ Captions are short, lowercase-friendly, and end in stillness. Often one sentence
 
 ---
 
-## 8. Hard rules — never violate (LLM self-check before returning each post)
+## 7. Hard rules — never violate (LLM self-check before returning each post)
 
 Before returning each post, the LLM must walk through this checklist and confirm each item. Include the checklist result in the Output Schema (`hard_rules_passed: true|false` plus a `notes` field for any item that needed adjustment).
 
@@ -375,34 +306,33 @@ Before returning each post, the LLM must walk through this checklist and confirm
 4. **Handle correct** — any reference to the IG handle uses `@dailyimaanapp` exactly. (The brand frame already places it in the footer, but if a caption mentions the handle, it must match.)
 5. **No emoji in sacred text** — Arabic and English body fields contain zero emoji. Captions may use 🌙 sparingly; nothing else.
 6. **No paraphrase, no commentary** — no "what this means" sentences appended to the body. The Du'a transliteration is allowed because it is mechanical, not interpretive.
-7. **Length cap respected** — Qur'an Ayah English ≤ 200 chars; Hadith English ≤ 240 chars; Reminder Qur'an ≤ 8 English words; Reminder hadith ≤ 12 English words; Du'a Arabic ≤ 12 words; App Feature headline ≤ 60 chars.
+7. **Length cap respected** — Qur'an Ayah English ≤ 200 chars; Hadith English ≤ 240 chars; Du'a Arabic ≤ 12 words; App Feature headline ≤ 60 chars.
 8. **No pressure language** — captions and App Feature copy contain no urgency, guilt, streak-loss, countdowns, or premium-tier framing.
 
 If any item fails, regenerate the post or skip it. Never relax a rule to ship a post.
 
 ---
 
-## 9. Output Schema
+## 8. Output Schema
 
 Return one fenced markdown block per post, in this exact shape:
 
 ```yaml
 post_id: <free string, e.g. "ayah-2-152">
-template: <one of: quran-ayah | hadith | dua | reminder | asma-ul-husna | app-feature>
-sub_label: <the all-caps muted string for the top of the post>
+template: <one of: quran-ayah | hadith | dua | asma-ul-husna | app-feature>
+sub_label: <the all-caps tracked string for the top of the post>
 
 body:
   arabic: <Arabic text with full diacritics, or null>
-  transliteration: <Latin-script transliteration, or null>
+  transliteration: <Latin-script transliteration, or null>     # required for dua, optional otherwise
   english: <verbatim English text, or null>
-  narrator: <"Narrated by ..." string, or null>          # hadith only
-  grade: <SAHIH | HASAN | DA'IF, or null>                # hadith only
-  headline: <App Feature headline, or null>              # app-feature only
-  subline: <App Feature sub-line, or null>               # app-feature only
-  phone_mockup: <short description, or null>             # app-feature only
+  narrator: <"Narrated by ..." string, or null>                # hadith only
+  grade: <SAHIH | HASAN | DA'IF, or null>                      # hadith only
+  headline: <App Feature headline, or null>                    # app-feature only
+  subline: <App Feature sub-line, or null>                     # app-feature only
 
-citation: <citation string exactly as it should appear under the body>
-verify_url: <quran.com or sunnah.com URL — required for reminder; recommended otherwise>
+footer_source: <UPPERCASE source name for the footer, e.g. "SAHEEH INTERNATIONAL", "SUNNAH.COM", or "A DAILY ISLAMIC COMPANION" for app-feature>
+verify_url: <quran.com or sunnah.com URL — strongly recommended; required for any new fragment not pulled from a canonical reference>
 
 caption: |
   <line 1 of caption>
@@ -429,14 +359,12 @@ body:
   grade: null
   headline: null
   subline: null
-  phone_mockup: null
 
-citation: "Surah Ash-Sharh 94:6 · Saheeh International"
+footer_source: "SAHEEH INTERNATIONAL"
 verify_url: "https://quran.com/94/6/saheeh-international"
 
 caption: |
   Not after. With.
-  Verbatim from Saheeh International.
 hashtags: ["#dailyimaan", "#patience", "#quran"]
 
 hard_rules_passed: true
@@ -445,8 +373,8 @@ notes: null
 
 ---
 
-## 10. One-line summary
+## 9. One-line summary
 
-> **Verbatim. Sourced. Quiet.**
+> **Sourced. Quiet. Verbatim.**
 
 If a post fails any of those three words, it does not ship.
