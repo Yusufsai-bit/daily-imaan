@@ -106,6 +106,12 @@ export interface AppState {
    * top level (not in settings) so it cannot be reset by a settings reset.
    */
   welcomeSeen: boolean;
+  /**
+   * Soft home-screen tip banner ("Want a daily reminder? Enable in Settings")
+   * dismissal flag. Once true, the banner never re-appears. Also auto-hides
+   * via render-time check when the user has actually enabled a reminder.
+   */
+  homeTipDismissed: boolean;
 }
 
 interface AppContextType {
@@ -129,6 +135,8 @@ interface AppContextType {
   setLastReadPosition: (pos: LastReadPosition) => void;
   /** Mark the first-launch welcome flow as completed. Idempotent. */
   setWelcomeSeen: () => void;
+  /** Permanently dismiss the home-screen reminder tip banner. Idempotent. */
+  dismissHomeTip: () => void;
   loaded: boolean;
 }
 
@@ -164,6 +172,7 @@ const DEFAULT_STATE: AppState = {
   readAyatIds: [],
   lastReadPosition: null,
   welcomeSeen: false,
+  homeTipDismissed: false,
 };
 
 const STORAGE_KEY = "@daily_imaan_state";
@@ -221,6 +230,8 @@ function migrateState(saved: Partial<AppState>): AppState {
         : {},
     lastReadPosition: saved.lastReadPosition ?? null,
     welcomeSeen: typeof saved.welcomeSeen === "boolean" ? saved.welcomeSeen : false,
+    homeTipDismissed:
+      typeof saved.homeTipDismissed === "boolean" ? saved.homeTipDismissed : false,
     version: CURRENT_STATE_VERSION,
   };
 }
@@ -426,6 +437,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     updateState((prev) => (prev.welcomeSeen ? prev : { ...prev, welcomeSeen: true }));
   }, [updateState]);
 
+  const dismissHomeTip = useCallback(() => {
+    updateState((prev) =>
+      prev.homeTipDismissed ? prev : { ...prev, homeTipDismissed: true }
+    );
+  }, [updateState]);
+
   const setLastReadPosition = useCallback(
     (pos: LastReadPosition) => {
       updateState((prev) => {
@@ -462,6 +479,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         incrementStreak,
         setLastReadPosition,
         setWelcomeSeen,
+        dismissHomeTip,
         loaded,
       }}
     >

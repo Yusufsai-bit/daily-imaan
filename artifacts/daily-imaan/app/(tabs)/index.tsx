@@ -123,6 +123,7 @@ export default function HomeScreen() {
     toggleBookmark, isBookmarked,
     toggleHadithBookmark, isHadithBookmarked,
     incrementStreak, markAyahRead,
+    dismissHomeTip,
   } = useApp();
   const {
     nextPrayer, prayerTimes, hijri, refresh: refreshPrayerTimes, loading: prayerLoading,
@@ -414,6 +415,60 @@ export default function HomeScreen() {
           <Text style={[styles.pillTitle, { fontFamily: "Inter_500Medium" }]}>Qibla</Text>
         </Pressable>
       </View>
+
+      {/* Soft reminder tip banner — shown only when the user has finished
+          welcome, has not dismissed the tip, and has not yet enabled either
+          of the two daily reminders. Tapping opens Settings; the X dismisses
+          permanently. Intentionally low-key so it doesn't compete with the
+          prayer/qibla pills above. */}
+      {state.welcomeSeen &&
+        !state.homeTipDismissed &&
+        !state.settings.dailyAyahReminderEnabled &&
+        !state.settings.dailyHadithReminderEnabled && (
+          <View style={[styles.tipBanner, { backgroundColor: C.secondary, borderColor: C.border }]}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push("/settings" as never);
+              }}
+              {...a11yButton(
+                "Enable a daily reminder",
+                "Opens Settings to turn on a daily ayah or hadith reminder",
+              )}
+              style={({ pressed }) => [styles.tipBannerBody, { opacity: pressed ? 0.7 : 1 }]}
+            >
+              <View style={[styles.tipBannerIcon, { backgroundColor: C.background }]}>
+                <Ionicons name="notifications-outline" size={16} color={C.primary} {...a11yDecorative} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  maxFontSizeMultiplier={1.5}
+                  style={[styles.tipBannerTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}
+                >
+                  Want a gentle daily nudge?
+                </Text>
+                <Text
+                  maxFontSizeMultiplier={1.5}
+                  style={[styles.tipBannerSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+                >
+                  Turn on a daily ayah or hadith reminder in Settings.
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} {...a11yDecorative} />
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                dismissHomeTip();
+              }}
+              {...a11yButton("Dismiss tip", "Hides this reminder tip permanently")}
+              hitSlop={10}
+              style={({ pressed }) => [styles.tipBannerClose, { opacity: pressed ? 0.5 : 1 }]}
+            >
+              <Ionicons name="close" size={16} color={C.mutedForeground} {...a11yDecorative} />
+            </Pressable>
+          </View>
+        )}
 
       {/* Resume Qur'an tile (first-run: "Start the Qur'an" / Begin with Al-Fatiha). */}
       <Pressable
@@ -909,6 +964,25 @@ const styles = StyleSheet.create({
   },
   pillTitle: { color: "#fff", fontSize: 13 },
   pillTime: { color: "rgba(255,255,255,0.75)", fontSize: 12, flexShrink: 1 },
+
+  tipBanner: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    borderRadius: 14, borderWidth: StyleSheet.hairlineWidth,
+    paddingLeft: 12, paddingRight: 6, paddingVertical: 10,
+  },
+  tipBannerBody: {
+    flex: 1, flexDirection: "row", alignItems: "center", gap: 10, paddingRight: 4,
+  },
+  tipBannerIcon: {
+    width: 28, height: 28, borderRadius: 8,
+    alignItems: "center", justifyContent: "center",
+  },
+  tipBannerTitle: { fontSize: 13, lineHeight: 17 },
+  tipBannerSub: { fontSize: 11, lineHeight: 15, marginTop: 1 },
+  tipBannerClose: {
+    width: 28, height: 28, borderRadius: 14,
+    alignItems: "center", justifyContent: "center",
+  },
 
   tile: {
     flexDirection: "row", alignItems: "center", gap: 10,
