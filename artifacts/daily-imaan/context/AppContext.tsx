@@ -20,13 +20,23 @@ export interface AppSettings {
   darkMode: boolean;
   /**
    * Per-prayer sound toggle for prayer-time notifications. All five prayers
-   * default to ON so users hear an adhan-style nudge at every salah out of
-   * the box; users can mute Fajr (or any other) individually from Settings
-   * if they don't want the pre-sunrise alert. The sound used is the device's
-   * default notification sound — a bundled adhan recitation requires a
-   * licensed audio asset and is tracked as a separate enhancement.
+   * default to ON so users hear a nudge at every salah out of the box; users
+   * can mute Fajr (or any other) individually from Settings if they don't
+   * want the pre-sunrise alert. The actual sound played when ON is governed
+   * by `adhanSound` below.
    */
   prayerSoundEnabled: PrayerSoundSettings;
+  /**
+   * Which audio file plays when a prayer-time reminder fires with sound on.
+   *  - "default":  device's default notification sound (always available).
+   *  - "makkah":   bundled adhan-makkah.caf / .mp3 (must be present in
+   *                assets/sounds/ — see assets/sounds/README.md for sourcing).
+   *  - "madinah":  bundled adhan-madinah.caf / .mp3 (same).
+   * Falls back to "default" if the chosen audio file is missing at runtime
+   * (expo-notifications silently uses the system sound when a referenced
+   * filename isn't found in the bundle).
+   */
+  adhanSound: "default" | "makkah" | "madinah";
   /**
    * Audio reciter for ayah playback. Stored as the alquran.cloud edition
    * code (e.g. "ar.alafasy"). See constants/reciters.ts for the catalogue.
@@ -163,6 +173,7 @@ const DEFAULT_STATE: AppState = {
       Maghrib: true,
       Isha: true,
     },
+    adhanSound: "default",
     reciter: DEFAULT_RECITER_ID,
     dailyAyahReminderEnabled: false,
     dailyHadithReminderEnabled: false,

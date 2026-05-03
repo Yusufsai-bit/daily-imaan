@@ -1,8 +1,37 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "lzEWNAB_oEwyZrlcjyqh4"
 uri = "file://artifacts/daily-imaan/assets/images/icon.png"
 type = "image"
 title = "daily imaan app icon"
+
+[[outputs]]
+id = "qgRgo08uapKejw4gqs-3O"
+uri = "file://artifacts/daily-imaan/marketing/instagram/post-01.png"
+type = "image"
+title = "Post 01 — Al-Baqarah 2:152"
+
+[[outputs]]
+id = "lj3JDSppIk9FUNKXo3tTW"
+uri = "file://artifacts/daily-imaan/marketing/instagram/post-05.png"
+type = "image"
+title = "Post 05 — Al-Baqarah 2:153"
+
+[[outputs]]
+id = "9P4fotRomDzrrXQ43LYF9"
+uri = "file://artifacts/daily-imaan/marketing/instagram/post-08.png"
+type = "image"
+title = "Post 08 — Ar-Ra'd 13:28"
+
+[[outputs]]
+id = "jTYUN7bP4srqxC36nNZmZ"
+uri = "file://artifacts/daily-imaan/marketing/instagram/post-18.png"
+type = "image"
+title = "Post 18 — Qaf 50:16"
+
+[[outputs]]
+id = "9FA9fWFfWW22lNrd1_dog"
+uri = "file://artifacts/daily-imaan/marketing/instagram/captions.md"
+type = "text"
+title = "All 20 captions + posting guide"

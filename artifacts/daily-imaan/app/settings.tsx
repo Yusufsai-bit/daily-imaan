@@ -915,11 +915,68 @@ export default function SettingsScreen() {
             />
           ))}
         </View>
+      </View>
+
+      {/* Adhan Sound — which audio file plays for prayer-time reminders. */}
+      <View style={styles.section}>
+        <View style={{ gap: 2, marginBottom: 8 }}>
+          <Text
+            maxFontSizeMultiplier={1.4}
+            style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+          >
+            ADHAN SOUND
+          </Text>
+          <Text
+            maxFontSizeMultiplier={1.6}
+            style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+          >
+            Pick what plays at prayer time when sound is on above. Bundled adhans fall back to the device default if not yet shipped.
+          </Text>
+        </View>
+        <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+          {([
+            { id: "default" as const, title: "Device default", subtitle: "System notification sound — always available" },
+            { id: "makkah" as const,  title: "Adhan — Makkah", subtitle: "Bundled recitation, Masjid al-Haram style" },
+            { id: "madinah" as const, title: "Adhan — Madinah", subtitle: "Bundled recitation, Masjid an-Nabawi style" },
+          ] as const).map((opt, i, arr) => (
+            <Pressable
+              key={opt.id}
+              onPress={() => updateSettings({ adhanSound: opt.id })}
+              {...a11ySelectable(`${opt.title}. ${opt.subtitle}`, settings.adhanSound === opt.id)}
+              style={({ pressed }) => [
+                styles.methodRow,
+                i < arr.length - 1 && {
+                  borderBottomWidth: StyleSheet.hairlineWidth,
+                  borderBottomColor: C.border,
+                },
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text
+                  maxFontSizeMultiplier={1.6}
+                  style={[styles.methodLabel, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+                >
+                  {opt.title}
+                </Text>
+                <Text
+                  maxFontSizeMultiplier={1.6}
+                  style={{ color: C.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 12 }}
+                >
+                  {opt.subtitle}
+                </Text>
+              </View>
+              {settings.adhanSound === opt.id && (
+                <Ionicons name="checkmark-circle" size={20} color={C.primary} {...a11yDecorative} />
+              )}
+            </Pressable>
+          ))}
+        </View>
         <Text
           maxFontSizeMultiplier={1.6}
           style={[styles.hint, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
         >
-          Uses your device's default notification sound. A bundled adhan recitation requires a licensed audio file and would be added in a future update.
+          Bundled adhans require audio files in assets/sounds/ and a rebuild — see assets/sounds/README.md.
         </Text>
       </View>
 

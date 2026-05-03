@@ -58,6 +58,7 @@
         {
           "icon": "./assets/images/icon.png",
           "color": "#1A6B4A",
+          "_comment_sounds": "To enable bundled Makkah / Madinah adhans in the prayer-time notification: 1) drop adhan-makkah.mp3 and adhan-madinah.mp3 into assets/sounds/ (see that folder's README.md for sourcing + licensing), then 2) replace the empty array below with [\"./assets/sounds/adhan-makkah.mp3\", \"./assets/sounds/adhan-madinah.mp3\"], then 3) rebuild with `eas build`. The in-app Adhan Sound picker (Settings) is already wired — when files are missing expo-notifications silently falls back to the device default sound.",
           "sounds": []
         }
       ],

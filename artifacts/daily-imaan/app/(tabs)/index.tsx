@@ -159,10 +159,14 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!prayerTimes) return;
     const handle = InteractionManager.runAfterInteractions(() => {
-      schedulePrayerNotifications(prayerTimes, state.settings.prayerSoundEnabled);
+      schedulePrayerNotifications(
+        prayerTimes,
+        state.settings.prayerSoundEnabled,
+        state.settings.adhanSound
+      );
     });
     return () => handle.cancel();
-  }, [prayerTimes, state.settings.prayerSoundEnabled]);
+  }, [prayerTimes, state.settings.prayerSoundEnabled, state.settings.adhanSound]);
 
   // Pre-warm the tafsir cache for the currently displayed ayah after the
   // first interaction frame so the "Show tafsir" tap renders instantly.
