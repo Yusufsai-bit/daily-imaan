@@ -71,3 +71,63 @@ id = "y1FiPhbNh-fT1cArcWntp"
 uri = "file://artifacts/daily-imaan/marketing/instagram/mockups/template-6-app-feature.png"
 type = "image"
 title = "6 — App Feature"
+
+[[outputs]]
+id = "nnRiUvHaVuZdj2qH5CxCW"
+uri = "file://artifacts/daily-imaan/marketing/logo/png/horizontal-sage-1200.png"
+type = "image"
+title = "Horizontal lockup (sage on transparent)"
+
+[[outputs]]
+id = "sSc4OYxW8LrQ3Mf9rDfKJ"
+uri = "file://artifacts/daily-imaan/marketing/logo/png/vertical-sage-800.png"
+type = "image"
+title = "Vertical lockup (sage on transparent)"
+
+[[outputs]]
+id = "mx56P3KmsC1TgnprPuXcZ"
+uri = "file://artifacts/daily-imaan/marketing/logo/png/mark-sage-512.png"
+type = "image"
+title = "Crescent mark only (sage)"
+
+[[outputs]]
+id = "zF38k40SZYYz7yeYjiJf7"
+uri = "file://artifacts/daily-imaan/marketing/logo/app/ios-icon-1024.png"
+type = "image"
+title = "iOS app icon (1024×1024)"
+
+[[outputs]]
+id = "nxU3s077bS_3d5Mo1BHx4"
+uri = "file://artifacts/daily-imaan/marketing/logo/app/android-adaptive-foreground-1024.png"
+type = "image"
+title = "Android adaptive icon foreground"
+
+[[outputs]]
+id = "2a22UdADcwZAViUZ1F_ef"
+uri = "file://artifacts/daily-imaan/marketing/logo/social/avatar-1080.png"
+type = "image"
+title = "Instagram / TikTok profile avatar"
+
+[[outputs]]
+id = "R8GlkfJd7lRxnAj-YsbKt"
+uri = "file://artifacts/daily-imaan/marketing/logo/social/og-1200x630.png"
+type = "image"
+title = "Open Graph link-share card"
+
+[[outputs]]
+id = "ivA7wJ0Yv5F9TOUWsXEF3"
+uri = "file://artifacts/daily-imaan/marketing/logo/favicon.ico"
+type = "unspecified"
+title = "favicon.ico (multi-res)"
+
+[[outputs]]
+id = "JPrHJj2rDSv85hAb4GWtO"
+uri = "file://artifacts/daily-imaan/marketing/logo/svg/horizontal-sage.svg"
+type = "image"
+title = "Editable vector master (horizontal sage)"
+
+[[outputs]]
+id = "bv_adw6_r5ccnZQOczLY0"
+uri = "file://artifacts/daily-imaan/marketing/logo/README.md"
+type = "text"
+title = "Logo kit README — usage guide"

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" xmlns:xlink="http://www.w3.org/1999/xlink"><defs>
+    <mask id="af" maskUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="200" height="200" fill="black"/>
+      <circle cx="100" cy="100" r="85" fill="white"/>
+      <circle cx="116" cy="94" r="76" fill="black"/>
+    </mask>
+  </defs>
+    <g transform="translate(307,307) scale(2.05)">
+      <rect x="0" y="0" width="200" height="200" fill="#F2F0EC" mask="url(#af)"/>
+    </g></svg>
