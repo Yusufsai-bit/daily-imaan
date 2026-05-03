@@ -80,12 +80,14 @@ A quiet companion. Every word verbatim. No noise.
 ## 5. Typography
 
 - **English / UI**: **Inter** (Regular 400, Medium 500, SemiBold 600, Bold 700). Tracking 0 at body, +0.5pt at small caps section labels (`SECTION LABEL` style at 11pt).
-- **Arabic**: System Arabic font on iOS/Android. For graphics: **Amiri** (preferred) → **Noto Naskh Arabic** (fallback). Always set with diacritical marks (Uthmani script). Never italicise. Never colorise individual letters. Always large enough to read every harakah.
+- **Arabic (in-app)**: **Noto Naskh Arabic** (Regular 400, Bold 700) — the brand standard for any Arabic rendered inside the iOS/Android app, where on-screen readability is the priority. Always set with full diacritical marks (Uthmani script). Never italicise. Never colorise individual letters. Always large enough to read every harakah.
+- **Arabic (marketing graphics)**: **Amiri** — Khaled Hosny's classical naskh, used for Instagram posts, posters, and any large-format printed work where the more ornate strokes are an asset rather than a readability cost. Same rules: full diacritics, never italic, never recolored.
 - **Numerals**: Arabic-Indic for Qur'anic citations (٢:٢٥٥) where space allows; Latin numerals are acceptable for dates and metrics.
 
 **Hierarchy on a post**
 - Source line (top): Inter SemiBold, 24pt, uppercase, +1pt tracking, sage green
-- Arabic body: Amiri, 64pt, line-height 1.5, dark foreground
+- Arabic body (graphics): Amiri, 64pt, line-height 1.5, dark foreground
+- Arabic body (in-app): Noto Naskh Arabic, 24pt, line-height 46, dark foreground
 - English body: Inter Regular, 30pt, line-height 1.45, dark foreground
 - Citation (bottom): Inter Medium, 22pt, muted foreground
 

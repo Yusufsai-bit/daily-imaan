@@ -239,9 +239,9 @@ const styles = StyleSheet.create({
   badge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
   badgeText: { fontSize: 11 },
   arabicText: {
-    fontFamily: "Amiri_400Regular",
-    fontSize: 22,
-    lineHeight: 42,
+    fontFamily: "NotoNaskhArabic_400Regular",
+    fontSize: 24,
+    lineHeight: 46,
     textAlign: "right",
     writingDirection: "rtl",
   },

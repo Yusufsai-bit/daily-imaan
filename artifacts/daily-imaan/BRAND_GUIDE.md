@@ -56,12 +56,17 @@ under section titles, brand-mark hover). Never for buttons, never for background
 |--------|-----|-------|
 | **Lora** | Display, headlines, English verse text | Humanist serif. Weights 400 / 500 / 600. Avoid 700 — competes with Arabic. |
 | **Inter** | Body, UI, buttons, metadata | Variable font. 400 body, 500 emphasis/buttons, tabular numerals for ayah/surah numbers. |
-| **Amiri** | Arabic / Qur'anic text — and only this | Khaled Hosny's classical naskh, designed for Quranic typesetting. |
+| **Noto Naskh Arabic** | Arabic / Qur'anic text rendered inside the app | Modern naskh designed for on-screen reading. Thicker strokes and more open counters than Amiri, so harakāt stay legible at body sizes on phones. Weights 400 / 700. |
+| **Amiri** | Arabic / Qur'anic text in marketing graphics only (IG, posters, print) | Khaled Hosny's classical naskh, designed for Quranic typesetting. Reserved for large-format / display contexts where its ornate strokes are an asset. |
 
-**Why Amiri specifically:** It is the typographic standard for Qur'an rendering on
-the web. Built specifically for the Cairo edition mushaf, supports full diacritics,
-respects vertical metrics needed for tashkīl. Do not use Scheherazade, Noto Naskh
-Arabic, or system Arabic fonts in their place.
+**Why two Arabic faces?** Amiri is the typographic standard for Qur'an rendering
+in print and display — built for the Cairo edition mushaf, with full Uthmani
+diacritics and the vertical metrics needed for tashkīl. But Amiri's strokes are
+thin and ornate, which costs readability at body sizes on a phone screen. So
+the app uses **Noto Naskh Arabic** (Google's screen-optimised naskh, also fully
+diacritised) for everything rendered inside iOS/Android, and reserves Amiri for
+marketing graphics where it can breathe at 48pt+. Do not substitute Scheherazade
+or system Arabic fonts for either of them.
 
 ### Type scale (mobile)
 
@@ -70,7 +75,7 @@ Arabic, or system Arabic fonts in their place.
 | display | 32 / 38      | Lora 500                          | Welcome screens, empty states |
 | title   | 22 / 28      | Lora 500                          | Section titles |
 | verse   | 18 / 30      | Lora 400                          | English verse translation |
-| arabic  | 28 / 56      | Amiri 400, `dir="rtl"`            | Qur'anic verse |
+| arabic  | 24 / 46      | Noto Naskh Arabic 400, `dir="rtl"` | Qur'anic verse, hadith, du'a (in-app) |
 | body    | 15 / 24      | Inter 400                         | Tafsir paragraphs, descriptions |
 | label   | 13 / 18      | Inter 500                         | Buttons, labels |
 | meta    | 11 / 16      | Inter 500, 0.18em tracking, UPPER | Surah · Ayah · Date stamps |
@@ -86,7 +91,8 @@ useFonts({
   "Lora-Medium":  require("@/assets/fonts/Lora-Medium.ttf"),
   "Inter-Regular": require("@/assets/fonts/Inter-Regular.ttf"),
   "Inter-Medium":  require("@/assets/fonts/Inter-Medium.ttf"),
-  "Amiri-Regular": require("@/assets/fonts/Amiri-Regular.ttf"),
+  "NotoNaskhArabic-Regular": require("@/assets/fonts/NotoNaskhArabic-Regular.ttf"),
+  "NotoNaskhArabic-Bold":    require("@/assets/fonts/NotoNaskhArabic-Bold.ttf"),
 });
 ```
 

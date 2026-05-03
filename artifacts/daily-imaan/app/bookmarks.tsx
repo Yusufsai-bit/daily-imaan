@@ -227,6 +227,6 @@ const styles = StyleSheet.create({
   surahBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   surahBadgeText: { fontSize: 12 },
   removeBtn: { padding: 4 },
-  arabic: { fontSize: 19, lineHeight: 38, textAlign: "right", writingDirection: "rtl", fontFamily: "Amiri_400Regular" },
+  arabic: { fontSize: 22, lineHeight: 42, textAlign: "right", writingDirection: "rtl", fontFamily: "NotoNaskhArabic_400Regular" },
   english: { fontSize: 14, lineHeight: 22 },
 });
