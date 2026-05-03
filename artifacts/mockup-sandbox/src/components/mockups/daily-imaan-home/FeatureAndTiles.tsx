@@ -127,21 +127,11 @@ function AyatCard() {
             <Shuffle size={16} style={{ color: "var(--di-muted-fg)" }} />
           </div>
         </div>
-        {/* Tafsir Ibn Kathir snippet — verbatim, attributed. Lives inside
-            the Ayat card so understanding sits next to the verse, instead
-            of behind a separate tap. The "Read full tafsir" CTA also
-            satisfies the symmetry with Hadith's "Read full hadith". */}
-        <div className="mt-3 pt-3 pl-3 border-l-2" style={{ borderColor: "var(--di-accent)" }}>
-          <div className="font-['Inter'] font-semibold text-[10px] tracking-[1.2px]" style={{ color: "var(--di-accent)" }}>
-            TAFSIR · IBN KATHIR
-          </div>
-          <div className="font-['Inter'] text-[13px] leading-[1.55] mt-1.5" style={{ color: "#4a5240" }}>
-            &ldquo;This is from the kindness, gentleness, and graciousness of Allah toward His creation.&rdquo;
-          </div>
-          <div className="flex items-center gap-1 mt-2">
-            <span className="font-['Inter'] font-medium text-[12px]" style={{ color: "var(--di-primary)" }}>Read full tafsir</span>
-            <ChevronRight size={13} style={{ color: "var(--di-primary)" }} />
-          </div>
+        {/* Mirrors the Hadith card's "Read full hadith" CTA so the two
+            content cards feel like a real pair. */}
+        <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: "var(--di-border)" }}>
+          <span className="font-['Inter'] font-medium text-[13px]" style={{ color: "var(--di-primary)" }}>Read in Al-Baqarah</span>
+          <ChevronRight size={16} style={{ color: "var(--di-primary)" }} />
         </div>
       </div>
     </div>
@@ -282,12 +272,11 @@ export function FeatureAndTiles() {
           subtitle="Al-Baqarah 2:255"
         />
 
-        {/* Daily content stack — Ayat (with tafsir inset) → Hadith →
-            Evening Adhkar (time-aware) → Feeling hero as the gentle
-            next step. */}
+        {/* Daily content stack — Ayat → Evening Adhkar (time-aware) →
+            Hadith → Feeling hero as the gentle next step. */}
         <AyatCard />
-        <HadithContentCard />
         <AdhkarCard />
+        <HadithContentCard />
         <FeelingHero />
       </div>
     </div>
