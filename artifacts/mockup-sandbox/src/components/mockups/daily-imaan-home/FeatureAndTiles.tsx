@@ -43,27 +43,35 @@ function PrayerBanner() {
   );
 }
 
-/* Compact tile strip near the top — single row, icon + label only, no
-   subtitle. Keeps tools one tap from landing while letting the Ayat card
-   peek above the fold. Tappable through the full card. */
+/* Compact tile strip near the top — single row, icon + label (and an
+   optional small muted subtitle for context, e.g. last-read surah).
+   Title forced single-line + ellipsis so two tiles always feel balanced
+   regardless of label length. Tappable through the full card. */
 function CompactTile({
-  icon, title, iconBg, iconColor,
+  icon, title, subtitle, iconBg, iconColor,
 }: {
-  icon: React.ReactNode; title: string; iconBg: string; iconColor: string;
+  icon: React.ReactNode; title: string; subtitle?: string; iconBg: string; iconColor: string;
 }) {
   return (
     <div
-      className="flex-1 rounded-2xl py-3 px-3.5 flex items-center gap-2.5"
+      className="flex-1 min-w-0 rounded-2xl py-2.5 px-3 flex items-center gap-2"
       style={{ background: "var(--di-card)", boxShadow: "var(--di-card-shadow)" }}
     >
       <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
         style={{ background: iconBg, color: iconColor }}
       >
         {icon}
       </div>
-      <div className="font-['Inter'] font-semibold text-[14px] leading-tight" style={{ color: "var(--di-fg)" }}>
-        {title}
+      <div className="min-w-0 flex-1">
+        <div className="font-['Inter'] font-semibold text-[14px] leading-tight truncate" style={{ color: "var(--di-fg)" }}>
+          {title}
+        </div>
+        {subtitle && (
+          <div className="font-['Inter'] text-[11.5px] leading-tight mt-1 truncate" style={{ color: "var(--di-muted-fg)" }}>
+            {subtitle}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -88,16 +96,20 @@ function AyatCard() {
         <div className="font-['Inter'] text-[15px] leading-[1.6]" style={{ color: "#374151" }}>
           &ldquo;Allah does not charge a soul except [with that within] its capacity.&rdquo;
         </div>
-        <div className="font-['Inter'] text-[10px] tracking-[0.3px] mt-1" style={{ color: "var(--di-muted-fg)" }}>
+        <div className="font-['Inter'] text-[12px] tracking-[0.2px] mt-1.5" style={{ color: "var(--di-muted-fg)" }}>
           Translation: Saheeh International
         </div>
         <div className="flex gap-2 mt-3">
-          <div className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-[10px]" style={{ background: "var(--di-secondary)" }}>
-            <Play size={16} style={{ color: "var(--di-primary)" }} />
-            <span className="font-['Inter'] font-medium text-[14px]" style={{ color: "var(--di-primary)" }}>Listen</span>
+          {/* Filled primary so Listen actually wins as the lead action,
+              instead of blending in with the secondary icon buttons. */}
+          <div className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-[10px]" style={{ background: "var(--di-primary)" }}>
+            <Play size={16} style={{ color: "white" }} />
+            <span className="font-['Inter'] font-medium text-[14px] text-white">Listen</span>
           </div>
+          {/* All three secondary actions share the muted treatment.
+              Bookmark gets its colored/filled state only when actually saved. */}
           <div className="w-10 h-10 flex items-center justify-center rounded-[10px]" style={{ background: "var(--di-secondary)" }}>
-            <Bookmark size={16} style={{ color: "var(--di-accent)" }} />
+            <Bookmark size={16} style={{ color: "var(--di-muted-fg)" }} />
           </div>
           <div className="w-10 h-10 flex items-center justify-center rounded-[10px]" style={{ background: "var(--di-secondary)" }}>
             <Share2 size={16} style={{ color: "var(--di-muted-fg)" }} />
@@ -105,6 +117,13 @@ function AyatCard() {
           <div className="w-10 h-10 flex items-center justify-center rounded-[10px]" style={{ background: "var(--di-secondary)" }}>
             <Shuffle size={16} style={{ color: "var(--di-muted-fg)" }} />
           </div>
+        </div>
+        {/* Mirrors the Hadith card's "Read full hadith" CTA so the two
+            content cards feel like a real pair and users have a path into
+            tafsir / surrounding context. */}
+        <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: "var(--di-border)" }}>
+          <span className="font-['Inter'] font-medium text-[13px]" style={{ color: "var(--di-primary)" }}>Read in Al-Baqarah</span>
+          <ChevronRight size={16} style={{ color: "var(--di-primary)" }} />
         </div>
       </div>
     </div>
@@ -137,7 +156,7 @@ function HadithContentCard() {
         <div className="font-['Inter'] text-[14px] leading-[1.6]" style={{ color: "#374151" }}>
           &ldquo;The reward of deeds depends upon the intentions and every person will get the reward according to what he has intended.&rdquo;
         </div>
-        <div className="font-['Inter'] text-[10px] tracking-[0.3px] mt-1.5" style={{ color: "var(--di-muted-fg)" }}>
+        <div className="font-['Inter'] text-[12px] tracking-[0.2px] mt-1.5" style={{ color: "var(--di-muted-fg)" }}>
           Narrated by &lsquo;Umar ibn al-Khattab · Sahih
         </div>
         <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: "var(--di-border)" }}>
@@ -194,15 +213,19 @@ export function FeatureAndTiles() {
             for a returning user); Qibla is the second tap-target. */}
         <div className="flex gap-3">
           <CompactTile
-            icon={<BookText size={18} />}
+            icon={<BookText size={16} />}
             iconBg="var(--di-primary-soft)"
             iconColor="var(--di-primary)"
-            title="Continue Al-Baqarah"
+            title="Resume Qur'an"
+            subtitle="Al-Baqarah 2:255"
           />
+          {/* Qibla is a tool, not content — keep amber/accent reserved for
+              hadith. Neutral secondary fill avoids weakening that signal.
+              No subtitle: the audience knows what Qibla is. */}
           <CompactTile
-            icon={<Compass size={18} />}
-            iconBg="var(--di-accent-soft)"
-            iconColor="var(--di-accent)"
+            icon={<Compass size={16} />}
+            iconBg="var(--di-secondary)"
+            iconColor="var(--di-primary)"
             title="Qibla"
           />
         </div>
