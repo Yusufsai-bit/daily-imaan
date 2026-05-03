@@ -106,19 +106,19 @@ title = "Android adaptive icon foreground"
 id = "2a22UdADcwZAViUZ1F_ef"
 uri = "file://artifacts/daily-imaan/marketing/logo/social/avatar-1080.png"
 type = "image"
-title = "Instagram / TikTok profile avatar"
+title = "Instagram / TikTok profile avatar (1080)"
 
 [[outputs]]
 id = "R8GlkfJd7lRxnAj-YsbKt"
 uri = "file://artifacts/daily-imaan/marketing/logo/social/og-1200x630.png"
 type = "image"
-title = "Open Graph link-share card"
+title = "Open Graph link-share card (1200×630)"
 
 [[outputs]]
 id = "ivA7wJ0Yv5F9TOUWsXEF3"
 uri = "file://artifacts/daily-imaan/marketing/logo/favicon.ico"
 type = "unspecified"
-title = "favicon.ico (multi-res)"
+title = "favicon.ico (multi-resolution)"
 
 [[outputs]]
 id = "JPrHJj2rDSv85hAb4GWtO"
@@ -130,7 +130,7 @@ title = "Editable vector master (horizontal sage)"
 id = "bv_adw6_r5ccnZQOczLY0"
 uri = "file://artifacts/daily-imaan/marketing/logo/README.md"
 type = "text"
-title = "Logo kit README — usage guide"
+title = "Logo kit README — file map + usage rules"
 
 [[outputs]]
 id = "-s060PATrb-LnPhLqig9a"
@@ -143,3 +143,21 @@ id = "VkvKChws7-rTcWCTUtbx5"
 uri = "file://.local/logo-comparison/current-logo.png"
 type = "image"
 title = "CURRENT logo (generated yesterday)"
+
+[[outputs]]
+id = "iI5BhCPRdCqn3PqTBRaE9"
+uri = "file://artifacts/daily-imaan/marketing/daily-imaan-logo-kit.zip"
+type = "unspecified"
+title = "Daily Imaan Logo Kit (.zip) — 30+ files, all sizes & formats"
+
+[[outputs]]
+id = "r9hB6qJfatPCIxLzOjw0J"
+uri = "file://artifacts/daily-imaan/marketing/logo/master/daily-imaan-icon-1024.png"
+type = "image"
+title = "Master logo (1024×1024)"
+
+[[outputs]]
+id = "73pYsY9Ijbgje6FGa9cLD"
+uri = "file://artifacts/daily-imaan/marketing/logo/app/app-store-1024.png"
+type = "image"
+title = "App Store marketing icon (1024)"

@@ -77,6 +77,36 @@ A quiet companion. Every word verbatim. No noise.
 
 ---
 
+## 4b. Logo
+
+**The official Daily Imaan mark** is a single composition: a cream / soft-gold
+crescent with a small hanging pendant, sitting above an open book, on a dark
+sage (`#1A6B4A`) rounded square that carries a subtle tessellated Islamic
+geometric pattern at low contrast. The "Daily Imaan" wordmark is set in a
+cream serif inside the bottom of the same rounded square.
+
+- **Master file:** `artifacts/daily-imaan/assets/images/icon.png` (1024 × 1024).
+- **Distributable kit:** `artifacts/daily-imaan/marketing/logo/` — pre-built
+  PNGs at every standard app, favicon, and social size, plus `favicon.ico`
+  and a 1200×630 Open Graph card. A zipped copy lives at
+  `artifacts/daily-imaan/marketing/daily-imaan-logo-kit.zip`.
+- **To regenerate the kit from the master:** `node scripts/gen-logo-kit.mjs`
+  from the project root.
+
+**Rules**
+- Do not stretch, recolor, or recompose. The mark is one composition; treat
+  it as a unit. Always scale uniformly.
+- Do not add drop shadows, strokes, or glows — the mark already sits on its
+  own dark sage card.
+- Do not place on patterned or busy backgrounds. Use calm cream, white, or
+  sage surfaces.
+- Minimum on-screen size 32 × 32 px. Below that, the wordmark becomes
+  illegible; that's expected, and acceptable for favicons.
+- For the App Store icon, use `app/app-store-1024.png` (no pre-rounded
+  corners — Apple applies the superellipse mask at install time).
+
+---
+
 ## 5. Typography
 
 - **English / UI**: **Inter** (Regular 400, Medium 500, SemiBold 600, Bold 700). Tracking 0 at body, +0.5pt at small caps section labels (`SECTION LABEL` style at 11pt).
