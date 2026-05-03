@@ -14,6 +14,8 @@ import {
 
 import colors from "@/constants/colors";
 import { SURAHS, Surah } from "@/data/surahsData";
+import { ARABIC_FONT_REGULAR } from "@/constants/fonts";
+import { a11yLink } from "@/components/a11y";
 
 export default function QuranScreen() {
   const scheme = useColorScheme();
@@ -37,6 +39,10 @@ export default function QuranScreen() {
   const renderItem = ({ item }: { item: Surah }) => (
     <Pressable
       onPress={() => router.push(`/surah/${item.id}` as never)}
+      {...a11yLink(
+        `Surah ${item.id}, ${item.nameEnglish}, ${item.nameTranslation}`,
+        `${item.ayahCount} ayat, ${item.revelationType}`,
+      )}
       style={({ pressed }) => [
         styles.row,
         {
@@ -57,7 +63,7 @@ export default function QuranScreen() {
           <Text style={[styles.englishName, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
             {item.nameEnglish}
           </Text>
-          <Text style={[styles.arabicName, { color: C.primary }]}>
+          <Text style={[styles.arabicName, { color: C.primary, fontFamily: ARABIC_FONT_REGULAR }]}>
             {item.name}
           </Text>
         </View>

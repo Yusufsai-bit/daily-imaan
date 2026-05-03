@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   duaHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   occasionBadge: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   occasionText: { fontSize: 12 },
-  duaArabic: { fontSize: 22, lineHeight: 42, textAlign: "right", writingDirection: "rtl" },
+  duaArabic: { fontSize: 22, lineHeight: 44, textAlign: "right", writingDirection: "rtl", fontFamily: "Amiri_400Regular" },
   expandedContent: { gap: 10 },
   divider: { height: StyleSheet.hairlineWidth },
   transliteration: { fontSize: 13, lineHeight: 20, fontStyle: "italic" },

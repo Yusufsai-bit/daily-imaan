@@ -5,6 +5,10 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
+import {
+  Amiri_400Regular,
+  Amiri_700Bold,
+} from "@expo-google-fonts/amiri";
 import * as Notifications from "expo-notifications";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { router, Stack } from "expo-router";
@@ -24,7 +28,12 @@ import {
   scheduleAyatNotifications,
   scheduleHadithNotification,
 } from "@/hooks/useNotifications";
-import { initSentry, reportRenderError, wrapRoot } from "@/lib/sentry";
+import {
+  initSentry,
+  reportRenderError,
+  setCrashReportsEnabled,
+  wrapRoot,
+} from "@/lib/sentry";
 
 initSentry();
 
@@ -106,6 +115,13 @@ function AppEffects() {
     Appearance.setColorScheme(state.settings.darkMode ? "dark" : "light");
   }, [state.settings.darkMode]);
 
+  // Honor the user's crash-reporting opt-out. Sentry is initialized at module
+  // load to catch very early crashes; this effect runs as soon as AppContext
+  // hydrates so a returning user's "off" preference takes effect immediately.
+  useEffect(() => {
+    setCrashReportsEnabled(state.settings.crashReportsEnabled);
+  }, [state.settings.crashReportsEnabled]);
+
   return null;
 }
 
@@ -120,6 +136,7 @@ function RootLayoutNav() {
       <Stack.Screen name="qibla" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="hadith" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="privacy" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="adhkar" options={{ headerShown: false, presentation: "card" }} />
     </Stack>
   );
 }
@@ -130,6 +147,11 @@ function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    // Amiri — beautiful Arabic naskh face used everywhere we render Quranic
+    // text, ahadith, and du'a so the script reads as it should rather than
+    // falling back to the system UI font.
+    Amiri_400Regular,
+    Amiri_700Bold,
   });
 
   useEffect(() => {

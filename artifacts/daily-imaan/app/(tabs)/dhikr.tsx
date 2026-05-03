@@ -16,6 +16,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 import colors from "@/constants/colors";
 import { useApp } from "@/context/AppContext";
+import { ARABIC_FONT_REGULAR } from "@/constants/fonts";
+import { a11yButton } from "@/components/a11y";
 
 interface DhikrState {
   subhanAllah: number;
@@ -143,6 +145,7 @@ export default function DhikrScreen() {
         </View>
         <Pressable
           onPress={handleReset}
+          {...a11yButton("Reset all dhikr counters", "Sets every counter back to zero")}
           style={({ pressed }) => [styles.resetBtn, { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 }]}
         >
           <Ionicons name="refresh" size={16} color={C.mutedForeground} />
@@ -177,6 +180,10 @@ export default function DhikrScreen() {
             >
               <Pressable
                 onPress={() => handlePress(dhikr.key, i, dhikr.max)}
+                {...a11yButton(
+                  `${dhikr.english}, ${dhikr.meaning}`,
+                  `Currently ${count} of ${dhikr.max}. Tap to increment.`,
+                )}
                 style={[
                   styles.dhikrBtn,
                   {
@@ -197,7 +204,7 @@ export default function DhikrScreen() {
                   </Text>
                 </View>
 
-                <Text style={[styles.dhikrArabic, { color: btnColor }]}>
+                <Text style={[styles.dhikrArabic, { color: btnColor, fontFamily: ARABIC_FONT_REGULAR }]}>
                   {dhikr.arabic}
                 </Text>
                 <Text style={[styles.dhikrEnglish, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>

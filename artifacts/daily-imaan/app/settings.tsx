@@ -109,6 +109,55 @@ export default function SettingsScreen() {
     return d;
   });
 
+  // Independent picker state for the daily hadith reminder time. Kept
+  // separate from the ayah-reminder picker above so opening one does not
+  // accidentally commit to the other.
+  const [hadithPickerVisible, setHadithPickerVisible] = useState(false);
+  const [hadithPickerValue, setHadithPickerValue] = useState<Date>(() => {
+    const d = new Date();
+    const [hStr, mStr] = (settings.hadithReminderTime || "20:00").split(":");
+    d.setHours(parseInt(hStr ?? "20", 10), parseInt(mStr ?? "0", 10), 0, 0);
+    return d;
+  });
+
+  const commitHadithReminderTime = useCallback(
+    (date: Date) => {
+      const hh = String(date.getHours()).padStart(2, "0");
+      const mm = String(date.getMinutes()).padStart(2, "0");
+      updateSettings({ hadithReminderTime: `${hh}:${mm}` });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    [updateSettings],
+  );
+
+  const handleHadithPickerChange = useCallback(
+    (event: DateTimePickerEvent, date?: Date) => {
+      // Mirrors the ayah picker behavior — commit immediately on Android,
+      // stage on iOS so the spinner doesn't fire on every wheel movement.
+      if (Platform.OS === "android") {
+        setHadithPickerVisible(false);
+        if (event.type !== "set" || !date) return;
+        commitHadithReminderTime(date);
+        return;
+      }
+      if (date) setHadithPickerValue(date);
+    },
+    [commitHadithReminderTime],
+  );
+
+  const handleHadithPickerDone = useCallback(() => {
+    setHadithPickerVisible(false);
+    commitHadithReminderTime(hadithPickerValue);
+  }, [commitHadithReminderTime, hadithPickerValue]);
+
+  const handleCrashReportsToggle = useCallback(
+    (val: boolean) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      updateSettings({ crashReportsEnabled: val });
+    },
+    [updateSettings],
+  );
+
   const handleDarkModeToggle = useCallback(
     (val: boolean) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -430,7 +479,99 @@ export default function SettingsScreen() {
               />
             }
           />
+          {/* Reminder time row — only useful (and only legible) when the
+              reminder switch above is on. Web stays read-only since the
+              native picker is unavailable there. */}
+          {settings.dailyHadithReminderEnabled && Platform.OS !== "web" && (
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setHadithPickerVisible(true);
+              }}
+              {...a11yButton(
+                `Hadith reminder time, currently ${settings.hadithReminderTime}`,
+                "Opens a time picker to change when the daily hadith reminder fires",
+              )}
+              style={({ pressed }) => [
+                styles.settingRow,
+                {
+                  borderTopWidth: StyleSheet.hairlineWidth,
+                  borderTopColor: C.border,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <View style={[styles.settingIcon, { backgroundColor: C.secondary }]} {...a11yDecorative}>
+                <Ionicons name="time-outline" size={16} color={C.primary} />
+              </View>
+              <View style={styles.settingContent}>
+                <Text
+                  maxFontSizeMultiplier={1.6}
+                  style={[styles.settingTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+                >
+                  Reminder time
+                </Text>
+                <Text
+                  maxFontSizeMultiplier={1.6}
+                  style={[styles.settingSubtitle, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+                >
+                  Tap to change
+                </Text>
+              </View>
+              <Text
+                maxFontSizeMultiplier={1.4}
+                style={[styles.timeValue, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}
+              >
+                {settings.hadithReminderTime}
+              </Text>
+            </Pressable>
+          )}
         </View>
+
+        {hadithPickerVisible && Platform.OS !== "web" && (
+          <DateTimePicker
+            value={hadithPickerValue}
+            mode="time"
+            is24Hour={false}
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={handleHadithPickerChange}
+          />
+        )}
+
+        {Platform.OS === "ios" && hadithPickerVisible && (
+          <View style={styles.iosPickerActions}>
+            <Pressable
+              onPress={() => setHadithPickerVisible(false)}
+              {...a11yButton("Cancel time picker")}
+              style={({ pressed }) => [
+                styles.iosPickerBtn,
+                { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Text
+                maxFontSizeMultiplier={1.4}
+                style={[styles.iosPickerBtnText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+              >
+                Cancel
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleHadithPickerDone}
+              {...a11yButton("Save hadith reminder time")}
+              style={({ pressed }) => [
+                styles.iosPickerBtn,
+                { backgroundColor: C.primary, opacity: pressed ? 0.7 : 1, marginLeft: 8 },
+              ]}
+            >
+              <Text
+                maxFontSizeMultiplier={1.4}
+                style={[styles.iosPickerBtnText, { color: "#fff", fontFamily: "Inter_600SemiBold" }]}
+              >
+                Done
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </View>
 
       {/* Daily Ayah reminders — master toggle gates the times list below. */}
@@ -876,6 +1017,29 @@ export default function SettingsScreen() {
           PRIVACY & LEGAL
         </Text>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+          {/* Anonymized crash reports — opt-out. We never collect personal
+              data; only stack traces and anonymized device info to help us
+              fix bugs. The toggle takes effect immediately via
+              setCrashReportsEnabled in lib/sentry.ts. */}
+          <SettingRow
+            icon="bug-outline"
+            title="Send crash reports"
+            subtitle="Anonymized stack traces help us fix bugs"
+            C={C}
+            right={
+              <Switch
+                value={settings.crashReportsEnabled}
+                onValueChange={handleCrashReportsToggle}
+                trackColor={{ false: C.border, true: C.primary }}
+                thumbColor="#fff"
+                {...a11yToggle(
+                  "Send crash reports",
+                  settings.crashReportsEnabled,
+                  "Anonymized crash reports help us fix bugs",
+                )}
+              />
+            }
+          />
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1012,6 +1176,7 @@ const styles = StyleSheet.create({
   },
   iosPickerBtnText: { fontSize: 14 },
   hint: { fontSize: 12, lineHeight: 18 },
+  timeValue: { fontSize: 16 },
   methodRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 13 },
   methodLabel: { flex: 1, fontSize: 15 },
   aboutText: { fontSize: 13, lineHeight: 20 },

@@ -71,7 +71,7 @@ export default function PrivacyPolicyScreen() {
         uploaded to a server we control, because we do not operate a server:
       </P>
       <Bullet C={C}>Your bookmarks (which ayat you've saved).</Bullet>
-      <Bullet C={C}>Your reading progress and "Days with Allah" counter.</Bullet>
+      <Bullet C={C}>Your reading progress and streak counter.</Bullet>
       <Bullet C={C}>Your daily intentions / good-deed checkmarks.</Bullet>
       <Bullet C={C}>
         Your settings (dark mode, reciter, prayer calculation method, juristic

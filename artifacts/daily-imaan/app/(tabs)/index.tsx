@@ -11,6 +11,7 @@ import {
   Animated,
   AppState,
   InteractionManager,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -30,6 +31,7 @@ import { usePrayerTimes } from "@/hooks/usePrayerTimes";
 import { schedulePrayerNotifications } from "@/hooks/useNotifications";
 import { useTafsir, prewarmTafsir } from "@/hooks/useTafsir";
 import colors from "@/constants/colors";
+import { ARABIC_FONT_REGULAR } from "@/constants/fonts";
 import { a11yButton, a11yDecorative, a11yLink } from "@/components/a11y";
 
 /**
@@ -292,7 +294,14 @@ export default function HomeScreen() {
     setHadith(DAILY_HADITH[idx]!);
   }, []);
 
+  const [scheduleVisible, setScheduleVisible] = useState(false);
+
   const handlePrayerPillPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setScheduleVisible(true);
+  }, []);
+
+  const handleSchedulePullToRefresh = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     refreshPrayerTimes();
   }, [refreshPrayerTimes]);
@@ -314,9 +323,10 @@ export default function HomeScreen() {
   const morning = isMorningAdhkarWindow(nextPrayer?.name);
   const adhkarTitle = morning ? "Morning Adhkar" : "Evening Adhkar";
   const adhkarSubtitle = morning
-    ? "0 of 28 read · best before Asr"
-    : "0 of 28 read · best after Asr";
+    ? "Sunnah remembrances · best before Asr"
+    : "Sunnah remembrances · best after Asr";
   const adhkarIcon = (morning ? "sunny-outline" : "moon-outline") as keyof typeof Ionicons.glyphMap;
+  const adhkarRoute = morning ? "/adhkar?period=morning" : "/adhkar?period=evening";
 
   // Prayer pill content. Falls back to a status hint until prayer times resolve.
   const prayerPillTitle = nextPrayer
@@ -436,7 +446,7 @@ export default function HomeScreen() {
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push("/dhikr" as never);
+          router.push(adhkarRoute as never);
         }}
         {...a11yLink(adhkarTitle, adhkarSubtitle)}
         style={({ pressed }) => [
@@ -752,6 +762,121 @@ export default function HomeScreen() {
           <Ionicons name="chevron-forward" size={20} color={C.primary} {...a11yDecorative} />
         </LinearGradient>
       </Pressable>
+      {/* Prayer schedule sheet — opens when the user taps the prayer pill at
+          the top of the home screen. Lists every prayer for today (plus
+          sunrise) in chronological order, with the next prayer highlighted.
+          Pull from `prayerTimes` so values stay in sync with the user's
+          chosen calculation method/school. */}
+      <Modal
+        visible={scheduleVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setScheduleVisible(false)}
+      >
+        <Pressable
+          onPress={() => setScheduleVisible(false)}
+          accessibilityLabel="Close prayer schedule"
+          style={styles.scheduleBackdrop}
+        >
+          <Pressable
+            onPress={() => undefined}
+            style={[styles.scheduleSheet, { backgroundColor: C.card, paddingBottom: insets.bottom + 16 }]}
+          >
+            <View style={styles.scheduleHandle}>
+              <View style={[styles.scheduleHandleBar, { backgroundColor: C.border }]} />
+            </View>
+            <View style={styles.scheduleHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.scheduleTitle, { color: C.foreground, fontFamily: "Inter_700Bold" }]}>
+                  Today's Prayers
+                </Text>
+                {hijri ? (
+                  <Text style={[styles.scheduleSubtitle, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    {hijri.day} {hijri.monthEn} {hijri.year} AH
+                  </Text>
+                ) : null}
+              </View>
+              <Pressable
+                onPress={handleSchedulePullToRefresh}
+                {...a11yButton("Refresh prayer times")}
+                style={({ pressed }) => [
+                  styles.scheduleRefresh,
+                  { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Ionicons name="refresh" size={16} color={C.mutedForeground} {...a11yDecorative} />
+              </Pressable>
+            </View>
+            {prayerTimes ? (
+              <View style={styles.scheduleList}>
+                {(
+                  [
+                    { name: "Fajr", time: prayerTimes.Fajr, icon: "moon-outline" as const },
+                    { name: "Sunrise", time: prayerTimes.Sunrise, icon: "sunny-outline" as const, muted: true },
+                    { name: "Dhuhr", time: prayerTimes.Dhuhr, icon: "sunny-outline" as const },
+                    { name: "Asr", time: prayerTimes.Asr, icon: "partly-sunny-outline" as const },
+                    { name: "Maghrib", time: prayerTimes.Maghrib, icon: "moon-outline" as const },
+                    { name: "Isha", time: prayerTimes.Isha, icon: "moon-outline" as const },
+                  ] as const
+                ).map((row, i, arr) => {
+                  const isNext = nextPrayer?.name === row.name;
+                  return (
+                    <View
+                      key={row.name}
+                      accessible
+                      accessibilityLabel={`${row.name} ${formatTime12h(row.time)}${isNext ? ", next" : ""}`}
+                      style={[
+                        styles.scheduleRow,
+                        i < arr.length - 1 && {
+                          borderBottomWidth: StyleSheet.hairlineWidth,
+                          borderBottomColor: C.border,
+                        },
+                        isNext && { backgroundColor: C.secondary },
+                      ]}
+                    >
+                      <Ionicons
+                        name={row.icon}
+                        size={18}
+                        color={isNext ? C.primary : "muted" in row && row.muted ? C.mutedForeground : C.foreground}
+                        {...a11yDecorative}
+                      />
+                      <Text
+                        style={[
+                          styles.scheduleName,
+                          {
+                            color: isNext ? C.primary : "muted" in row && row.muted ? C.mutedForeground : C.foreground,
+                            fontFamily: isNext ? "Inter_700Bold" : "Inter_500Medium",
+                          },
+                        ]}
+                      >
+                        {row.name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.scheduleTime,
+                          {
+                            color: isNext ? C.primary : "muted" in row && row.muted ? C.mutedForeground : C.foreground,
+                            fontFamily: isNext ? "Inter_700Bold" : "Inter_400Regular",
+                          },
+                        ]}
+                      >
+                        {formatTime12h(row.time)}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <View style={styles.scheduleEmpty}>
+                <ActivityIndicator color={C.primary} />
+                <Text style={[styles.scheduleEmptyText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  Loading today's prayer times…
+                </Text>
+              </View>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScrollView>
   );
 }
@@ -806,7 +931,21 @@ const styles = StyleSheet.create({
   },
   surahBadge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   surahBadgeText: { fontSize: 12 },
-  arabicText: { fontSize: 26, lineHeight: 48, textAlign: "right", writingDirection: "rtl" },
+  arabicText: { fontSize: 26, lineHeight: 50, textAlign: "right", writingDirection: "rtl", fontFamily: ARABIC_FONT_REGULAR },
+  scheduleBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  scheduleSheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 8, paddingHorizontal: 16 },
+  scheduleHandle: { alignItems: "center", paddingVertical: 6 },
+  scheduleHandleBar: { width: 36, height: 4, borderRadius: 2 },
+  scheduleHeader: { flexDirection: "row", alignItems: "center", paddingVertical: 8, gap: 12 },
+  scheduleTitle: { fontSize: 18, letterSpacing: -0.3 },
+  scheduleSubtitle: { fontSize: 12, marginTop: 2 },
+  scheduleRefresh: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  scheduleList: { marginTop: 4, borderRadius: 12, overflow: "hidden" },
+  scheduleRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 14 },
+  scheduleName: { flex: 1, fontSize: 15 },
+  scheduleTime: { fontSize: 15 },
+  scheduleEmpty: { alignItems: "center", padding: 24, gap: 12 },
+  scheduleEmptyText: { fontSize: 13 },
   divider: { height: 1 },
   englishText: { fontSize: 15, lineHeight: 24 },
   credit: { fontSize: 11, letterSpacing: 0.2, marginTop: -4 },

@@ -18,6 +18,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import colors from "@/constants/colors";
+import { ARABIC_FONT_REGULAR } from "@/constants/fonts";
 import { useApp } from "@/context/AppContext";
 import { SURAHS, getSurahById } from "@/data/surahsData";
 import { getQuranSurah, QURAN_TRANSLATION_LABEL } from "@/data/quranFull";
@@ -110,7 +111,8 @@ export default function SurahDetailScreen() {
   const C = isDark ? colors.dark : colors.light;
   const insets = useSafeAreaInsets();
 
-  const { state, toggleBookmark, isBookmarked, setLastReadPosition, markDeedDone, markAyahRead } = useApp();
+  const { state, toggleBookmark, isBookmarked, setLastReadPosition, markDeedDone, markAyahRead, updateSettings } = useApp();
+  const mushafMode = state.settings.mushafMode;
 
   const [ayat, setAyat] = useState<ParsedAyah[]>([]);
   const [loading, setLoading] = useState(true);
@@ -241,13 +243,15 @@ export default function SurahDetailScreen() {
         </View>
 
         <View style={styles.ayahContent}>
-          <Text style={[styles.arabicAyah, { color: C.foreground }]}>{item.arabic}</Text>
-          <Text style={[styles.englishAyah, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            {item.english}
-          </Text>
+          <Text style={[styles.arabicAyah, { color: C.foreground, fontFamily: ARABIC_FONT_REGULAR }]}>{item.arabic}</Text>
+          {!mushafMode && (
+            <Text style={[styles.englishAyah, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              {item.english}
+            </Text>
+          )}
 
           <View style={styles.ayahActions}>
-            {Platform.OS !== "web" && (
+            {!mushafMode && Platform.OS !== "web" && (
               <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -275,31 +279,33 @@ export default function SurahDetailScreen() {
               </Pressable>
             )}
 
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setOpenTafsir(tafsirOpen ? null : item.numberInSurah);
-              }}
-              accessibilityLabel={tafsirOpen ? "Hide tafsir" : "Show tafsir"}
-              style={({ pressed }) => [
-                styles.iconBtn,
-                { backgroundColor: tafsirOpen ? C.secondary : C.muted, opacity: pressed ? 0.7 : 1 },
-              ]}
-            >
-              <Ionicons
-                name={tafsirOpen ? "chevron-up" : "book-outline"}
-                size={12}
-                color={tafsirOpen ? C.primary : C.mutedForeground}
-              />
-              <Text
-                style={[
-                  styles.iconBtnText,
-                  { color: tafsirOpen ? C.primary : C.mutedForeground, fontFamily: "Inter_500Medium" },
+            {!mushafMode && (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setOpenTafsir(tafsirOpen ? null : item.numberInSurah);
+                }}
+                accessibilityLabel={tafsirOpen ? "Hide tafsir" : "Show tafsir"}
+                style={({ pressed }) => [
+                  styles.iconBtn,
+                  { backgroundColor: tafsirOpen ? C.secondary : C.muted, opacity: pressed ? 0.7 : 1 },
                 ]}
               >
-                Tafsir
-              </Text>
-            </Pressable>
+                <Ionicons
+                  name={tafsirOpen ? "chevron-up" : "book-outline"}
+                  size={12}
+                  color={tafsirOpen ? C.primary : C.mutedForeground}
+                />
+                <Text
+                  style={[
+                    styles.iconBtnText,
+                    { color: tafsirOpen ? C.primary : C.mutedForeground, fontFamily: "Inter_500Medium" },
+                  ]}
+                >
+                  Tafsir
+                </Text>
+              </Pressable>
+            )}
 
             <Pressable
               onPress={() => {
@@ -320,7 +326,7 @@ export default function SurahDetailScreen() {
             </Pressable>
           </View>
 
-          {tafsirOpen && (
+          {!mushafMode && tafsirOpen && (
             <AyahTafsir
               surahId={surahId}
               ayahNumber={item.numberInSurah}
@@ -355,12 +361,34 @@ export default function SurahDetailScreen() {
         </Pressable>
         <View style={styles.headerCenter}>
           <Text style={[styles.surahName, { fontFamily: "Inter_700Bold" }]}>{surah.nameEnglish}</Text>
-          <Text style={styles.surahArabic}>{surah.name}</Text>
+          <Text style={[styles.surahArabic, { fontFamily: ARABIC_FONT_REGULAR }]}>{surah.name}</Text>
           <Text style={[styles.surahMeta, { fontFamily: "Inter_400Regular" }]}>
             {surah.nameTranslation} · {surah.ayahCount} Ayat · {surah.revelationType}
           </Text>
         </View>
-        <View style={{ width: 40 }} />
+        {/* Mushaf-mode toggle. When ON the English translation and the
+            Tafsir/Listen actions are hidden so the page reads like a printed
+            mushaf — Arabic only. Setting persists across screens via
+            AppContext. */}
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            updateSettings({ mushafMode: !mushafMode });
+          }}
+          accessibilityRole="switch"
+          accessibilityLabel="Mushaf mode"
+          accessibilityHint="Hides the English translation and shows Arabic only"
+          accessibilityState={{ checked: mushafMode }}
+          style={({ pressed }) => [
+            styles.mushafToggle,
+            {
+              backgroundColor: mushafMode ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.12)",
+              opacity: pressed ? 0.7 : 1,
+            },
+          ]}
+        >
+          <Ionicons name={mushafMode ? "language" : "language-outline"} size={18} color="#fff" />
+        </Pressable>
       </View>
 
       {loading ? (
@@ -388,7 +416,7 @@ export default function SurahDetailScreen() {
             <View style={styles.listHeader}>
               {surahId !== 9 && (
                 <View style={[styles.bismillah, { backgroundColor: C.card }]}>
-                  <Text style={[styles.bismillahText, { color: C.primary }]}>
+                  <Text style={[styles.bismillahText, { color: C.primary, fontFamily: ARABIC_FONT_REGULAR }]}>
                     بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
                   </Text>
                 </View>
@@ -414,6 +442,13 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingBottom: 16, paddingHorizontal: 16, flexDirection: "row", alignItems: "center" },
   backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  mushafToggle: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   headerCenter: { flex: 1, alignItems: "center", gap: 2 },
   surahName: { color: "#fff", fontSize: 18 },
   surahArabic: { color: "rgba(255,255,255,0.9)", fontSize: 20 },
@@ -439,7 +474,7 @@ const styles = StyleSheet.create({
   },
   ayahNumber: { fontSize: 12 },
   ayahContent: { flex: 1, gap: 10 },
-  arabicAyah: { fontSize: 22, lineHeight: 42, textAlign: "right", writingDirection: "rtl" },
+  arabicAyah: { fontSize: 24, lineHeight: 48, textAlign: "right", writingDirection: "rtl" },
   englishAyah: { fontSize: 14, lineHeight: 22 },
   ayahActions: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
   iconBtn: {

@@ -74,13 +74,13 @@ export default function MeScreen() {
       </View>
 
       {/* Stats Row — soft, gain-only metrics. No "best" or "broken" framing.
-          The hero metric ("Days with Allah") gets a wider card and larger
-          number so the soft streak feels primary; secondary stats are
-          tappable to take the user to their full lists. */}
+          The hero metric ("Streak") gets a wider card and larger number so
+          the soft streak feels primary; secondary stats are tappable to
+          take the user to their full lists. */}
       <View style={styles.statsRow}>
         <View
           accessible
-          accessibilityLabel={`${streak.count} days with Allah`}
+          accessibilityLabel={`${streak.count} day streak`}
           style={[
             styles.statCard,
             styles.statCardHero,
@@ -101,7 +101,7 @@ export default function MeScreen() {
             maxFontSizeMultiplier={1.5}
             style={[styles.statLabel, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
           >
-            Days with Allah
+            Streak
           </Text>
         </View>
 
@@ -155,7 +155,7 @@ export default function MeScreen() {
         </Pressable>
       </View>
       <Text style={[styles.streakNote, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-        Days with Allah only ever goes up. Periods, illness, travel, and rest never break it.
+        Your streak only ever goes up. Periods, illness, travel, and rest never break it.
       </Text>
 
       {/* Daily Deeds */}
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     flex: 1, borderRadius: 14, padding: 14, alignItems: "center", gap: 4,
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
-  // Wider hero card for the primary "Days with Allah" metric — communicates
+  // Wider hero card for the primary "Streak" metric — communicates
   // importance without changing colour weight.
   statCardHero: { flex: 1.4, paddingVertical: 18 },
   statNumber: { fontSize: 24, letterSpacing: -0.5 },

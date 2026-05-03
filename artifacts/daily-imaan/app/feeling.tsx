@@ -302,10 +302,11 @@ const styles = StyleSheet.create({
   blockLabel: { fontSize: 11, letterSpacing: 1.2 },
   arabic: {
     fontSize: 22,
-    lineHeight: 42,
+    lineHeight: 44,
     textAlign: "right",
     writingDirection: "rtl",
     marginTop: 2,
+    fontFamily: "Amiri_400Regular",
   },
   translit: { fontSize: 13, lineHeight: 20, fontStyle: "italic" },
   english: { fontSize: 14, lineHeight: 22 },

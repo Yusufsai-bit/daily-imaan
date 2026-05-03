@@ -51,6 +51,18 @@ export interface AppSettings {
   dailyHadithReminderEnabled: boolean;
   /** HH:MM (24h) for the daily hadith reminder. Defaults to "20:00". */
   hadithReminderTime: string;
+  /**
+   * Crash-reporting opt-out. When false, Sentry capture functions early-exit
+   * even if Sentry was initialized. Defaults to ON because anonymized stack
+   * traces help us fix bugs faster — but the user is in control.
+   */
+  crashReportsEnabled: boolean;
+  /**
+   * Mushaf mode in Surah detail — when true, hides the English translation
+   * and the Tafsir/Listen action row to focus on the Arabic text. Off by
+   * default. Toggle from the Surah detail header.
+   */
+  mushafMode: boolean;
 }
 
 export interface StreakData {
@@ -138,6 +150,8 @@ const DEFAULT_STATE: AppState = {
     dailyAyahReminderEnabled: false,
     dailyHadithReminderEnabled: false,
     hadithReminderTime: "20:00",
+    crashReportsEnabled: true,
+    mushafMode: false,
   },
   readAyatIds: [],
   lastReadPosition: null,
