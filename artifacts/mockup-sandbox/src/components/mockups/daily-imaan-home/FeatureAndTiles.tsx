@@ -1,6 +1,6 @@
 import "./_group.css";
 import {
-  Compass, Leaf, BookOpen, BookText, ChevronRight, Play, Bookmark, Share2, Shuffle, Clock,
+  Compass, Leaf, BookOpen, BookText, ChevronRight, Play, Bookmark, Share2, Shuffle, Clock, Moon,
 } from "lucide-react";
 
 /* Header
@@ -38,9 +38,11 @@ function Header() {
 function PrayerAndQiblaRow() {
   return (
     <div className="flex gap-2.5">
+      {/* Countdown reads as utility instead of just info. */}
       <div className="flex-1 flex items-center gap-2 px-3.5 py-2.5 rounded-[10px]" style={{ background: "var(--di-primary)" }}>
         <Clock size={16} style={{ color: "rgba(255,255,255,0.8)" }} />
-        <span className="font-['Inter'] font-medium text-[13px] text-white">Next: Asr · 4:42 PM</span>
+        <span className="font-['Inter'] font-medium text-[13px] text-white">Asr in 1h 23m</span>
+        <span className="font-['Inter'] text-[12px]" style={{ color: "rgba(255,255,255,0.7)" }}>· 4:42 PM</span>
       </div>
       <div className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-[10px]" style={{ background: "var(--di-primary)" }}>
         <Compass size={16} style={{ color: "rgba(255,255,255,0.8)" }} />
@@ -125,11 +127,66 @@ function AyatCard() {
             <Shuffle size={16} style={{ color: "var(--di-muted-fg)" }} />
           </div>
         </div>
-        {/* Mirrors the Hadith card's "Read full hadith" CTA so the two
-            content cards feel like a real pair and users have a path into
-            tafsir / surrounding context. */}
+        {/* Tafsir Ibn Kathir snippet — verbatim, attributed. Lives inside
+            the Ayat card so understanding sits next to the verse, instead
+            of behind a separate tap. The "Read full tafsir" CTA also
+            satisfies the symmetry with Hadith's "Read full hadith". */}
+        <div className="mt-3 pt-3 pl-3 border-l-2" style={{ borderColor: "var(--di-accent)" }}>
+          <div className="font-['Inter'] font-semibold text-[10px] tracking-[1.2px]" style={{ color: "var(--di-accent)" }}>
+            TAFSIR · IBN KATHIR
+          </div>
+          <div className="font-['Inter'] text-[13px] leading-[1.55] mt-1.5" style={{ color: "#4a5240" }}>
+            &ldquo;This is from the kindness, gentleness, and graciousness of Allah toward His creation.&rdquo;
+          </div>
+          <div className="flex items-center gap-1 mt-2">
+            <span className="font-['Inter'] font-medium text-[12px]" style={{ color: "var(--di-primary)" }}>Read full tafsir</span>
+            <ChevronRight size={13} style={{ color: "var(--di-primary)" }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* Evening Adhkar card — surfaces after Asr (in the morning we'd swap to
+   "Morning Adhkar"). Verbatim from Hisn al-Muslim / sunnah.com. Progress
+   indicator turns it into a small daily ritual without gamifying it.
+   Sits as the third content card, below Hadith. */
+function AdhkarCard() {
+  return (
+    <div>
+      <div className="font-['Inter'] font-semibold text-[11px] tracking-[1.2px] mb-2.5" style={{ color: "var(--di-muted-fg)" }}>
+        EVENING ADHKAR
+      </div>
+      <div className="rounded-2xl p-5" style={{ background: "var(--di-card)", boxShadow: "var(--di-card-shadow)" }}>
+        <div className="flex items-start gap-3">
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "var(--di-primary-soft)" }}
+          >
+            <Moon size={20} style={{ color: "var(--di-primary)" }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-['Inter'] font-semibold text-[15px] leading-tight" style={{ color: "var(--di-fg)" }}>
+              Begin your evening remembrance
+            </div>
+            <div className="font-['Inter'] text-[12.5px] leading-[1.5] mt-1" style={{ color: "var(--di-muted-fg)" }}>
+              28 du&apos;as · about 7 minutes · from Hisn al-Muslim
+            </div>
+          </div>
+        </div>
+        {/* Progress strip — read like a journey, not a streak. */}
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="font-['Inter'] text-[11.5px]" style={{ color: "var(--di-muted-fg)" }}>0 of 28 read</span>
+            <span className="font-['Inter'] text-[11.5px]" style={{ color: "var(--di-muted-fg)" }}>Best after Asr</span>
+          </div>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--di-secondary)" }}>
+            <div className="h-full" style={{ width: "0%", background: "var(--di-primary)" }} />
+          </div>
+        </div>
         <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: "var(--di-border)" }}>
-          <span className="font-['Inter'] font-medium text-[13px]" style={{ color: "var(--di-primary)" }}>Read in Al-Baqarah</span>
+          <span className="font-['Inter'] font-medium text-[13px]" style={{ color: "var(--di-primary)" }}>Start reading</span>
           <ChevronRight size={16} style={{ color: "var(--di-primary)" }} />
         </div>
       </div>
@@ -225,10 +282,12 @@ export function FeatureAndTiles() {
           subtitle="Al-Baqarah 2:255"
         />
 
-        {/* Daily content stack — paired Ayat + Hadith read together as
-            today's content, with the feeling hero as a gentle next step. */}
+        {/* Daily content stack — Ayat (with tafsir inset) → Hadith →
+            Evening Adhkar (time-aware) → Feeling hero as the gentle
+            next step. */}
         <AyatCard />
         <HadithContentCard />
+        <AdhkarCard />
         <FeelingHero />
       </div>
     </div>
