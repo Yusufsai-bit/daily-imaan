@@ -9,40 +9,16 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/images/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1A6B4A",
-      "dark": {
-        "image": "./assets/images/splash-icon.png",
-        "resizeMode": "contain",
-        "backgroundColor": "#0F2E22"
-      }
+      "backgroundColor": "#1A6B4A"
     },
     "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "com.dailyimaan.app",
-      "buildNumber": "1",
-      "icon": "./assets/images/icon.png",
-      "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Daily Imaan needs your location to calculate accurate prayer times.",
-        "ITSAppUsesNonExemptEncryption": false
-      }
+      "supportsTablet": false
     },
-    "android": {
-      "package": "com.dailyimaan.app",
-      "versionCode": 1,
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#1A6B4A"
-      },
-      "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE"
-      ]
-    },
+    "android": {},
     "web": {
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       [
@@ -52,31 +28,7 @@
         }
       ],
       "expo-font",
-      "expo-web-browser",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/images/icon.png",
-          "color": "#1A6B4A",
-          "_comment_sounds": "To enable bundled Makkah / Madinah adhans in the prayer-time notification: 1) drop adhan-makkah.mp3 and adhan-madinah.mp3 into assets/sounds/ (see that folder's README.md for sourcing + licensing), then 2) replace the empty array below with [\"./assets/sounds/adhan-makkah.mp3\", \"./assets/sounds/adhan-madinah.mp3\"], then 3) rebuild with `eas build`. The in-app Adhan Sound picker (Settings) is already wired — when files are missing expo-notifications silently falls back to the device default sound.",
-          "sounds": []
-        }
-      ],
-      [
-        "expo-location",
-        {
-          "locationWhenInUsePermission": "Daily Imaan needs your location to calculate accurate prayer times."
-        }
-      ],
-      [
-        "@bacons/apple-targets",
-        {
-          "_comment": "REQUIRED FOR APP STORE BUILDS — replace with your 10-character Apple Developer Team ID before running `eas build --profile production --platform ios`. Find it at https://developer.apple.com/account → Membership.",
-          "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID"
-        }
-      ],
-      "./plugins/withAndroidWidget.js",
-      "@sentry/react-native"
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

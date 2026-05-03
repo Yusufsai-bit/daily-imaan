@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" xmlns:xlink="http://www.w3.org/1999/xlink"><defs>
-    <mask id="m" maskUnits="userSpaceOnUse">
-      <rect x="0" y="0" width="200" height="200" fill="black"/>
-      <circle cx="100" cy="100" r="85" fill="white"/>
-      <circle cx="116" cy="94" r="76" fill="black"/>
-    </mask>
-  </defs><rect x="0" y="0" width="200" height="200" fill="#FFFFFF" mask="url(#m)"/></svg>
