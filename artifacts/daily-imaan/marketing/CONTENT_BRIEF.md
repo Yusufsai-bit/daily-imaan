@@ -125,15 +125,15 @@ Every post is **1080 × 1350** px (Instagram portrait 4:5).
 - Short gold rule (~70px) sits between body and the optional citation/transliteration line. This is the only place gold ever appears, with the single exception of the Hadith grade chip (see template 2).
 - Footer is **two centered lines**, stacked: source attribution on top (uppercase tracked sage SemiBold, e.g. `SAHEEH INTERNATIONAL`, `SUNNAH.COM`), the handle `@DAILYIMAANAPP` directly below it (same tracking, dark foreground). The legacy `Verbatim · …` prefix is removed — the source name alone is enough.
 - **No post number.** No "01/20". No carousel index. Ever.
+- **On the sage variant (T3, T4, T5):** the `DAILY IMAAN` wordmark and the `@DAILYIMAANAPP` handle both render in **gold** `#C8933C`, while the source line above the handle stays in soft cream. On the cream variant (T1, T2) the wordmark stays sage and the handle stays dark foreground, as before.
 
 ### Logo usage on posts
 
-The Daily Imaan logo is the profile avatar — viewers already see it next to every post in the feed. Repeating it on the post body is clutter and competes with sacred text. Treat it as off-canvas by default.
+The Daily Imaan logo is the profile avatar — viewers already see it next to every post in the feed. Repeating it on the post body is clutter and competes with sacred text. **The logo image is never placed on any post canvas.** Attribution lives entirely in the text footer; the avatar carries the mark.
 
-- **Cream post bodies (Templates 1, 2, 3 — Qur'an / Hadith / Du'a): no logo image.** Attribution lives entirely in the text footer.
-- **Sage post body (Template 4 — Asma ul-Husna): no logo image.** Same footer rule.
-- **App Feature posts (Template 5) only:** the logo *is* the subject — place `marketing/logo/master/daily-imaan-icon-1024.png` at ~55–65 % of the canvas width, centered above the headline. This is the only template where the logo image appears.
-- **Never** use the logo as a corner watermark or stamp on Qur'an, Hadith, Du'a, or Asma ul-Husna posts.
+- **No template uses the logo image on canvas** — not Qur'an, not Hadith, not Du'a, not Asma ul-Husna, and not App Feature.
+- App Feature posts (Template 5) instead use an **illustrated phone mockup** drawn directly in SVG (sage bezel, thin gold border, cream screen with the in-app UI), as their hero — not the logo.
+- **Never** use the logo as a corner watermark or stamp anywhere on the post canvas.
 - **Wordless 🌙 crescent emoji** may still appear in captions (sparingly), as before — but never inside the rendered post canvas.
 
 ### Theme assignment per template
@@ -142,11 +142,11 @@ The Daily Imaan logo is the profile avatar — viewers already see it next to ev
 |---|---|---|
 | 1 | Qur'an Ayah | Cream `#F2F0EC` |
 | 2 | Hadith | Cream `#F2F0EC` |
-| 3 | Du'a | Cream `#F2F0EC` |
-| 4 | Asma ul-Husna | Sage `#1A6B4A` |
-| 5 | App Feature | Sage `#1A6B4A` |
+| 3 | Du'a | Sage `#1A6B4A` + gold |
+| 4 | Asma ul-Husna | Sage `#1A6B4A` + gold |
+| 5 | App Feature | Sage `#1A6B4A` + gold |
 
-On sage backgrounds, foreground swaps to cream `#F2F0EC` and muted swaps to a soft sage `#A8C7B8`.
+On sage backgrounds, foreground swaps to cream `#F2F0EC` and muted swaps to a soft sage `#A8C7B8`. The wordmark, Arabic body (T3, T4), and handle render in gold `#C8933C`; the English body and source line stay in cream.
 
 ---
 
@@ -157,8 +157,9 @@ On sage backgrounds, foreground swaps to cream `#F2F0EC` and muted swaps to a so
 **Sub-label:** `QUR'AN · SURAH [NAME] [C:V]`
 **Body fields:**
 1. Arabic line (Amiri, ~70pt, with diacritics) — required
-2. English translation (EB Garamond Italic, ~36pt, line-height 1.35) — verbatim Saheeh International.
-3. Source name appears in the centered footer block (e.g. `SAHEEH INTERNATIONAL`). No inline citation line is needed when the sub-label already carries the surah:ayah reference.
+2. **Transliteration (EB Garamond Italic, ~26pt, dark muted) — required.** Sits centered between the Arabic and the English. Worked example for Surah Qaf 50:16: `Wa naḥnu aqrabu ilayhi min ḥabli al-warīd`.
+3. English translation (EB Garamond Italic, ~36pt, line-height 1.35) — verbatim Saheeh International.
+4. Source name appears in the centered footer block (e.g. `SAHEEH INTERNATIONAL`). No inline citation line is needed when the sub-label already carries the surah:ayah reference.
 
 **Sourcing rule:** English text MUST match `quran.com/[surah]/[ayah]/saheeh-international` character-for-character. If unsure, omit the post.
 
@@ -198,13 +199,13 @@ On sage backgrounds, foreground swaps to cream `#F2F0EC` and muted swaps to a so
 
 ---
 
-### Template 3 — Du'a (cream)
+### Template 3 — Du'a (sage + gold)
 
 **Sub-label:** `DU'A · [OCCASION OR CATEGORY] · [REFERENCE]` (e.g. `DU'A · WHEN ANXIOUS · ALI 'IMRAN 3:173`)
 **Body fields:**
-1. Arabic du'a (Amiri, ~64pt, full diacritics) — required
-2. Transliteration (EB Garamond Italic, ~26pt, dark muted) — **always required** (we like the transliteration line; it stays on every du'a post)
-3. English translation (EB Garamond Italic, ~32pt) — verbatim.
+1. Arabic du'a (Amiri, ~64pt, **gold** `#C8933C`, full diacritics) — required. The wordmark `DAILY IMAAN` and the `@DAILYIMAANAPP` handle also render in gold; the source line stays soft cream.
+2. Transliteration (EB Garamond Italic, ~26pt, soft cream) — **always required** (we like the transliteration line; it stays on every du'a post).
+3. English translation (EB Garamond Italic, ~32pt, cream) — verbatim.
 4. Source name appears in the centered footer block (e.g. `SAHEEH INTERNATIONAL` for Qur'anic du'as, `SUNNAH.COM` for Hisn al-Muslim du'as).
 
 **Sourcing rule:** Du'a must be from the Qur'an or from `sunnah.com` — typically Hisn al-Muslim entries map to a hadith collection. Do not post du'as you cannot trace.
@@ -222,14 +223,14 @@ On sage backgrounds, foreground swaps to cream `#F2F0EC` and muted swaps to a so
 
 ---
 
-### Template 4 — Asma ul-Husna (sage)
+### Template 4 — Asma ul-Husna (sage + gold)
 
 **Sub-label:** `NAMES OF ALLAH · [N] / 99` (e.g. `NAMES OF ALLAH · 14 / 99`)
 
 **Body fields:**
-1. Arabic name (Amiri, ~140pt, cream on sage, with diacritics) — e.g. `ٱلرَّحْمَٰنُ`
+1. Arabic name (Amiri, ~140pt, **gold** `#C8933C`, with diacritics) — e.g. `ٱلرَّحْمَٰنُ`. The wordmark `DAILY IMAAN` and the `@DAILYIMAANAPP` handle also render in gold; the source line stays soft cream.
 2. Transliteration (Inter SemiBold, ~32pt, +2pt tracking, soft cream): `Ar-Raḥmān`
-3. English meaning (EB Garamond Italic, ~32pt, cream): `The Most Compassionate`.
+3. English meaning (EB Garamond Italic, ~32pt, cream italic): `The Most Compassionate`.
 4. Footer source line (e.g. `SAHEEH INTERNATIONAL`) — no inline citation needed; if you want to anchor the name in a specific verse, add it as a small dark-muted line above the gold rule (Inter Medium ~20pt).
 
 **Sourcing rule:** Use the canonical 99 Names list. The citation is a verse from the Qur'an where the name appears (Saheeh International).
@@ -245,17 +246,17 @@ On sage backgrounds, foreground swaps to cream `#F2F0EC` and muted swaps to a so
 
 ---
 
-### Template 5 — App Feature (sage) — **the only template with the logo on canvas**
+### Template 5 — App Feature (sage + gold)
 
 This is the only template that may speak in the brand's own voice — because it is describing the app, not quoting scripture.
 
-**Sub-label:** `THE APP · [FEATURE NAME]` (e.g. `THE APP · STREAK`, `THE APP · DUAS LIBRARY`, `THE APP · TAFSIR`, `THE APP · OFFLINE`)
+**Sub-label:** `INTRODUCING` — or, when the post is part of a feature series, `THE APP · [FEATURE NAME]` (e.g. `THE APP · STREAK`, `THE APP · DUAS LIBRARY`, `THE APP · TAFSIR`, `THE APP · OFFLINE`). Either form is valid; both render in soft cream tracked uppercase.
 
 **Body fields:**
-1. **Logo image** (`marketing/logo/master/daily-imaan-icon-1024.png`) — centered, ~55–65 % of canvas width, sitting above the headline. This is the only template where the logo image appears on canvas.
-2. Headline (Inter SemiBold, ~46pt, cream): one short sentence describing the feature — ≤ 60 chars
-3. Sub-line (EB Garamond Italic, ~28pt, soft cream): one supporting sentence — ≤ 100 chars
-4. Footer carries `@DAILYIMAANAPP` alone (the source line above it can read `A DAILY ISLAMIC COMPANION` or simply be omitted). **No "Download now" CTA.** No app-store badges in the body.
+1. **Phone mockup** — drawn directly in inline SVG (no logo image, no external mockup asset). ~440 × 660px, centered above the headline. Composition: sage interior with a thin gold rounded-rect border (~3px stroke), an inset cream rounded rect for the screen, a small dark notch at the top, and the in-app **Streak UI** rendered inside the cream screen — small tracked sage `CURRENT STREAK` label, big sage `42`, small `days` underneath, a hairline divider, then a checklist of `Fajr`, `Dhuhr`, `'Asr`, `Maghrib`, `'Isha` (the first three with filled sage check circles, the last two with empty rings). For other feature posts, swap the Streak UI for a comparable in-app screen rendered in the same drawn-SVG style.
+2. Headline (EB Garamond Italic, ~48pt, cream): one short sentence describing the feature — ≤ 60 chars (e.g. `Track your streak.`).
+3. Final-line accent (EB Garamond Italic, ~48pt, **gold**): one short closing word or phrase on its own line for emphasis (e.g. `Quietly.`).
+4. Footer source line reads `FREE · iOS & ANDROID` in soft cream tracked uppercase; the handle `@DAILYIMAANAPP` directly below renders in **gold** tracked uppercase. The wordmark `DAILY IMAAN` at the top is also gold. **No "Download now" CTA.** No app-store badges in the body. **No logo image anywhere on the canvas.**
 
 **Voice rules for this template only:**
 - Lowercase-friendly, calm.
@@ -324,7 +325,7 @@ sub_label: <the all-caps tracked string for the top of the post>
 
 body:
   arabic: <Arabic text with full diacritics, or null>
-  transliteration: <Latin-script transliteration, or null>     # required for dua, optional otherwise
+  transliteration: <Latin-script transliteration, or null>     # required for quran-ayah, dua, asma-ul-husna; not applicable for hadith, app-feature
   english: <verbatim English text, or null>
   narrator: <"Narrated by ..." string, or null>                # hadith only
   grade: <SAHIH | HASAN | DA'IF, or null>                      # hadith only
@@ -353,7 +354,7 @@ sub_label: "QUR'AN · SURAH ASH-SHARH 94:6"
 
 body:
   arabic: "إِنَّ مَعَ ٱلْعُسْرِ يُسْرًا"
-  transliteration: null
+  transliteration: "Inna maʿa al-ʿusri yusrā"
   english: "For indeed, with hardship [will be] ease."
   narrator: null
   grade: null

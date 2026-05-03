@@ -7,7 +7,6 @@ import { mkdir, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 
 const OUT = "artifacts/daily-imaan/marketing/template-previews";
-const LOGO = "artifacts/daily-imaan/marketing/logo/master/daily-imaan-icon-1024.png";
 const W = 1080, H = 1350;
 
 const SAGE = "#1A6B4A";
@@ -40,7 +39,7 @@ function ornament({ stroke, opacity = 0.06, cx = W / 2, cy = 640, r = 240 }) {
   </g>`;
 }
 
-function frame({ bg, fg, muted, hair, sublabel, footerSource, headerColor, watermarkStroke }) {
+function frame({ bg, fg, muted, hair, sublabel, footerSource, headerColor, handleColor, watermarkStroke }) {
   const orn = ornament({ stroke: watermarkStroke });
   return {
     bgRect: `<rect width="${W}" height="${H}" fill="${bg}"/>`,
@@ -57,10 +56,10 @@ function frame({ bg, fg, muted, hair, sublabel, footerSource, headerColor, water
       <line x1="180" y1="${H - 200}" x2="${W - 180}" y2="${H - 200}" stroke="${hair}" stroke-width="1"/>
       <text x="${W/2}" y="${H - 140}" text-anchor="middle"
         font-family="Inter" font-weight="600" font-size="18"
-        fill="${headerColor}" letter-spacing="3">${esc(footerSource)}</text>
+        fill="${fg}" letter-spacing="3">${esc(footerSource)}</text>
       <text x="${W/2}" y="${H - 100}" text-anchor="middle"
         font-family="Inter" font-weight="600" font-size="18"
-        fill="${fg}" letter-spacing="3">@DAILYIMAANAPP</text>
+        fill="${handleColor}" letter-spacing="3">@DAILYIMAANAPP</text>
     `,
   };
 }
@@ -69,32 +68,34 @@ function goldRule(y) {
   return `<line x1="${W/2 - 40}" y1="${y}" x2="${W/2 + 40}" y2="${y}" stroke="${GOLD}" stroke-width="2.5"/>`;
 }
 
-// --- Template 1: Qur'an Ayah (cream) ---
+// --- Template 1: Qur'an Ayah (cream) — now with transliteration ---
 function t1() {
   const f = frame({
     bg: CREAM, fg: FG, muted: MUTED, hair: HAIR_CREAM,
     sublabel: "QUR'AN · SURAH QAF 50:16", footerSource: "SAHEEH INTERNATIONAL",
-    headerColor: SAGE, watermarkStroke: SAGE,
+    headerColor: SAGE, handleColor: FG, watermarkStroke: SAGE,
   });
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
     ${f.bgRect}${f.watermark}${f.header}
-    <text x="${W/2}" y="600" text-anchor="middle"
+    <text x="${W/2}" y="540" text-anchor="middle"
       font-family="Amiri" font-size="72" fill="${FG}" direction="rtl">وَنَحْنُ أَقْرَبُ إِلَيْهِ مِنْ حَبْلِ ٱلْوَرِيدِ</text>
+    <text x="${W/2}" y="640" text-anchor="middle"
+      font-family="EB Garamond" font-style="italic" font-size="26" fill="${MUTED}">Wa naḥnu aqrabu ilayhi min ḥabli al-warīd</text>
     ${goldRule(720)}
-    <text x="${W/2}" y="850" text-anchor="middle"
+    <text x="${W/2}" y="830" text-anchor="middle"
       font-family="EB Garamond" font-style="italic" font-size="42" fill="${FG}">And We are closer to him than [his]</text>
-    <text x="${W/2}" y="906" text-anchor="middle"
+    <text x="${W/2}" y="886" text-anchor="middle"
       font-family="EB Garamond" font-style="italic" font-size="42" fill="${FG}">jugular vein.</text>
     ${f.footer}
   </svg>`;
 }
 
-// --- Template 2: Hadith (cream) ---
+// --- Template 2: Hadith (cream) — unchanged ---
 function t2() {
   const f = frame({
     bg: CREAM, fg: FG, muted: MUTED, hair: HAIR_CREAM,
     sublabel: "HADITH · BUKHARI 1", footerSource: "SUNNAH.COM",
-    headerColor: SAGE, watermarkStroke: SAGE,
+    headerColor: SAGE, handleColor: FG, watermarkStroke: SAGE,
   });
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
     ${f.bgRect}${f.watermark}${f.header}
@@ -114,41 +115,41 @@ function t2() {
   </svg>`;
 }
 
-// --- Template 3: Du'a (cream) ---
+// --- Template 3: Du'a (sage + gold) ---
 function t3() {
   const f = frame({
-    bg: CREAM, fg: FG, muted: MUTED, hair: HAIR_CREAM,
+    bg: SAGE, fg: FG_SAGE, muted: MUTED_SAGE, hair: HAIR_SAGE,
     sublabel: "DU'A · WHEN ANXIOUS · ALI 'IMRAN 3:173", footerSource: "SAHEEH INTERNATIONAL",
-    headerColor: SAGE, watermarkStroke: SAGE,
+    headerColor: GOLD, handleColor: GOLD, watermarkStroke: CREAM,
   });
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
     ${f.bgRect}${f.watermark}${f.header}
     <text x="${W/2}" y="540" text-anchor="middle"
-      font-family="Amiri" font-size="72" fill="${FG}" direction="rtl">حَسْبُنَا ٱللَّهُ وَنِعْمَ ٱلْوَكِيلُ</text>
+      font-family="Amiri" font-size="64" fill="${GOLD}" direction="rtl">حَسْبُنَا ٱللَّهُ وَنِعْمَ ٱلْوَكِيلُ</text>
     <text x="${W/2}" y="640" text-anchor="middle"
-      font-family="EB Garamond" font-style="italic" font-size="30" fill="${MUTED}">Hasbunā Allāhu wa niʿma al-wakīl</text>
+      font-family="EB Garamond" font-style="italic" font-size="30" fill="${MUTED_SAGE}">Hasbunā Allāhu wa niʿma al-wakīl</text>
     ${goldRule(720)}
     <text x="${W/2}" y="830" text-anchor="middle"
-      font-family="EB Garamond" font-style="italic" font-size="38" fill="${FG}">"Sufficient for us is Allah,</text>
+      font-family="EB Garamond" font-style="italic" font-size="38" fill="${FG_SAGE}">"Sufficient for us is Allah,</text>
     <text x="${W/2}" y="882" text-anchor="middle"
-      font-family="EB Garamond" font-style="italic" font-size="38" fill="${FG}">and [He is] the best Disposer</text>
+      font-family="EB Garamond" font-style="italic" font-size="38" fill="${FG_SAGE}">and [He is] the best Disposer</text>
     <text x="${W/2}" y="934" text-anchor="middle"
-      font-family="EB Garamond" font-style="italic" font-size="38" fill="${FG}">of affairs."</text>
+      font-family="EB Garamond" font-style="italic" font-size="38" fill="${FG_SAGE}">of affairs."</text>
     ${f.footer}
   </svg>`;
 }
 
-// --- Template 4: Asma ul-Husna (sage) ---
+// --- Template 4: Asma ul-Husna (sage + gold) ---
 function t4() {
   const f = frame({
     bg: SAGE, fg: FG_SAGE, muted: MUTED_SAGE, hair: HAIR_SAGE,
     sublabel: "NAMES OF ALLAH · 1 / 99", footerSource: "SAHEEH INTERNATIONAL",
-    headerColor: FG_SAGE, watermarkStroke: CREAM,
+    headerColor: GOLD, handleColor: GOLD, watermarkStroke: CREAM,
   });
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
     ${f.bgRect}${f.watermark}${f.header}
     <text x="${W/2}" y="600" text-anchor="middle"
-      font-family="Amiri" font-size="180" fill="${FG_SAGE}" direction="rtl">ٱللَّهُ</text>
+      font-family="Amiri" font-size="180" fill="${GOLD}" direction="rtl">ٱللَّهُ</text>
     <text x="${W/2}" y="720" text-anchor="middle"
       font-family="Inter" font-weight="600" font-size="34" fill="${FG_SAGE}" letter-spacing="3.5">ALLĀH</text>
     ${goldRule(800)}
@@ -160,27 +161,97 @@ function t4() {
   </svg>`;
 }
 
-// --- Template 5: App Feature (sage) — only template with logo on canvas ---
-async function t5() {
+// --- Template 5: App Feature (sage) — phone mockup, no logo ---
+function phoneMockup({ cx, cy, w, h }) {
+  const x = cx - w / 2;
+  const y = cy - h / 2;
+  const r = 56;
+  // Inner cream screen
+  const screenInset = 16;
+  const sx = x + screenInset, sy = y + screenInset;
+  const sw = w - screenInset * 2, sh = h - screenInset * 2;
+  const sr = r - 12;
+  // Notch
+  const notchW = 130, notchH = 22;
+  const nx = sx + sw / 2 - notchW / 2;
+  const ny = sy + 18;
+
+  // Streak UI inside screen
+  const screenCx = sx + sw / 2;
+  const labelY = sy + 96;
+  const numberY = sy + 196;
+  const daysY = sy + 240;
+  const dividerY = sy + 286;
+  const listStartY = sy + 348;
+  const rowGap = 56;
+
+  const prayers = [
+    { name: "Fajr", done: true },
+    { name: "Dhuhr", done: true },
+    { name: "'Asr", done: true },
+    { name: "Maghrib", done: false },
+    { name: "'Isha", done: false },
+  ];
+  const rowLeft = sx + 80;
+  const rows = prayers.map((p, i) => {
+    const ry = listStartY + i * rowGap;
+    const ccx = rowLeft;
+    const ccy = ry;
+    const cr = 16;
+    const circle = p.done
+      ? `<circle cx="${ccx}" cy="${ccy}" r="${cr}" fill="${SAGE}"/>
+         <path d="M ${ccx - 7} ${ccy} l 5 5 l 10 -10" stroke="${CREAM}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`
+      : `<circle cx="${ccx}" cy="${ccy}" r="${cr}" fill="none" stroke="#C9D6CE" stroke-width="2"/>`;
+    const labelFill = p.done ? SAGE : "#9DAFA3";
+    return `${circle}
+      <text x="${ccx + 32}" y="${ccy + 8}" text-anchor="start"
+        font-family="Inter" font-weight="${p.done ? 600 : 500}" font-size="22"
+        fill="${labelFill}">${esc(p.name)}</text>`;
+  }).join("");
+
+  return `
+    <!-- outer phone bezel: gold rounded rect with sage interior -->
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" ry="${r}"
+      fill="${SAGE}" stroke="${GOLD}" stroke-width="3"/>
+    <!-- inner cream screen -->
+    <rect x="${sx}" y="${sy}" width="${sw}" height="${sh}" rx="${sr}" ry="${sr}"
+      fill="${CREAM}"/>
+    <!-- notch -->
+    <rect x="${nx}" y="${ny}" width="${notchW}" height="${notchH}" rx="${notchH/2}" ry="${notchH/2}"
+      fill="${SAGE}" opacity="0.85"/>
+    <!-- CURRENT STREAK label -->
+    <text x="${screenCx}" y="${labelY}" text-anchor="middle"
+      font-family="Inter" font-weight="600" font-size="16"
+      fill="${SAGE}" letter-spacing="3">CURRENT STREAK</text>
+    <!-- big number -->
+    <text x="${screenCx}" y="${numberY}" text-anchor="middle"
+      font-family="EB Garamond" font-weight="500" font-size="92" fill="${SAGE}">42</text>
+    <!-- days -->
+    <text x="${screenCx}" y="${daysY}" text-anchor="middle"
+      font-family="Inter" font-weight="500" font-size="18" fill="#7B8C82">days</text>
+    <!-- divider -->
+    <line x1="${sx + 70}" y1="${dividerY}" x2="${sx + sw - 70}" y2="${dividerY}"
+      stroke="#D9D5CE" stroke-width="1"/>
+    ${rows}
+  `;
+}
+
+function t5() {
   const f = frame({
     bg: SAGE, fg: FG_SAGE, muted: MUTED_SAGE, hair: HAIR_SAGE,
-    sublabel: "THE APP · STREAK", footerSource: "A DAILY ISLAMIC COMPANION",
-    headerColor: FG_SAGE, watermarkStroke: CREAM,
+    sublabel: "INTRODUCING", footerSource: "FREE · iOS & ANDROID",
+    headerColor: GOLD, handleColor: GOLD, watermarkStroke: CREAM,
   });
-  const logoSize = 580;
-  const logoBuf = await sharp(LOGO).resize(logoSize, logoSize).png().toBuffer();
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  const phone = phoneMockup({ cx: W / 2, cy: 600, w: 440, h: 660 });
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
     ${f.bgRect}${f.header}
-    <text x="${W/2}" y="970" text-anchor="middle"
-      font-family="Inter" font-weight="600" font-size="44" fill="${FG_SAGE}">A gentle Streak. Never a guilt trip.</text>
+    ${phone}
     <text x="${W/2}" y="1030" text-anchor="middle"
-      font-family="EB Garamond" font-style="italic" font-size="28" fill="${MUTED_SAGE}">One small habit, kept. That's the whole feature.</text>
+      font-family="EB Garamond" font-style="italic" font-size="48" fill="${FG_SAGE}">Track your streak.</text>
+    <text x="${W/2}" y="1090" text-anchor="middle"
+      font-family="EB Garamond" font-style="italic" font-size="48" fill="${GOLD}">Quietly.</text>
     ${f.footer}
   </svg>`;
-  return await sharp(Buffer.from(svg))
-    .composite([{ input: logoBuf, top: 290, left: Math.round((W - logoSize) / 2) }])
-    .png({ compressionLevel: 9 })
-    .toBuffer();
 }
 
 async function renderSvgToFile(svg, outPath) {
@@ -194,7 +265,7 @@ async function run() {
   await renderSvgToFile(t2(), join(OUT, "template-2-hadith.png"));
   await renderSvgToFile(t3(), join(OUT, "template-3-dua.png"));
   await renderSvgToFile(t4(), join(OUT, "template-4-asma.png"));
-  await writeFile(join(OUT, "template-5-app-feature.png"), await t5());
+  await renderSvgToFile(t5(), join(OUT, "template-5-app-feature.png"));
   console.log("Mockups generated at", OUT);
 }
 run().catch(e => { console.error(e); process.exit(1); });
