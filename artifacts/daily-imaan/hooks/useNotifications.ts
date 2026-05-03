@@ -189,6 +189,63 @@ export async function schedulePrayerNotifications(
   }
 }
 
+/**
+ * Schedule (or cancel) the once-daily hadith reminder. When `enabled` is
+ * false, any existing daily_hadith notifications are cancelled and no new
+ * one is scheduled. Otherwise a single DAILY trigger is created at the
+ * provided HH:MM. Body is generic — today's hadith is shown when the user
+ * opens the app from the notification (DAILY-trigger payloads can't be
+ * updated without an app launch, so embedding the text would go stale).
+ */
+export async function scheduleHadithNotification(
+  enabled: boolean,
+  time: string
+): Promise<void> {
+  if (Platform.OS === "web") return;
+  try {
+    await Notifications.setNotificationCategoryAsync("daily_hadith", [
+      {
+        identifier: "open",
+        buttonTitle: "Open App",
+        options: { opensAppToForeground: true },
+      },
+    ]);
+
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    for (const n of scheduled) {
+      if (n.content.categoryIdentifier === "daily_hadith") {
+        try {
+          await Notifications.cancelScheduledNotificationAsync(n.identifier);
+        } catch {
+          /* already fired or cleared */
+        }
+      }
+    }
+
+    if (!enabled) return;
+
+    const parts = time.split(":");
+    const hour = parseInt(parts[0] ?? "20");
+    const minute = parseInt(parts[1] ?? "0");
+    if (Number.isNaN(hour) || Number.isNaN(minute)) return;
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Daily Imaan",
+        body: "Your hadith for today is ready. Tap to read.",
+        categoryIdentifier: "daily_hadith",
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute,
+      },
+    });
+  } catch (err) {
+    if (__DEV__) console.warn("[DailyImaan] scheduleHadithNotification failed:", err);
+  }
+}
+
 export async function cancelAllNotifications(): Promise<void> {
   if (Platform.OS === "web") return;
   try {

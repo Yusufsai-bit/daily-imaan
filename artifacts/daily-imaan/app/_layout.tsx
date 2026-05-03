@@ -22,6 +22,7 @@ import { SURAHS } from "@/data/surahsData";
 import {
   requestNotificationPermission,
   scheduleAyatNotifications,
+  scheduleHadithNotification,
 } from "@/hooks/useNotifications";
 import { initSentry, reportRenderError, wrapRoot } from "@/lib/sentry";
 
@@ -62,14 +63,28 @@ function AppEffects() {
     return () => sub.remove();
   }, [loaded, incrementStreak, markAyahRead, state.settings.ayatOrder]);
 
+  // Daily ayah reminders are gated on the master toggle (default OFF).
+  // When the toggle is off we schedule [] which clears any prior pushes.
   const rescheduleAyatNotifs = useCallback(() => {
     if (Platform.OS === "web") return;
-    scheduleAyatNotifications(state.settings.notificationTimes);
-  }, [state.settings.notificationTimes]);
+    const times = state.settings.dailyAyahReminderEnabled
+      ? state.settings.notificationTimes
+      : [];
+    scheduleAyatNotifications(times);
+  }, [state.settings.dailyAyahReminderEnabled, state.settings.notificationTimes]);
 
   useEffect(() => {
     rescheduleAyatNotifs();
-  }, [state.settings.notificationTimes]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state.settings.dailyAyahReminderEnabled, state.settings.notificationTimes]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Daily hadith reminder — single optional nudge, also default OFF.
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    scheduleHadithNotification(
+      state.settings.dailyHadithReminderEnabled,
+      state.settings.hadithReminderTime
+    );
+  }, [state.settings.dailyHadithReminderEnabled, state.settings.hadithReminderTime]);
 
   // Reschedule on foreground in case the user revisits after a long absence.
   const lastRescheduleDateRef = useRef<string>("");

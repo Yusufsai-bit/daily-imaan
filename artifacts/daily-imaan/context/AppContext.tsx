@@ -37,6 +37,20 @@ export interface AppSettings {
    * Settings without affecting any other functionality.
    */
   dailyHadithEnabled: boolean;
+  /**
+   * Master switch for the daily ayah reminder notification(s). When OFF,
+   * `notificationTimes` is ignored at scheduling time and no ayah pushes
+   * are scheduled. Defaults to OFF — reminders are an opt-in feature so
+   * the app stays quiet on a fresh install.
+   */
+  dailyAyahReminderEnabled: boolean;
+  /**
+   * Master switch for the daily hadith reminder notification. When ON,
+   * fires one daily nudge at `hadithReminderTime`. Defaults to OFF.
+   */
+  dailyHadithReminderEnabled: boolean;
+  /** HH:MM (24h) for the daily hadith reminder. Defaults to "20:00". */
+  hadithReminderTime: string;
 }
 
 export interface StreakData {
@@ -121,6 +135,9 @@ const DEFAULT_STATE: AppState = {
     },
     reciter: DEFAULT_RECITER_ID,
     dailyHadithEnabled: true,
+    dailyAyahReminderEnabled: false,
+    dailyHadithReminderEnabled: false,
+    hadithReminderTime: "20:00",
   },
   readAyatIds: [],
   lastReadPosition: null,

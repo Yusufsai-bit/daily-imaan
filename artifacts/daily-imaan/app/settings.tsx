@@ -361,8 +361,9 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      {/* Daily Hadith — toggle the home-screen shortcut on/off. Hadith
-          content lives in data/hadithData.ts and is verbatim from sunnah.com. */}
+      {/* Daily Hadith — controls (a) whether the hadith card appears on the
+          home screen, and (b) whether a once-a-day push reminder fires.
+          Hadith content lives in data/hadithData.ts and is verbatim from sunnah.com. */}
       <View style={styles.section}>
         <Text
           maxFontSizeMultiplier={1.4}
@@ -376,7 +377,6 @@ export default function SettingsScreen() {
             title="Show Daily Hadith"
             subtitle="Adds a hadith shortcut to your home screen"
             C={C}
-            last
             right={
               <Switch
                 value={settings.dailyHadithEnabled}
@@ -394,17 +394,53 @@ export default function SettingsScreen() {
               />
             }
           />
+          <SettingRow
+            icon="notifications-outline"
+            title="Daily Hadith reminder"
+            subtitle={`A gentle nudge once a day at ${settings.hadithReminderTime}`}
+            C={C}
+            last
+            right={
+              <Switch
+                value={settings.dailyHadithReminderEnabled}
+                onValueChange={async (val) => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  // Opt-in flow: if the user is enabling and the OS denies
+                  // permission, don't flip state — otherwise the UI would
+                  // claim reminders are on while nothing is delivered.
+                  if (val && Platform.OS !== "web") {
+                    const granted = await requestNotificationPermission();
+                    if (!granted) {
+                      Alert.alert(
+                        "Notifications blocked",
+                        "Enable notifications for Daily Imaan in your device settings to receive the daily hadith reminder."
+                      );
+                      return;
+                    }
+                  }
+                  updateSettings({ dailyHadithReminderEnabled: val });
+                }}
+                trackColor={{ false: C.border, true: C.primary }}
+                thumbColor="#fff"
+                {...a11yToggle(
+                  "Daily Hadith reminder",
+                  settings.dailyHadithReminderEnabled,
+                  "Sends a once-a-day reminder to read the daily hadith",
+                )}
+              />
+            }
+          />
         </View>
       </View>
 
-      {/* Notification Times */}
+      {/* Daily Ayah reminders — master toggle gates the times list below. */}
       <View style={styles.section}>
         <View style={{ gap: 2, marginBottom: 8 }}>
           <Text
             maxFontSizeMultiplier={1.4}
             style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
           >
-            DAILY REMINDERS
+            DAILY AYAH REMINDERS
           </Text>
           <Text
             maxFontSizeMultiplier={1.6}
@@ -413,7 +449,47 @@ export default function SettingsScreen() {
             Gentle nudges — no guilt, just a moment with Allah
           </Text>
         </View>
-        <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+        <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000", marginBottom: 12 }]}>
+          <SettingRow
+            icon="notifications-outline"
+            title="Daily Ayah reminder"
+            subtitle={
+              settings.dailyAyahReminderEnabled
+                ? "Pick the times for your daily ayah nudges below"
+                : "Off — turn on to schedule daily ayah nudges"
+            }
+            C={C}
+            last
+            right={
+              <Switch
+                value={settings.dailyAyahReminderEnabled}
+                onValueChange={async (val) => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  if (val && Platform.OS !== "web") {
+                    const granted = await requestNotificationPermission();
+                    if (!granted) {
+                      Alert.alert(
+                        "Notifications blocked",
+                        "Enable notifications for Daily Imaan in your device settings to receive daily ayah reminders."
+                      );
+                      return;
+                    }
+                  }
+                  updateSettings({ dailyAyahReminderEnabled: val });
+                }}
+                trackColor={{ false: C.border, true: C.primary }}
+                thumbColor="#fff"
+                {...a11yToggle(
+                  "Daily Ayah reminder",
+                  settings.dailyAyahReminderEnabled,
+                  "Master switch for daily ayah notifications",
+                )}
+              />
+            }
+          />
+        </View>
+        {settings.dailyAyahReminderEnabled ? (
+          <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
           {settings.notificationTimes.length === 0 ? (
             <View style={styles.emptyRow}>
               <Text
@@ -525,7 +601,8 @@ export default function SettingsScreen() {
               <Ionicons name="time-outline" size={18} color={C.mutedForeground} {...a11yDecorative} />
             </Pressable>
           )}
-        </View>
+          </View>
+        ) : null}
 
         {pickerVisible && Platform.OS !== "web" && (
           <DateTimePicker
