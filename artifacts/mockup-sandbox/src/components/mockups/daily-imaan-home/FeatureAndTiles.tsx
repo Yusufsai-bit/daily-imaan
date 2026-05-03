@@ -32,13 +32,20 @@ function Header() {
   );
 }
 
-/* The only place primary green appears at the top — so it actually feels
-   like it's telling you something. */
-function PrayerBanner() {
+/* Prayer + Qibla pair: same primary-green pill style so they read as
+   "today's two time-sensitive prayer essentials." Prayer takes the wider
+   share since its content (next prayer + time) is longer. */
+function PrayerAndQiblaRow() {
   return (
-    <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-[10px]" style={{ background: "var(--di-primary)" }}>
-      <Clock size={16} style={{ color: "rgba(255,255,255,0.8)" }} />
-      <span className="font-['Inter'] font-medium text-[13px] text-white">Next: Asr · 4:42 PM</span>
+    <div className="flex gap-2.5">
+      <div className="flex-1 flex items-center gap-2 px-3.5 py-2.5 rounded-[10px]" style={{ background: "var(--di-primary)" }}>
+        <Clock size={16} style={{ color: "rgba(255,255,255,0.8)" }} />
+        <span className="font-['Inter'] font-medium text-[13px] text-white">Next: Asr · 4:42 PM</span>
+      </div>
+      <div className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-[10px]" style={{ background: "var(--di-primary)" }}>
+        <Compass size={16} style={{ color: "rgba(255,255,255,0.8)" }} />
+        <span className="font-['Inter'] font-medium text-[13px] text-white">Qibla</span>
+      </div>
     </div>
   );
 }
@@ -206,29 +213,17 @@ export function FeatureAndTiles() {
     >
       <div className="px-5 pt-3 pb-24 flex flex-col gap-4">
         <Header />
-        <PrayerBanner />
+        <PrayerAndQiblaRow />
 
-        {/* Compact tile strip — Read Qur'an copy is personalized to the
-            user's last-read position when there is one (most realistic state
-            for a returning user); Qibla is the second tap-target. */}
-        <div className="flex gap-3">
-          <CompactTile
-            icon={<BookText size={16} />}
-            iconBg="var(--di-primary-soft)"
-            iconColor="var(--di-primary)"
-            title="Resume Qur'an"
-            subtitle="Al-Baqarah 2:255"
-          />
-          {/* Qibla is a tool, not content — keep amber/accent reserved for
-              hadith. Neutral secondary fill avoids weakening that signal.
-              No subtitle: the audience knows what Qibla is. */}
-          <CompactTile
-            icon={<Compass size={16} />}
-            iconBg="var(--di-secondary)"
-            iconColor="var(--di-primary)"
-            title="Qibla"
-          />
-        </div>
+        {/* Resume reading takes a full-width tile — it's the user's
+            personal continuation, the most likely tap on a returning visit. */}
+        <CompactTile
+          icon={<BookText size={16} />}
+          iconBg="var(--di-primary-soft)"
+          iconColor="var(--di-primary)"
+          title="Resume Qur'an"
+          subtitle="Al-Baqarah 2:255"
+        />
 
         {/* Daily content stack — paired Ayat + Hadith read together as
             today's content, with the feeling hero as a gentle next step. */}
