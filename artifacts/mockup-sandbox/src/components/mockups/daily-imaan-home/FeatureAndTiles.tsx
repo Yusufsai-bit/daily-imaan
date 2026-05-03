@@ -105,7 +105,7 @@ function FeelingHero() {
           How is your heart today?
         </div>
         <div className="font-['Inter'] text-[13px] leading-[1.5] mt-1.5" style={{ color: "#3a4a40" }}>
-          Tell us how you feel.
+          Find a verse or du&apos;a for what&apos;s on your heart today.
         </div>
       </div>
       <ChevronRight size={18} style={{ color: "var(--di-primary)", opacity: 0.6 }} />
@@ -183,11 +183,9 @@ export function FeatureAndTiles() {
       <div className="px-5 pt-3 pb-24 flex flex-col gap-4">
         <Header />
         <PrayerBanner />
-        <AyatCard />
 
-        {/* No section header — let the cards speak. */}
-        <FeelingHero />
-        <HadithContentCard />
+        {/* Quick-access tiles surfaced near the top so the most-used tools
+            (Qur'an reader + Qibla) are one tap from landing. */}
         <div className="flex gap-3">
           <SecondaryTile
             icon={<BookText size={20} />}
@@ -204,6 +202,12 @@ export function FeatureAndTiles() {
             subtitle="Direction to Makkah"
           />
         </div>
+
+        {/* Daily content stack: Ayat → Feeling hero → Hadith. No section
+            header — let the cards speak. */}
+        <AyatCard />
+        <FeelingHero />
+        <HadithContentCard />
       </div>
     </div>
   );
