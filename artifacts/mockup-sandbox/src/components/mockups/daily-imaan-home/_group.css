@@ -1,0 +1,17 @@
+:root {
+  --di-bg: #FAFAF8;
+  --di-fg: #111827;
+  --di-card: #FFFFFF;
+  --di-primary: #1A6B4A;
+  --di-primary-soft: rgba(26,107,74,0.08);
+  --di-secondary: #F0F4F1;
+  --di-muted: #F3F4F6;
+  --di-muted-fg: #6B7280;
+  --di-accent: #C8933C;
+  --di-accent-soft: rgba(200,147,60,0.12);
+  --di-border: #E5E7EB;
+  --di-sage: #D9E8DE;
+  --di-cream: #F7F1E3;
+  --di-ayat-shadow: 0 8px 24px rgba(26,107,74,0.10);
+  --di-card-shadow: 0 2px 8px rgba(17,24,39,0.06);
+}
