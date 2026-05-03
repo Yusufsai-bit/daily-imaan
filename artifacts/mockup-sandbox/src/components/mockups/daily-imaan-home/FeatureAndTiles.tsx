@@ -138,52 +138,6 @@ function AyatCard() {
   );
 }
 
-/* Evening Adhkar card — surfaces after Asr (in the morning we'd swap to
-   "Morning Adhkar"). Verbatim from Hisn al-Muslim / sunnah.com. Progress
-   indicator turns it into a small daily ritual without gamifying it.
-   Sits as the third content card, below Hadith. */
-function AdhkarCard() {
-  return (
-    <div>
-      <div className="font-['Inter'] font-semibold text-[11px] tracking-[1.2px] mb-2.5" style={{ color: "var(--di-muted-fg)" }}>
-        EVENING ADHKAR
-      </div>
-      <div className="rounded-2xl p-5" style={{ background: "var(--di-card)", boxShadow: "var(--di-card-shadow)" }}>
-        <div className="flex items-start gap-3">
-          <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: "var(--di-primary-soft)" }}
-          >
-            <Moon size={20} style={{ color: "var(--di-primary)" }} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-['Inter'] font-semibold text-[15px] leading-tight" style={{ color: "var(--di-fg)" }}>
-              Begin your evening remembrance
-            </div>
-            <div className="font-['Inter'] text-[12.5px] leading-[1.5] mt-1" style={{ color: "var(--di-muted-fg)" }}>
-              28 du&apos;as · about 7 minutes · from Hisn al-Muslim
-            </div>
-          </div>
-        </div>
-        {/* Progress strip — read like a journey, not a streak. */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="font-['Inter'] text-[11.5px]" style={{ color: "var(--di-muted-fg)" }}>0 of 28 read</span>
-            <span className="font-['Inter'] text-[11.5px]" style={{ color: "var(--di-muted-fg)" }}>Best after Asr</span>
-          </div>
-          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--di-secondary)" }}>
-            <div className="h-full" style={{ width: "0%", background: "var(--di-primary)" }} />
-          </div>
-        </div>
-        <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: "var(--di-border)" }}>
-          <span className="font-['Inter'] font-medium text-[13px]" style={{ color: "var(--di-primary)" }}>Start reading</span>
-          <ChevronRight size={16} style={{ color: "var(--di-primary)" }} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* Hadith card mirrors Ayat: outer "HADITH OF THE DAY" label so users who
    don't know Riyad as-Salihin's numbering still know what they're reading.
    Internal badge is the source book (the meaningful info), with the hadith
@@ -262,8 +216,10 @@ export function FeatureAndTiles() {
         <Header />
         <PrayerAndQiblaRow />
 
-        {/* Resume reading takes a full-width tile — it's the user's
-            personal continuation, the most likely tap on a returning visit. */}
+        {/* Two personal-action tiles — same compact format. Resume Qur'an
+            is where the user left off; Adhkar is the time-aware ritual
+            (label swaps to "Morning Adhkar" before noon). Both live above
+            the daily content as quick taps. */}
         <CompactTile
           icon={<BookText size={16} />}
           iconBg="var(--di-primary-soft)"
@@ -271,11 +227,16 @@ export function FeatureAndTiles() {
           title="Resume Qur'an"
           subtitle="Al-Baqarah 2:255"
         />
+        <CompactTile
+          icon={<Moon size={16} />}
+          iconBg="var(--di-primary-soft)"
+          iconColor="var(--di-primary)"
+          title="Evening Adhkar"
+          subtitle="0 of 28 read · about 7 minutes"
+        />
 
-        {/* Daily content stack — Ayat → Evening Adhkar (time-aware) →
-            Hadith → Feeling hero as the gentle next step. */}
+        {/* Daily content stack — Ayat → Hadith → Feeling hero. */}
         <AyatCard />
-        <AdhkarCard />
         <HadithContentCard />
         <FeelingHero />
       </div>
