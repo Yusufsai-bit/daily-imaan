@@ -82,9 +82,9 @@ function t1() {
       font-family="Amiri" font-size="72" fill="${FG}" direction="rtl">وَنَحْنُ أَقْرَبُ إِلَيْهِ مِنْ حَبْلِ ٱلْوَرِيدِ</text>
     ${goldRule(720)}
     <text x="${W/2}" y="850" text-anchor="middle"
-      font-family="EB Garamond" font-weight="400" font-size="42" fill="${FG}">And We are closer to him than [his]</text>
+      font-family="EB Garamond" font-style="italic" font-size="42" fill="${FG}">And We are closer to him than [his]</text>
     <text x="${W/2}" y="906" text-anchor="middle"
-      font-family="EB Garamond" font-weight="400" font-size="42" fill="${FG}">jugular vein.</text>
+      font-family="EB Garamond" font-style="italic" font-size="42" fill="${FG}">jugular vein.</text>
     ${f.footer}
   </svg>`;
 }
@@ -99,11 +99,11 @@ function t2() {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
     ${f.bgRect}${f.watermark}${f.header}
     <text x="${W/2}" y="540" text-anchor="middle"
-      font-family="EB Garamond" font-weight="400" font-size="42" fill="${FG}">"Actions are but by intentions,</text>
+      font-family="EB Garamond" font-style="italic" font-size="42" fill="${FG}">"Actions are but by intentions,</text>
     <text x="${W/2}" y="596" text-anchor="middle"
-      font-family="EB Garamond" font-weight="400" font-size="42" fill="${FG}">and every man shall have only</text>
+      font-family="EB Garamond" font-style="italic" font-size="42" fill="${FG}">and every man shall have only</text>
     <text x="${W/2}" y="652" text-anchor="middle"
-      font-family="EB Garamond" font-weight="400" font-size="42" fill="${FG}">that which he intended."</text>
+      font-family="EB Garamond" font-style="italic" font-size="42" fill="${FG}">that which he intended."</text>
     <text x="${W/2}" y="740" text-anchor="middle"
       font-family="Inter" font-weight="400" font-size="20" fill="${MUTED}">Narrated by 'Umar ibn al-Khattab</text>
     ${goldRule(810)}
@@ -129,11 +129,11 @@ function t3() {
       font-family="EB Garamond" font-style="italic" font-size="30" fill="${MUTED}">Hasbunā Allāhu wa niʿma al-wakīl</text>
     ${goldRule(720)}
     <text x="${W/2}" y="830" text-anchor="middle"
-      font-family="EB Garamond" font-weight="400" font-size="38" fill="${FG}">"Sufficient for us is Allah,</text>
+      font-family="EB Garamond" font-style="italic" font-size="38" fill="${FG}">"Sufficient for us is Allah,</text>
     <text x="${W/2}" y="882" text-anchor="middle"
-      font-family="EB Garamond" font-weight="400" font-size="38" fill="${FG}">and [He is] the best Disposer</text>
+      font-family="EB Garamond" font-style="italic" font-size="38" fill="${FG}">and [He is] the best Disposer</text>
     <text x="${W/2}" y="934" text-anchor="middle"
-      font-family="EB Garamond" font-weight="400" font-size="38" fill="${FG}">of affairs."</text>
+      font-family="EB Garamond" font-style="italic" font-size="38" fill="${FG}">of affairs."</text>
     ${f.footer}
   </svg>`;
 }
@@ -153,9 +153,9 @@ function t4() {
       font-family="Inter" font-weight="600" font-size="34" fill="${FG_SAGE}" letter-spacing="3.5">ALLĀH</text>
     ${goldRule(800)}
     <text x="${W/2}" y="900" text-anchor="middle"
-      font-family="EB Garamond" font-weight="400" font-size="36" fill="${FG_SAGE}">"The God — the only one</text>
+      font-family="EB Garamond" font-style="italic" font-size="36" fill="${FG_SAGE}">"The God — the only one</text>
     <text x="${W/2}" y="952" text-anchor="middle"
-      font-family="EB Garamond" font-weight="400" font-size="36" fill="${FG_SAGE}">worthy of worship."</text>
+      font-family="EB Garamond" font-style="italic" font-size="36" fill="${FG_SAGE}">worthy of worship."</text>
     ${f.footer}
   </svg>`;
 }

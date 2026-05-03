@@ -166,19 +166,19 @@ title = "App Store marketing icon (1024)"
 id = "hdNlmZ19wOelHtI559SSt"
 uri = "file://artifacts/daily-imaan/marketing/template-previews/template-1-quran.png"
 type = "image"
-title = "Template 1 — Qur'an Ayah (cream)"
+title = "Template 1 — Qur'an Ayah (cream, italic English)"
 
 [[outputs]]
 id = "WhUg7q07TSVL4OPk_Z9r_"
 uri = "file://artifacts/daily-imaan/marketing/template-previews/template-2-hadith.png"
 type = "image"
-title = "Template 2 — Hadith (cream, gold grade chip)"
+title = "Template 2 — Hadith (cream, italic English, gold grade chip)"
 
 [[outputs]]
 id = "6_YQDX9GPLZHncIH42YI6"
 uri = "file://artifacts/daily-imaan/marketing/template-previews/template-3-dua.png"
 type = "image"
-title = "Template 3 — Du'a (cream, with transliteration)"
+title = "Template 3 — Du'a (cream, with transliteration, italic English)"
 
 [[outputs]]
 id = "LVGA1sxPFeCEwPcbdlGvP"
@@ -202,7 +202,7 @@ title = "Template 6 — App Feature (sage, ONLY template with logo on canvas)"
 id = "Z0d-NbLAPScW-i40ICoB9"
 uri = "file://artifacts/daily-imaan/marketing/template-previews/template-4-asma.png"
 type = "image"
-title = "Template 4 — Asma ul-Husna (sage)"
+title = "Template 4 — Asma ul-Husna (sage, italic English)"
 
 [[outputs]]
 id = "MqWLij9Sdg5k9nhysRqCX"

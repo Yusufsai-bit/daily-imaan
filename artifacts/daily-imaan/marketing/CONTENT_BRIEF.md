@@ -157,7 +157,7 @@ On sage backgrounds, foreground swaps to cream `#F2F0EC` and muted swaps to a so
 **Sub-label:** `QUR'AN · SURAH [NAME] [C:V]`
 **Body fields:**
 1. Arabic line (Amiri, ~70pt, with diacritics) — required
-2. English translation (EB Garamond Regular, ~36pt, line-height 1.35) — verbatim Saheeh International. **Not italic.**
+2. English translation (EB Garamond Italic, ~36pt, line-height 1.35) — verbatim Saheeh International.
 3. Source name appears in the centered footer block (e.g. `SAHEEH INTERNATIONAL`). No inline citation line is needed when the sub-label already carries the surah:ayah reference.
 
 **Sourcing rule:** English text MUST match `quran.com/[surah]/[ayah]/saheeh-international` character-for-character. If unsure, omit the post.
@@ -178,7 +178,7 @@ On sage backgrounds, foreground swaps to cream `#F2F0EC` and muted swaps to a so
 
 **Sub-label:** `HADITH · [COLLECTION] [BOOK:NUMBER]` (e.g. `HADITH · BUKHARI 1`)
 **Body fields:**
-1. English hadith text (EB Garamond Regular, ~36pt) — verbatim from the cited collection's standard translation. **Not italic.**
+1. English hadith text (EB Garamond Italic, ~36pt) — verbatim from the cited collection's standard translation.
 2. Narrator line (Inter, ~20pt, dark muted): `Narrated by [Companion]` — only if the narrator is essential context
 3. **Grade chip** (Inter SemiBold, ~16pt, gold pill background, dark foreground): `SAHIH` / `HASAN` / `DA'IF` — required
 4. Source name `SUNNAH.COM` lives in the centered footer block. The collection + reference is already in the sub-label.
@@ -204,7 +204,7 @@ On sage backgrounds, foreground swaps to cream `#F2F0EC` and muted swaps to a so
 **Body fields:**
 1. Arabic du'a (Amiri, ~64pt, full diacritics) — required
 2. Transliteration (EB Garamond Italic, ~26pt, dark muted) — **always required** (we like the transliteration line; it stays on every du'a post)
-3. English translation (EB Garamond Regular, ~32pt) — verbatim. **Not italic.**
+3. English translation (EB Garamond Italic, ~32pt) — verbatim.
 4. Source name appears in the centered footer block (e.g. `SAHEEH INTERNATIONAL` for Qur'anic du'as, `SUNNAH.COM` for Hisn al-Muslim du'as).
 
 **Sourcing rule:** Du'a must be from the Qur'an or from `sunnah.com` — typically Hisn al-Muslim entries map to a hadith collection. Do not post du'as you cannot trace.
@@ -229,7 +229,7 @@ On sage backgrounds, foreground swaps to cream `#F2F0EC` and muted swaps to a so
 **Body fields:**
 1. Arabic name (Amiri, ~140pt, cream on sage, with diacritics) — e.g. `ٱلرَّحْمَٰنُ`
 2. Transliteration (Inter SemiBold, ~32pt, +2pt tracking, soft cream): `Ar-Raḥmān`
-3. English meaning (EB Garamond Regular, ~32pt, cream): `The Most Compassionate`. **Not italic.**
+3. English meaning (EB Garamond Italic, ~32pt, cream): `The Most Compassionate`.
 4. Footer source line (e.g. `SAHEEH INTERNATIONAL`) — no inline citation needed; if you want to anchor the name in a specific verse, add it as a small dark-muted line above the gold rule (Inter Medium ~20pt).
 
 **Sourcing rule:** Use the canonical 99 Names list. The citation is a verse from the Qur'an where the name appears (Saheeh International).
