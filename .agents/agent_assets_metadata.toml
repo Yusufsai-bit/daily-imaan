@@ -131,3 +131,15 @@ id = "bv_adw6_r5ccnZQOczLY0"
 uri = "file://artifacts/daily-imaan/marketing/logo/README.md"
 type = "text"
 title = "Logo kit README — usage guide"
+
+[[outputs]]
+id = "-s060PATrb-LnPhLqig9a"
+uri = "file://.local/logo-comparison/previous-logo.png"
+type = "image"
+title = "PREVIOUS logo (from initial app build, May 2)"
+
+[[outputs]]
+id = "VkvKChws7-rTcWCTUtbx5"
+uri = "file://.local/logo-comparison/current-logo.png"
+type = "image"
+title = "CURRENT logo (generated yesterday)"
