@@ -323,8 +323,8 @@ export default function HomeScreen() {
   const morning = isMorningAdhkarWindow(nextPrayer?.name);
   const adhkarTitle = morning ? "Morning Adhkar" : "Evening Adhkar";
   const adhkarSubtitle = morning
-    ? "Sunnah remembrances · best before Asr"
-    : "Sunnah remembrances · best after Asr";
+    ? "Morning protection"
+    : "Evening protection";
   const adhkarIcon = (morning ? "sunny-outline" : "moon-outline") as keyof typeof Ionicons.glyphMap;
   const adhkarRoute = morning ? "/adhkar?period=morning" : "/adhkar?period=evening";
 
