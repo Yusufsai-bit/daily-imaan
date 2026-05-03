@@ -161,3 +161,39 @@ id = "73pYsY9Ijbgje6FGa9cLD"
 uri = "file://artifacts/daily-imaan/marketing/logo/app/app-store-1024.png"
 type = "image"
 title = "App Store marketing icon (1024)"
+
+[[outputs]]
+id = "hdNlmZ19wOelHtI559SSt"
+uri = "file://artifacts/daily-imaan/marketing/template-previews/template-1-quran.png"
+type = "image"
+title = "Template 1 — Qur'an Ayah (cream)"
+
+[[outputs]]
+id = "WhUg7q07TSVL4OPk_Z9r_"
+uri = "file://artifacts/daily-imaan/marketing/template-previews/template-2-hadith.png"
+type = "image"
+title = "Template 2 — Hadith (cream, gold grade chip)"
+
+[[outputs]]
+id = "6_YQDX9GPLZHncIH42YI6"
+uri = "file://artifacts/daily-imaan/marketing/template-previews/template-3-dua.png"
+type = "image"
+title = "Template 3 — Du'a (cream)"
+
+[[outputs]]
+id = "LVGA1sxPFeCEwPcbdlGvP"
+uri = "file://artifacts/daily-imaan/marketing/template-previews/template-4-reminder.png"
+type = "image"
+title = "Template 4 — Reminder (sage)"
+
+[[outputs]]
+id = "oKqw_z3bji9CPJmMC0cmq"
+uri = "file://artifacts/daily-imaan/marketing/template-previews/template-5-asma.png"
+type = "image"
+title = "Template 5 — Asma ul-Husna (sage)"
+
+[[outputs]]
+id = "juT0C6VZMtkL9PDWdYZs-"
+uri = "file://artifacts/daily-imaan/marketing/template-previews/template-6-app-feature.png"
+type = "image"
+title = "Template 6 — App Feature (sage, ONLY template with logo on canvas)"
