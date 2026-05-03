@@ -269,14 +269,6 @@ export default function SettingsScreen() {
     [updateSettings]
   );
 
-  const handleSchoolSelect = useCallback(
-    (id: number) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      updateSettings({ prayerSchool: id });
-    },
-    [updateSettings]
-  );
-
   const handlePrayerSoundToggle = useCallback(
     (prayer: keyof PrayerSoundSettings, val: boolean) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -870,61 +862,6 @@ export default function SettingsScreen() {
                 </Text>
               </View>
               {settings.prayerMethod === method.id && (
-                <Ionicons name="checkmark-circle" size={20} color={C.primary} {...a11yDecorative} />
-              )}
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
-      {/* Asr Juristic School */}
-      <View style={styles.section}>
-        <View style={{ gap: 2, marginBottom: 8 }}>
-          <Text
-            maxFontSizeMultiplier={1.4}
-            style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
-          >
-            ASR JURISTIC SCHOOL
-          </Text>
-          <Text
-            maxFontSizeMultiplier={1.6}
-            style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
-          >
-            Hanafi Asr starts later (when shadow = 2× object). Standard follows Shafi'i, Maliki, Hanbali (shadow = 1×).
-          </Text>
-        </View>
-        <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
-          {[
-            { id: 0, label: "Standard", desc: "Shafi'i · Maliki · Hanbali" },
-            { id: 1, label: "Hanafi", desc: "Shadow length 2×" },
-          ].map((s, i, arr) => (
-            <Pressable
-              key={s.id}
-              onPress={() => handleSchoolSelect(s.id)}
-              {...a11ySelectable(`${s.label} — ${s.desc}`, settings.prayerSchool === s.id)}
-              style={({ pressed }) => [
-                styles.optionRow,
-                i < arr.length - 1
-                  ? { borderBottomColor: C.border }
-                  : { borderBottomWidth: 0 },
-                { opacity: pressed ? 0.7 : 1 },
-              ]}
-            >
-              <View style={styles.optionContent}>
-                <Text
-                  maxFontSizeMultiplier={1.6}
-                  style={[styles.optionTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
-                >
-                  {s.label}
-                </Text>
-                <Text
-                  maxFontSizeMultiplier={1.6}
-                  style={[styles.optionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
-                >
-                  {s.desc}
-                </Text>
-              </View>
-              {settings.prayerSchool === s.id && (
                 <Ionicons name="checkmark-circle" size={20} color={C.primary} {...a11yDecorative} />
               )}
             </Pressable>
