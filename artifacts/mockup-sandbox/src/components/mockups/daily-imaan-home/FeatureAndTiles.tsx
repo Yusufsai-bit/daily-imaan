@@ -1,6 +1,6 @@
 import "./_group.css";
 import {
-  Compass, Leaf, BookOpen, ChevronRight, Play, Bookmark, Share2, Shuffle, Clock,
+  Compass, Leaf, BookOpen, BookText, ChevronRight, Play, Bookmark, Share2, Shuffle, Clock,
 } from "lucide-react";
 
 function Header() {
@@ -82,11 +82,12 @@ function AyatCard() {
 }
 
 /* Hero: "I am feeling" gets full-bleed treatment on a soft sage panel — it's the
-   emotional gateway and most worth tapping. Bigger heart, longer subtitle. */
+   emotional gateway and most worth tapping. The whole card is the affordance, so
+   no internal CTA is needed. */
 function FeelingHero() {
   return (
     <div
-      className="rounded-2xl p-5 flex items-start gap-4 relative overflow-hidden"
+      className="rounded-2xl p-5 flex items-center gap-4 relative overflow-hidden"
       style={{
         background: "linear-gradient(135deg, var(--di-sage) 0%, var(--di-cream) 100%)",
       }}
@@ -104,12 +105,40 @@ function FeelingHero() {
           How is your heart today?
         </div>
         <div className="font-['Inter'] text-[13px] leading-[1.5] mt-1.5" style={{ color: "#3a4a40" }}>
-          Tell us what you&apos;re feeling — we&apos;ll find a verse or du&apos;a for it.
+          Tell us how you feel.
         </div>
-        <div className="flex items-center gap-1 mt-3 font-['Inter'] font-medium text-[13px]" style={{ color: "var(--di-primary)" }}>
-          <span>Choose a feeling</span>
-          <ChevronRight size={14} />
+      </div>
+      <ChevronRight size={18} style={{ color: "var(--di-primary)", opacity: 0.6 }} />
+    </div>
+  );
+}
+
+/* Hadith promoted to a full content card under the feeling hero — same treatment
+   as Variant 1. Lets the user read today's hadith without tapping. */
+function HadithContentCard() {
+  return (
+    <div className="rounded-2xl p-5" style={{ background: "var(--di-card)", boxShadow: "var(--di-card-shadow)" }}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="inline-block px-2.5 py-1 rounded-lg" style={{ background: "var(--di-accent-soft)" }}>
+          <span className="font-['Inter'] font-semibold text-[12px]" style={{ color: "var(--di-accent)" }}>
+            Hadith · Book 1 · 1
+          </span>
         </div>
+        <span className="font-['Inter'] text-[11px]" style={{ color: "var(--di-muted-fg)" }}>Riyad as-Salihin</span>
+      </div>
+      <div className="text-right font-['Amiri'] text-[20px] leading-[1.9]" style={{ color: "var(--di-fg)", direction: "rtl" }}>
+        إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ
+      </div>
+      <div className="h-px my-3" style={{ background: "var(--di-border)" }} />
+      <div className="font-['Inter'] text-[14px] leading-[1.6]" style={{ color: "#374151" }}>
+        &ldquo;The reward of deeds depends upon the intentions and every person will get the reward according to what he has intended.&rdquo;
+      </div>
+      <div className="font-['Inter'] text-[10px] tracking-[0.3px] mt-1.5" style={{ color: "var(--di-muted-fg)" }}>
+        Narrated by &lsquo;Umar ibn al-Khattab · Sahih
+      </div>
+      <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: "var(--di-border)" }}>
+        <span className="font-['Inter'] font-medium text-[13px]" style={{ color: "var(--di-primary)" }}>Read full hadith</span>
+        <ChevronRight size={16} style={{ color: "var(--di-primary)" }} />
       </div>
     </div>
   );
@@ -158,18 +187,19 @@ export function FeatureAndTiles() {
 
         {/* No section header — let the cards speak. */}
         <FeelingHero />
+        <HadithContentCard />
         <div className="flex gap-3">
           <SecondaryTile
-            icon={<BookOpen size={20} />}
-            iconBg="var(--di-accent-soft)"
-            iconColor="var(--di-accent)"
-            title="Daily Hadith"
-            subtitle="Riyad as-Salihin · today's reading"
+            icon={<BookText size={20} />}
+            iconBg="var(--di-primary-soft)"
+            iconColor="var(--di-primary)"
+            title="Read Qur'an"
+            subtitle="Browse all 114 surahs"
           />
           <SecondaryTile
             icon={<Compass size={20} />}
-            iconBg="var(--di-primary-soft)"
-            iconColor="var(--di-primary)"
+            iconBg="var(--di-accent-soft)"
+            iconColor="var(--di-accent)"
             title="Qibla"
             subtitle="Direction to Makkah"
           />
