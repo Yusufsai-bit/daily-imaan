@@ -221,6 +221,20 @@ function HadithContentCard() {
         <div className="font-['Inter'] text-[12px] tracking-[0.2px] mt-1.5" style={{ color: "var(--di-muted-fg)" }}>
           Narrated by &lsquo;Umar ibn al-Khattab · Sahih
         </div>
+        {/* Same secondary action row as the Ayat card — bookmark, share,
+            shuffle. No Listen (no audio recitation for hadith yet). All
+            muted; bookmark fills `--di-accent` only when actually saved. */}
+        <div className="flex gap-2 mt-3 justify-end">
+          <div className="w-10 h-10 flex items-center justify-center rounded-[10px]" style={{ background: "var(--di-secondary)" }}>
+            <Bookmark size={16} style={{ color: "var(--di-muted-fg)" }} />
+          </div>
+          <div className="w-10 h-10 flex items-center justify-center rounded-[10px]" style={{ background: "var(--di-secondary)" }}>
+            <Share2 size={16} style={{ color: "var(--di-muted-fg)" }} />
+          </div>
+          <div className="w-10 h-10 flex items-center justify-center rounded-[10px]" style={{ background: "var(--di-secondary)" }}>
+            <Shuffle size={16} style={{ color: "var(--di-muted-fg)" }} />
+          </div>
+        </div>
         <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: "var(--di-border)" }}>
           <span className="font-['Inter'] font-medium text-[13px]" style={{ color: "var(--di-primary)" }}>Read full hadith</span>
           <ChevronRight size={16} style={{ color: "var(--di-primary)" }} />
