@@ -1,7 +1,52 @@
 import "./_group.css";
 import {
-  Compass, Leaf, BookOpen, BookText, ChevronRight, Play, Bookmark, Share2, Shuffle, Clock, Moon,
+  Compass, Leaf, BookOpen, BookText, ChevronRight, Play, Bookmark, Share2, Shuffle, Clock, Sunrise,
 } from "lucide-react";
+
+/* =========================================================================
+   Daily Imaan — Home (Variant 3, ready-to-graduate)
+   Design decisions resolved in this mockup. Carry these to the Expo app.
+
+   1. ADHKAR LABEL TIMING
+      - Fajr  → Dhuhr   : "Morning Adhkar"  (subtitle: "Best before Asr")
+      - Dhuhr → Asr     : "Morning Adhkar"  (subtitle: "Best before Asr")
+      - Asr   → Maghrib : "Evening Adhkar"  (subtitle: "Best after Asr")
+      - After Maghrib   : "Evening Adhkar"  (subtitle: "Best after Asr")
+      Mockup shows the pre-Asr state so the label reads "Morning Adhkar".
+
+   2. FIRST-RUN / EMPTY STATES
+      - Resume Qur'an :  no last-read   → title "Start the Qur'an",
+                                          subtitle "Begin with Al-Fatiha"
+                         has last-read  → title "Resume Qur'an",
+                                          subtitle "<Surah> <ayah>"
+      - Adhkar count  :  resets daily at Fajr (not lifetime)
+                         first time today → "0 of 28 read · ~7 min"
+      - Streak chip   :  day 1 shows "1 day streak" (never 0/empty)
+
+   3. TAPPABLE PRAYER PILL
+      The whole green pill on the left is a tap target that opens the full
+      day's prayer schedule. Whole-pill tap, no inline chevron clutter.
+
+   4. DETERMINISTIC PER-DAY HADITH
+      Pick once per Hijri date (deterministic seed: hash(date) mod
+      collection length). Same hadith for every user on a given day; do
+      NOT randomize on each open.
+
+   5. BOOKMARK STATE
+      Bookmark icon is muted when the ayah is unsaved (state shown here);
+      switch to filled `--di-accent` when saved. No other state changes.
+
+   6. HERO CHEVRON
+      Full opacity for older-eye legibility (was 60%).
+
+   7. PRAYER PILL ROBUSTNESS
+      Long content like "Maghrib in 12h 45m · 7:18 PM" must not wrap.
+      Title is whitespace-nowrap; secondary time string can truncate.
+
+   8. TAB BAR CLEARANCE
+      Wrapper has pb-24 so the Feeling hero gradient doesn't get clipped
+      by the bottom tab bar in the real app.
+   ========================================================================= */
 
 /* Header
    - Wordmark in ink (was primary green) — frees the eye from the green stack
@@ -34,17 +79,18 @@ function Header() {
 
 /* Prayer + Qibla pair: same primary-green pill style so they read as
    "today's two time-sensitive prayer essentials." Prayer takes the wider
-   share since its content (next prayer + time) is longer. */
+   share. Whole left pill is tappable → opens the full daily schedule.
+   Title is nowrap-protected; the secondary time can truncate on narrow
+   widths so "Maghrib in 12h 45m" never breaks the row. */
 function PrayerAndQiblaRow() {
   return (
     <div className="flex gap-2.5">
-      {/* Countdown reads as utility instead of just info. */}
-      <div className="flex-1 flex items-center gap-2 px-3.5 py-2.5 rounded-[10px]" style={{ background: "var(--di-primary)" }}>
-        <Clock size={16} style={{ color: "rgba(255,255,255,0.8)" }} />
-        <span className="font-['Inter'] font-medium text-[13px] text-white">Asr in 1h 23m</span>
-        <span className="font-['Inter'] text-[12px]" style={{ color: "rgba(255,255,255,0.7)" }}>· 4:42 PM</span>
+      <div className="flex-1 min-w-0 flex items-center gap-2 px-3.5 py-2.5 rounded-[10px]" style={{ background: "var(--di-primary)" }}>
+        <Clock size={16} style={{ color: "rgba(255,255,255,0.8)" }} className="shrink-0" />
+        <span className="font-['Inter'] font-medium text-[13px] text-white whitespace-nowrap">Asr in 1h 23m</span>
+        <span className="font-['Inter'] text-[12px] truncate" style={{ color: "rgba(255,255,255,0.7)" }}>· 4:42 PM</span>
       </div>
-      <div className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-[10px]" style={{ background: "var(--di-primary)" }}>
+      <div className="shrink-0 flex items-center gap-1.5 px-3.5 py-2.5 rounded-[10px]" style={{ background: "var(--di-primary)" }}>
         <Compass size={16} style={{ color: "rgba(255,255,255,0.8)" }} />
         <span className="font-['Inter'] font-medium text-[13px] text-white">Qibla</span>
       </div>
@@ -52,36 +98,44 @@ function PrayerAndQiblaRow() {
   );
 }
 
-/* Compact tile strip near the top — single row, icon + label (and an
-   optional small muted subtitle for context, e.g. last-read surah).
-   Title forced single-line + ellipsis so two tiles always feel balanced
-   regardless of label length. Tappable through the full card. */
+/* Compact action tile — icon + title (+ optional subtitle, + optional
+   thin progress strip). Title forced single-line + ellipsis so the row
+   stays balanced. Tappable through the whole card. Progress strip opt-in
+   for tiles that represent a daily journey (e.g. Adhkar). */
 function CompactTile({
-  icon, title, subtitle, iconBg, iconColor,
+  icon, title, subtitle, iconBg, iconColor, progress,
 }: {
   icon: React.ReactNode; title: string; subtitle?: string; iconBg: string; iconColor: string;
+  progress?: number; // 0–1
 }) {
   return (
     <div
-      className="flex-1 min-w-0 rounded-2xl py-2.5 px-3 flex items-center gap-2"
+      className="rounded-2xl py-2.5 px-3 flex flex-col gap-2"
       style={{ background: "var(--di-card)", boxShadow: "var(--di-card-shadow)" }}
     >
-      <div
-        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-        style={{ background: iconBg, color: iconColor }}
-      >
-        {icon}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="font-['Inter'] font-semibold text-[14px] leading-tight truncate" style={{ color: "var(--di-fg)" }}>
-          {title}
+      <div className="flex items-center gap-2">
+        <div
+          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+          style={{ background: iconBg, color: iconColor }}
+        >
+          {icon}
         </div>
-        {subtitle && (
-          <div className="font-['Inter'] text-[11.5px] leading-tight mt-1 truncate" style={{ color: "var(--di-muted-fg)" }}>
-            {subtitle}
+        <div className="min-w-0 flex-1">
+          <div className="font-['Inter'] font-semibold text-[14px] leading-tight truncate" style={{ color: "var(--di-fg)" }}>
+            {title}
           </div>
-        )}
+          {subtitle && (
+            <div className="font-['Inter'] text-[11.5px] leading-tight mt-1 truncate" style={{ color: "var(--di-muted-fg)" }}>
+              {subtitle}
+            </div>
+          )}
+        </div>
       </div>
+      {typeof progress === "number" && (
+        <div className="h-1 rounded-full overflow-hidden" style={{ background: "var(--di-secondary)" }}>
+          <div className="h-full" style={{ width: `${Math.max(0, Math.min(1, progress)) * 100}%`, background: "var(--di-primary)" }} />
+        </div>
+      )}
     </div>
   );
 }
@@ -201,7 +255,7 @@ function FeelingHero() {
           Find a verse or du&apos;a for what&apos;s on your heart today.
         </div>
       </div>
-      <ChevronRight size={18} style={{ color: "var(--di-primary)", opacity: 0.6 }} />
+      <ChevronRight size={18} style={{ color: "var(--di-primary)" }} />
     </div>
   );
 }
@@ -227,12 +281,16 @@ export function FeatureAndTiles() {
           title="Resume Qur'an"
           subtitle="Al-Baqarah 2:255"
         />
+        {/* Adhkar label is time-aware (see header rule 1). The screen
+            time here is pre-Asr, so the label is "Morning Adhkar" with
+            "Best before Asr." Progress strip resets daily at Fajr. */}
         <CompactTile
-          icon={<Moon size={16} />}
+          icon={<Sunrise size={16} />}
           iconBg="var(--di-primary-soft)"
           iconColor="var(--di-primary)"
-          title="Evening Adhkar"
-          subtitle="0 of 28 read · about 7 minutes"
+          title="Morning Adhkar"
+          subtitle="0 of 28 read · best before Asr"
+          progress={0}
         />
 
         {/* Daily content stack — Ayat → Hadith → Feeling hero. */}
