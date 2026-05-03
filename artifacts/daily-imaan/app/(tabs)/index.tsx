@@ -285,8 +285,11 @@ export default function HomeScreen() {
 
   const handleHadithShare = useCallback(async () => {
     try {
+      // Keep the share concise: just the English meaning + a single
+      // attribution line + source URL. The Arabic block was making the
+      // share preview look like a wall of text in iMessage / WhatsApp.
       await Share.share({
-        message: `${hadith.arabicText}\n\n${hadith.englishText}\n— ${hadith.collection} #${hadith.reference}\n${hadith.sourceUrl}\n\nShared via Daily Imaan`,
+        message: `"${hadith.englishText}"\n\n— ${hadith.collection} #${hadith.reference}\n${hadith.sourceUrl}\n\nvia Daily Imaan`,
       });
     } catch {
       // ignore

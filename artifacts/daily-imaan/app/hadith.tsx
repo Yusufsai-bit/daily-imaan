@@ -52,8 +52,13 @@ export default function HadithScreen() {
 
   const handleShare = useCallback(async () => {
     try {
+      // Concise share format — drops the Arabic block and book-chapter
+      // line that were making the share preview feel like a wall of
+      // text. English meaning + a single attribution line + source URL
+      // is enough; the recipient can tap through to sunnah.com for the
+      // full chain of narrators if they want depth.
       await Share.share({
-        message: `${hadith.arabicText}\n\n"${hadith.englishText}"\n\n— ${hadith.collection} ${hadith.reference}${hadith.grade ? ` (${hadith.grade})` : ""}\n${hadith.bookTitle}\n\nShared via Daily Imaan`,
+        message: `"${hadith.englishText}"\n\n— ${hadith.collection} ${hadith.reference}${hadith.grade ? ` · ${hadith.grade}` : ""}\n${hadith.sourceUrl}\n\nvia Daily Imaan`,
       });
     } catch {
       // ignore

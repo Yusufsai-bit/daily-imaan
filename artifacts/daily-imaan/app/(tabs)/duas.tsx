@@ -7,7 +7,6 @@ import {
   FlatList,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -18,6 +17,22 @@ import {
 import colors from "@/constants/colors";
 import { useApp } from "@/context/AppContext";
 import { DUA_CATEGORIES, DUAS, Dua } from "@/data/duasData";
+
+/**
+ * Per-category icon mapping. Keep keys in sync with DUA_CATEGORIES — any
+ * unknown category falls back to a generic bookmark icon. We deliberately
+ * use Ionicons "outline" variants to match the rest of the app.
+ */
+const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  "Morning & Evening": "sunny-outline",
+  Prayer: "moon-outline",
+  "Eating & Drinking": "restaurant-outline",
+  Commuting: "car-outline",
+  Home: "home-outline",
+  "Work & Study": "briefcase-outline",
+  Hardship: "heart-outline",
+  Sleep: "bed-outline",
+};
 
 function DuaCard({ dua, isDark, C }: { dua: Dua; isDark: boolean; C: (typeof colors)["light"] }) {
   const [expanded, setExpanded] = useState(false);
@@ -96,25 +111,55 @@ export default function DuasScreen() {
   const C = isDark ? colors.dark : colors.light;
   const insets = useSafeAreaInsets();
 
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  // null = landing (category grid). A string = drilled into one category.
+  // Search overrides both: typing a query shows cross-category results
+  // regardless of which category the user is in.
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
+  const isSearching = query.trim().length > 0;
+  const showCategoryGrid = selectedCategory === null && !isSearching;
+
+  // Categories with live counts so the grid tiles can show "12 du'as"
+  // subtitles. We strip the legacy "All" sentinel from DUA_CATEGORIES —
+  // categorical browsing is now the default; the old "All" pill caused
+  // the overwhelming wall-of-cards problem this screen used to have.
+  const categoryTiles = useMemo(
+    () =>
+      DUA_CATEGORIES.filter((c) => c !== "All").map((cat) => ({
+        name: cat,
+        count: DUAS.filter((d) => d.category === cat).length,
+        icon: CATEGORY_ICONS[cat] ?? ("bookmark-outline" as const),
+      })),
+    [],
+  );
+
   const filtered = useMemo(() => {
-    let list = DUAS;
-    if (selectedCategory !== "All") {
-      list = list.filter((d) => d.category === selectedCategory);
-    }
-    if (query.trim()) {
+    if (isSearching) {
       const q = query.toLowerCase();
-      list = list.filter(
+      return DUAS.filter(
         (d) =>
           d.occasion.toLowerCase().includes(q) ||
           d.englishText.toLowerCase().includes(q) ||
-          d.transliteration.toLowerCase().includes(q)
+          d.transliteration.toLowerCase().includes(q),
       );
     }
-    return list;
-  }, [selectedCategory, query]);
+    if (selectedCategory) {
+      return DUAS.filter((d) => d.category === selectedCategory);
+    }
+    return [];
+  }, [selectedCategory, query, isSearching]);
+
+  const handleCategoryTap = (cat: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedCategory(cat);
+  };
+
+  const handleBackToCategories = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedCategory(null);
+    setQuery("");
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: C.background }]}>
@@ -124,7 +169,11 @@ export default function DuasScreen() {
           Duas
         </Text>
         <Text style={[styles.subtitle, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-          {filtered.length} du'as
+          {showCategoryGrid
+            ? `${categoryTiles.length} categories`
+            : isSearching
+            ? `${filtered.length} ${filtered.length === 1 ? "result" : "results"}`
+            : `${filtered.length} ${filtered.length === 1 ? "du'a" : "du'as"}`}
         </Text>
       </View>
 
@@ -147,59 +196,92 @@ export default function DuasScreen() {
         </View>
       </View>
 
-      {/* Category Pills */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={[styles.pillScroll, { backgroundColor: C.background }]}
-        contentContainerStyle={styles.pillContent}
-      >
-        {DUA_CATEGORIES.map((cat) => (
+      {/* Breadcrumb back-to-categories pill — only when drilled in and
+          not actively searching across all categories. */}
+      {selectedCategory && !isSearching && (
+        <View style={styles.crumbRow}>
           <Pressable
-            key={cat}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setSelectedCategory(cat);
-            }}
-            style={[
-              styles.pill,
-              {
-                backgroundColor: selectedCategory === cat ? C.primary : C.muted,
-                borderColor: selectedCategory === cat ? C.primary : C.border,
-              },
+            onPress={handleBackToCategories}
+            accessibilityRole="button"
+            accessibilityLabel="Back to categories"
+            style={({ pressed }) => [
+              styles.crumbPill,
+              { backgroundColor: C.muted, borderColor: C.border, opacity: pressed ? 0.7 : 1 },
             ]}
           >
-            <Text
-              style={[
-                styles.pillText,
+            <Ionicons name="chevron-back" size={14} color={C.mutedForeground} />
+            <Text style={[styles.crumbText, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              Categories
+            </Text>
+          </Pressable>
+          <Text
+            style={[styles.crumbCurrent, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}
+            numberOfLines={1}
+          >
+            {selectedCategory}
+          </Text>
+        </View>
+      )}
+
+      {/* Body — either the 2-column category grid, or the drilled-in
+          dua list, or cross-category search results. */}
+      {showCategoryGrid ? (
+        <FlatList
+          data={categoryTiles}
+          keyExtractor={(item) => item.name}
+          numColumns={2}
+          columnWrapperStyle={styles.gridRow}
+          contentContainerStyle={[styles.grid, { paddingBottom: insets.bottom + 100 }]}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => handleCategoryTap(item.name)}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.name}, ${item.count} du'as`}
+              style={({ pressed }) => [
+                styles.categoryTile,
                 {
-                  color: selectedCategory === cat ? "#fff" : C.mutedForeground,
-                  fontFamily: selectedCategory === cat ? "Inter_600SemiBold" : "Inter_400Regular",
+                  backgroundColor: C.card,
+                  borderColor: C.border,
+                  opacity: pressed ? 0.85 : 1,
+                  shadowColor: "#000",
                 },
               ]}
             >
-              {cat}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      {/* Duas List */}
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <DuaCard dua={item} isDark={isDark} C={C} />}
-        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 100 }]}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={() => (
-          <View style={styles.empty}>
-            <Ionicons name="search-outline" size={48} color={C.mutedForeground} />
-            <Text style={[styles.emptyText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              No duas found
-            </Text>
-          </View>
-        )}
-      />
+              <View style={[styles.categoryIconWrap, { backgroundColor: C.secondary }]}>
+                <Ionicons name={item.icon} size={22} color={C.primary} />
+              </View>
+              <Text
+                style={[styles.categoryName, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}
+                numberOfLines={2}
+              >
+                {item.name}
+              </Text>
+              <Text
+                style={[styles.categoryCount, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+              >
+                {item.count} {item.count === 1 ? "du'a" : "du'as"}
+              </Text>
+            </Pressable>
+          )}
+        />
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <DuaCard dua={item} isDark={isDark} C={C} />}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 100 }]}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={() => (
+            <View style={styles.empty}>
+              <Ionicons name="search-outline" size={48} color={C.mutedForeground} />
+              <Text style={[styles.emptyText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                No duas found
+              </Text>
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 }
@@ -215,10 +297,49 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1,
   },
   searchInput: { flex: 1, fontSize: 15, padding: 0 },
-  pillScroll: { flexGrow: 0 },
-  pillContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
-  pill: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
-  pillText: { fontSize: 13 },
+  crumbRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  crumbPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  crumbText: { fontSize: 12 },
+  crumbCurrent: { flex: 1, fontSize: 14 },
+  grid: { paddingHorizontal: 16, paddingTop: 12, gap: 12 },
+  gridRow: { gap: 12 },
+  categoryTile: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 18,
+    paddingHorizontal: 14,
+    gap: 10,
+    minHeight: 130,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  categoryIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  categoryName: { fontSize: 15, lineHeight: 20 },
+  categoryCount: { fontSize: 12 },
   list: { paddingHorizontal: 16, paddingTop: 8, gap: 10 },
   duaCard: {
     borderRadius: 14, padding: 16, gap: 12,
