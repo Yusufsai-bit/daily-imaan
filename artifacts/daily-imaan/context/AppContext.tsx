@@ -30,6 +30,13 @@ export interface AppSettings {
    * code (e.g. "ar.alafasy"). See constants/reciters.ts for the catalogue.
    */
   reciter: string;
+  /**
+   * When true, the home screen surfaces a "Daily Hadith" shortcut that
+   * opens a curated authentic hadith for the day. Defaults to ON. Users
+   * who prefer to keep the home screen Quran-only can hide it from
+   * Settings without affecting any other functionality.
+   */
+  dailyHadithEnabled: boolean;
 }
 
 export interface StreakData {
@@ -103,6 +110,7 @@ const DEFAULT_STATE: AppState = {
       Isha: true,
     },
     reciter: DEFAULT_RECITER_ID,
+    dailyHadithEnabled: true,
   },
   readAyatIds: [],
   lastReadPosition: null,

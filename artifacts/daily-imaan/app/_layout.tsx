@@ -103,6 +103,7 @@ function RootLayoutNav() {
       <Stack.Screen name="bookmarks" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="feeling" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="qibla" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="hadith" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="privacy" options={{ headerShown: false, presentation: "card" }} />
     </Stack>
   );

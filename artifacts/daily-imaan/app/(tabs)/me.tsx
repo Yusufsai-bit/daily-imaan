@@ -26,7 +26,7 @@ const GOOD_DEEDS = [
   { id: "quran", label: "Read Quran", icon: "book-outline" as const, time: "Daily" },
   { id: "dua", label: "Made Dua", icon: "chatbubble-ellipses-outline" as const, time: "Anytime" },
   { id: "sadaqah", label: "Gave Sadaqah", icon: "heart-outline" as const, time: "Daily" },
-  { id: "parents", label: "Called Parents", icon: "call-outline" as const, time: "Daily" },
+  { id: "parents", label: "Called a Loved One", icon: "call-outline" as const, time: "Daily" },
   { id: "dhikr", label: "Completed Dhikr", icon: "refresh-outline" as const, time: "Daily" },
 ];
 
@@ -158,49 +158,6 @@ export default function MeScreen() {
         Days with Allah only ever goes up. Periods, illness, travel, and rest never break it.
       </Text>
 
-      {/* I am feeling... — gentle entry to Quran/Sunnah comfort */}
-      <Pressable
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push("/feeling" as never);
-        }}
-        {...a11yButton(
-          "I am feeling",
-          "Opens a list of feelings to find a verse or dua",
-        )}
-        style={({ pressed }) => [
-          styles.feelingCard,
-          {
-            backgroundColor: C.card,
-            shadowColor: isDark ? "#000" : "#1A6B4A",
-            opacity: pressed ? 0.9 : 1,
-          },
-        ]}
-      >
-        <View
-          {...a11yDecorative}
-          style={[
-            styles.feelingIcon,
-            {
-              backgroundColor: isDark
-                ? "rgba(45,191,127,0.15)"
-                : "rgba(26,107,74,0.08)",
-            },
-          ]}
-        >
-          <Ionicons name="heart-outline" size={20} color={C.primary} />
-        </View>
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text style={[styles.feelingTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
-            I am feeling...
-          </Text>
-          <Text style={[styles.feelingSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            Find a verse or dua for your heart
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={C.mutedForeground} />
-      </Pressable>
-
       {/* Daily Deeds */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
@@ -308,24 +265,6 @@ export default function MeScreen() {
         </Text>
         <View style={[styles.linksList, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
           <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push("/qibla" as never);
-            }}
-            {...a11yLink("Qibla Compass", "Opens the Qibla compass")}
-            style={({ pressed }) => [styles.linkRow, { borderBottomColor: C.border, opacity: pressed ? 0.7 : 1 }]}
-          >
-            <Ionicons name="compass-outline" size={20} color={C.primary} {...a11yDecorative} />
-            <Text
-              maxFontSizeMultiplier={1.5}
-              style={[styles.linkText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
-            >
-              Qibla Compass
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} style={{ marginLeft: "auto" }} {...a11yDecorative} />
-          </Pressable>
-
-          <Pressable
             onPress={() => router.push("/settings" as never)}
             {...a11yLink("Settings", "Opens app settings")}
             style={({ pressed }) => [styles.linkRow, { borderBottomColor: C.border, opacity: pressed ? 0.7 : 1 }]}
@@ -407,24 +346,4 @@ const styles = StyleSheet.create({
   },
   linkRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   linkText: { fontSize: 15 },
-  feelingCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 14,
-    borderRadius: 14,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  feelingIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  feelingTitle: { fontSize: 15 },
-  feelingSub: { fontSize: 12, lineHeight: 17 },
 });

@@ -23,6 +23,7 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 
 import { useApp } from "@/context/AppContext";
 import { FEATURED_AYAT, FeaturedAyah, getTodayAyah } from "@/data/featuredAyat";
+import { getTodayHadith } from "@/data/hadithData";
 import { SURAHS } from "@/data/surahsData";
 import { usePrayerTimes } from "@/hooks/usePrayerTimes";
 import { schedulePrayerNotifications } from "@/hooks/useNotifications";
@@ -513,6 +514,134 @@ export default function HomeScreen() {
         </View>
       </Animated.View>
 
+      {/* Shortcuts — quick entries to the gentle, non-Quran tools.
+          Daily Hadith is conditionally rendered per the user's setting
+          (settings.dailyHadithEnabled, default true) so users who want a
+          Quran-only home screen can hide it from Settings → Daily Hadith. */}
+      <View style={styles.shortcutsSection}>
+        <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+          SHORTCUTS
+        </Text>
+        <View style={[styles.shortcutsList, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/feeling" as never);
+            }}
+            {...a11yLink(
+              "I am feeling",
+              "Opens a list of feelings to find a verse or dua",
+            )}
+            style={({ pressed }) => [
+              styles.shortcutRow,
+              { borderBottomColor: C.border, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <View
+              {...a11yDecorative}
+              style={[
+                styles.shortcutIcon,
+                {
+                  backgroundColor: isDark
+                    ? "rgba(45,191,127,0.15)"
+                    : "rgba(26,107,74,0.08)",
+                },
+              ]}
+            >
+              <Ionicons name="heart-outline" size={18} color={C.primary} />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[styles.shortcutTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                I am feeling...
+              </Text>
+              <Text style={[styles.shortcutSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                Find a verse or dua for your heart
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} {...a11yDecorative} />
+          </Pressable>
+
+          {state.settings.dailyHadithEnabled && (
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push("/hadith" as never);
+              }}
+              {...a11yLink(
+                "Daily Hadith",
+                "Opens today's authentic hadith from sunnah.com",
+              )}
+              style={({ pressed }) => [
+                styles.shortcutRow,
+                { borderBottomColor: C.border, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <View
+                {...a11yDecorative}
+                style={[
+                  styles.shortcutIcon,
+                  {
+                    backgroundColor: isDark
+                      ? "rgba(200,147,60,0.18)"
+                      : "rgba(200,147,60,0.12)",
+                  },
+                ]}
+              >
+                <Ionicons name="book-outline" size={18} color="#C8933C" />
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={[styles.shortcutTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                  Daily Hadith
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.shortcutSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+                >
+                  {getTodayHadith().collection} · sahih
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} {...a11yDecorative} />
+            </Pressable>
+          )}
+
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/qibla" as never);
+            }}
+            {...a11yLink("Qibla Compass", "Opens the Qibla compass")}
+            style={({ pressed }) => [
+              styles.shortcutRow,
+              styles.shortcutRowLast,
+              { opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <View
+              {...a11yDecorative}
+              style={[
+                styles.shortcutIcon,
+                {
+                  backgroundColor: isDark
+                    ? "rgba(45,191,127,0.15)"
+                    : "rgba(26,107,74,0.08)",
+                },
+              ]}
+            >
+              <Ionicons name="compass-outline" size={18} color={C.primary} />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[styles.shortcutTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                Qibla Compass
+              </Text>
+              <Text style={[styles.shortcutSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                Point towards Makkah from where you are
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} {...a11yDecorative} />
+          </Pressable>
+        </View>
+      </View>
+
       {/* Prayer Times Grid */}
       {prayerTimes && (
         <View style={styles.prayerSection}>
@@ -641,4 +770,18 @@ const styles = StyleSheet.create({
   nextBadge: { marginLeft: 8, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
   nextBadgeText: { color: "#fff", fontSize: 11 },
   prayerSource: { fontSize: 11, textAlign: "center", lineHeight: 16, marginTop: 2 },
+  shortcutsSection: { gap: 10 },
+  shortcutsList: {
+    borderRadius: 14, overflow: "hidden",
+    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+  },
+  shortcutRow: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    paddingHorizontal: 14, paddingVertical: 13,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  shortcutRowLast: { borderBottomWidth: 0 },
+  shortcutIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  shortcutTitle: { fontSize: 15 },
+  shortcutSub: { fontSize: 12, lineHeight: 16 },
 });

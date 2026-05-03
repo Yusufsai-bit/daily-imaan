@@ -361,6 +361,42 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      {/* Daily Hadith — toggle the home-screen shortcut on/off. Hadith
+          content lives in data/hadithData.ts and is verbatim from sunnah.com. */}
+      <View style={styles.section}>
+        <Text
+          maxFontSizeMultiplier={1.4}
+          style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+        >
+          DAILY HADITH
+        </Text>
+        <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+          <SettingRow
+            icon="book-outline"
+            title="Show Daily Hadith"
+            subtitle="Adds a hadith shortcut to your home screen"
+            C={C}
+            last
+            right={
+              <Switch
+                value={settings.dailyHadithEnabled}
+                onValueChange={(val) => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  updateSettings({ dailyHadithEnabled: val });
+                }}
+                trackColor={{ false: C.border, true: C.primary }}
+                thumbColor="#fff"
+                {...a11yToggle(
+                  "Daily Hadith",
+                  settings.dailyHadithEnabled,
+                  "Shows or hides the Daily Hadith shortcut on the home screen",
+                )}
+              />
+            }
+          />
+        </View>
+      </View>
+
       {/* Notification Times */}
       <View style={styles.section}>
         <View style={{ gap: 2, marginBottom: 8 }}>
