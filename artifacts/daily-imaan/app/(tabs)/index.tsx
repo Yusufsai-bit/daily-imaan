@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -153,9 +153,22 @@ export default function HomeScreen() {
     markAyahRead(getGlobalAyahNumber(ayah.surahId, ayah.ayahNumber));
   }, [ayah.id, loaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Schedule prayer-time notifications whenever prayer times or per-prayer
-  // sound settings change. Deferred via InteractionManager to avoid blocking
-  // the cold-start render with ~5 native bridge calls.
+  // Schedule prayer-time notifications whenever the actual HH:MM values or
+  // per-prayer sound settings change. Deferred via InteractionManager to
+  // avoid blocking the cold-start render with ~5 native bridge calls.
+  //
+  // We depend on a stringified key of the five prayer times rather than the
+  // `prayerTimes` object itself because `usePrayerTimes` returns a fresh
+  // object reference on every refresh (foreground tick, hourly poll, etc.) —
+  // depending on the object identity caused the scheduler to rerun even when
+  // nothing changed, racing the in-flight pass and producing duplicates.
+  const prayerTimesKey = useMemo(
+    () =>
+      prayerTimes
+        ? `${prayerTimes.Fajr}|${prayerTimes.Dhuhr}|${prayerTimes.Asr}|${prayerTimes.Maghrib}|${prayerTimes.Isha}`
+        : null,
+    [prayerTimes]
+  );
   useEffect(() => {
     if (!prayerTimes) return;
     const handle = InteractionManager.runAfterInteractions(() => {
@@ -166,7 +179,8 @@ export default function HomeScreen() {
       );
     });
     return () => handle.cancel();
-  }, [prayerTimes, state.settings.prayerSoundEnabled, state.settings.adhanSound]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prayerTimesKey, state.settings.prayerSoundEnabled, state.settings.adhanSound]);
 
   // Pre-warm the tafsir cache for the currently displayed ayah after the
   // first interaction frame so the "Show tafsir" tap renders instantly.

@@ -7,6 +7,67 @@ import type { PrayerSoundSettings } from "@/context/AppContext";
 
 const AYAT_NOTIF_IDS_KEY = "@daily_imaan_ayat_notif_ids";
 
+/**
+ * Per-category serialized queue (tail-chained).
+ *
+ * Each scheduler in this file follows a "cancel everything in category X,
+ * then schedule N fresh entries" pattern. That sequence has multiple `await`
+ * points, so two concurrent invocations on the same category can interleave:
+ * caller A finishes its cancel and starts scheduling, caller B starts after
+ * A's cancel (sees nothing to cancel) and schedules a second full set on top.
+ * Result: the user sees every notification twice.
+ *
+ * `withCategoryLock` chains each new call onto the *current tail* of that
+ * category's queue, so any number of concurrent callers run strictly in
+ * sequence (A → B → C → …). Cross-category calls (e.g. `daily_ayat` and
+ * `prayer_time`) still run in parallel — only same-category calls queue.
+ *
+ * Note: a naive "await previous; then run" implementation does NOT queue
+ * correctly — if B and C both await the same `previous` they will then run
+ * concurrently after `previous` resolves. The fix is to chain the new
+ * promise onto the previous one immediately and store *that* as the new
+ * tail, so the next arriving caller chains onto it (not onto `previous`).
+ */
+const queueTailByCategory = new Map<string, Promise<void>>();
+async function withCategoryLock(
+  categoryId: string,
+  fn: () => Promise<void>
+): Promise<void> {
+  const previous = queueTailByCategory.get(categoryId) ?? Promise.resolve();
+  // Swallow upstream errors so one failed scheduler doesn't break the chain
+  // for everyone behind it.
+  const next: Promise<void> = previous
+    .catch(() => undefined)
+    .then(() => fn());
+  queueTailByCategory.set(categoryId, next);
+  try {
+    await next;
+  } finally {
+    // Only clear if the current promise is still the tail — a later caller
+    // may have already chained onto us and become the new tail.
+    if (queueTailByCategory.get(categoryId) === next) {
+      queueTailByCategory.delete(categoryId);
+    }
+  }
+}
+
+/**
+ * Dev-only audit: log how many entries are currently scheduled for the given
+ * category. Useful for spotting duplicates after toggles / foregrounding.
+ */
+async function auditCategoryCount(categoryId: string): Promise<void> {
+  if (!__DEV__) return;
+  try {
+    const all = await Notifications.getAllScheduledNotificationsAsync();
+    const count = all.filter(
+      (n) => n.content.categoryIdentifier === categoryId
+    ).length;
+    console.log(`[DailyImaan] scheduled ${categoryId}: ${count}`);
+  } catch {
+    /* ignore audit-only errors */
+  }
+}
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -59,68 +120,74 @@ async function saveAyatNotifIds(ids: string[]): Promise<void> {
  */
 export async function scheduleAyatNotifications(times: string[]): Promise<void> {
   if (Platform.OS === "web") return;
-  try {
-    await Notifications.setNotificationCategoryAsync("daily_ayat", [
-      {
-        identifier: "read",
-        buttonTitle: "Mark as Read",
-        options: { opensAppToForeground: false },
-      },
-    ]);
+  // Serialize concurrent callers (settings effect + AppState foreground +
+  // settings-toggle bursts) — see `withCategoryLock` docs above.
+  await withCategoryLock("daily_ayat", async () => {
+    try {
+      await Notifications.setNotificationCategoryAsync("daily_ayat", [
+        {
+          identifier: "read",
+          buttonTitle: "Mark as Read",
+          options: { opensAppToForeground: false },
+        },
+      ]);
 
-    const storedIds = await loadAyatNotifIds();
-    for (const id of storedIds) {
-      try {
-        await Notifications.cancelScheduledNotificationAsync(id);
-      } catch {
-        /* already fired or cleared */
-      }
-    }
-
-    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    for (const n of scheduled) {
-      if (n.content.categoryIdentifier === "daily_ayat") {
+      const storedIds = await loadAyatNotifIds();
+      for (const id of storedIds) {
         try {
-          await Notifications.cancelScheduledNotificationAsync(n.identifier);
+          await Notifications.cancelScheduledNotificationAsync(id);
         } catch {
-          /* ignore */
+          /* already fired or cleared */
         }
       }
-    }
 
-    if (times.length === 0) {
-      await saveAyatNotifIds([]);
-      return;
-    }
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      for (const n of scheduled) {
+        if (n.content.categoryIdentifier === "daily_ayat") {
+          try {
+            await Notifications.cancelScheduledNotificationAsync(n.identifier);
+          } catch {
+            /* ignore */
+          }
+        }
+      }
 
-    // Lazily request permission only when the user has actually opted in to a
-    // reminder — never at app launch, per Apple HIG and Play Store guidance.
-    const granted = await requestNotificationPermission();
-    if (!granted) {
-      await saveAyatNotifIds([]);
-      return;
-    }
+      if (times.length === 0) {
+        await saveAyatNotifIds([]);
+        await auditCategoryCount("daily_ayat");
+        return;
+      }
 
-    const body = "Your verse for today is ready. Tap to read.";
-    const newIds: string[] = [];
-    for (const time of times) {
-      const parts = time.split(":");
-      const hour = parseInt(parts[0] ?? "7");
-      const minute = parseInt(parts[1] ?? "0");
-      const id = await Notifications.scheduleNotificationAsync({
-        content: { title: "Daily Imaan", body, categoryIdentifier: "daily_ayat" },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DAILY,
-          hour,
-          minute,
-        },
-      });
-      newIds.push(id);
+      // Lazily request permission only when the user has actually opted in to a
+      // reminder — never at app launch, per Apple HIG and Play Store guidance.
+      const granted = await requestNotificationPermission();
+      if (!granted) {
+        await saveAyatNotifIds([]);
+        return;
+      }
+
+      const body = "Your verse for today is ready. Tap to read.";
+      const newIds: string[] = [];
+      for (const time of times) {
+        const parts = time.split(":");
+        const hour = parseInt(parts[0] ?? "7");
+        const minute = parseInt(parts[1] ?? "0");
+        const id = await Notifications.scheduleNotificationAsync({
+          content: { title: "Daily Imaan", body, categoryIdentifier: "daily_ayat" },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour,
+            minute,
+          },
+        });
+        newIds.push(id);
+      }
+      await saveAyatNotifIds(newIds);
+      await auditCategoryCount("daily_ayat");
+    } catch (err) {
+      if (__DEV__) console.warn("[DailyImaan] scheduleAyatNotifications failed:", err);
     }
-    await saveAyatNotifIds(newIds);
-  } catch (err) {
-    if (__DEV__) console.warn("[DailyImaan] scheduleAyatNotifications failed:", err);
-  }
+  });
 }
 
 
@@ -209,72 +276,77 @@ export async function schedulePrayerNotifications(
   adhanSound: "default" | "makkah" | "madinah" = "default"
 ): Promise<void> {
   if (Platform.OS === "web") return;
-  try {
-    await Notifications.setNotificationCategoryAsync("prayer_time", [
-      {
-        identifier: "open",
-        buttonTitle: "Open App",
-        options: { opensAppToForeground: true },
-      },
-    ]);
+  // Serialize concurrent callers — without this, a `prayerTimes` refresh that
+  // overlaps a sound-setting toggle can leave duplicate prayer schedules.
+  await withCategoryLock("prayer_time", async () => {
+    try {
+      await Notifications.setNotificationCategoryAsync("prayer_time", [
+        {
+          identifier: "open",
+          buttonTitle: "Open App",
+          options: { opensAppToForeground: true },
+        },
+      ]);
 
-    // Android 8+ binds sound to the channel, not the notification — set up
-    // one channel per adhan choice (default / makkah / madinah / silent) so
-    // switching sounds in Settings just routes to a different channel rather
-    // than trying to mutate channel sound (which Android forbids).
-    await setupAndroidPrayerChannels();
+      // Android 8+ binds sound to the channel, not the notification — set up
+      // one channel per adhan choice (default / makkah / madinah / silent) so
+      // switching sounds in Settings just routes to a different channel rather
+      // than trying to mutate channel sound (which Android forbids).
+      await setupAndroidPrayerChannels();
 
-    // Cancel existing prayer notifications
-    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    for (const n of scheduled) {
-      if (n.content.categoryIdentifier === "prayer_time") {
-        await Notifications.cancelScheduledNotificationAsync(n.identifier);
+      // Cancel existing prayer notifications
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      for (const n of scheduled) {
+        if (n.content.categoryIdentifier === "prayer_time") {
+          await Notifications.cancelScheduledNotificationAsync(n.identifier);
+        }
       }
+
+      const prayerList: { name: keyof PrayerSoundSettings; timeStr: string }[] = [
+        { name: "Fajr", timeStr: prayerTimes.Fajr },
+        { name: "Dhuhr", timeStr: prayerTimes.Dhuhr },
+        { name: "Asr", timeStr: prayerTimes.Asr },
+        { name: "Maghrib", timeStr: prayerTimes.Maghrib },
+        { name: "Isha", timeStr: prayerTimes.Isha },
+      ];
+
+      for (const prayer of prayerList) {
+        const parts = prayer.timeStr.split(":");
+        const hour = parseInt(parts[0] ?? "0");
+        // Strip AM/PM suffixes the Aladhan API may append
+        const rawMin = (parts[1] ?? "00").split(" ")[0] ?? "00";
+        const minute = parseInt(rawMin);
+
+        const enabled = prayerSoundEnabled[prayer.name];
+        const sound = resolveAdhanSound(enabled, adhanSound);
+        const channelId = androidChannelFor(enabled, adhanSound);
+
+        // Use DAILY trigger so the reminder fires every day at the same time.
+        // Prayer times shift only ~1 min/day; the home screen effect reruns
+        // when the HH:MM key changes (see app/(tabs)/index.tsx). On iOS the
+        // `sound` field on content does the routing; on Android `sound` is
+        // ignored and the channelId determines which sound plays — both are
+        // passed for correctness on either OS.
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: `${prayer.name} Time`,
+            body: `It's time for ${prayer.name} prayer.`,
+            categoryIdentifier: "prayer_time",
+            sound,
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour,
+            minute,
+            channelId,
+          },
+        });
+      }
+      await auditCategoryCount("prayer_time");
+    } catch {
+      // Notifications may not work in all environments
     }
-
-    const prayerList: { name: keyof PrayerSoundSettings; timeStr: string }[] = [
-      { name: "Fajr", timeStr: prayerTimes.Fajr },
-      { name: "Dhuhr", timeStr: prayerTimes.Dhuhr },
-      { name: "Asr", timeStr: prayerTimes.Asr },
-      { name: "Maghrib", timeStr: prayerTimes.Maghrib },
-      { name: "Isha", timeStr: prayerTimes.Isha },
-    ];
-
-    for (const prayer of prayerList) {
-      const parts = prayer.timeStr.split(":");
-      const hour = parseInt(parts[0] ?? "0");
-      // Strip AM/PM suffixes the Aladhan API may append
-      const rawMin = (parts[1] ?? "00").split(" ")[0] ?? "00";
-      const minute = parseInt(rawMin);
-
-      const enabled = prayerSoundEnabled[prayer.name];
-      const sound = resolveAdhanSound(enabled, adhanSound);
-      const channelId = androidChannelFor(enabled, adhanSound);
-
-      // Use DAILY trigger so the reminder fires every day at the same time.
-      // Prayer times shift only ~1 min/day; the app reschedules on each
-      // foreground refresh with updated exact times (via usePrayerTimes +
-      // AppState listener). On iOS the `sound` field on content does the
-      // routing; on Android `sound` is ignored and the channelId determines
-      // which sound plays — both are passed for correctness on either OS.
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `${prayer.name} Time`,
-          body: `It's time for ${prayer.name} prayer.`,
-          categoryIdentifier: "prayer_time",
-          sound,
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DAILY,
-          hour,
-          minute,
-          channelId,
-        },
-      });
-    }
-  } catch {
-    // Notifications may not work in all environments
-  }
+  });
 }
 
 /**
@@ -290,54 +362,61 @@ export async function scheduleHadithNotification(
   time: string
 ): Promise<void> {
   if (Platform.OS === "web") return;
-  try {
-    await Notifications.setNotificationCategoryAsync("daily_hadith", [
-      {
-        identifier: "open",
-        buttonTitle: "Open App",
-        options: { opensAppToForeground: true },
-      },
-    ]);
+  // Serialize concurrent callers — see `withCategoryLock` docs above.
+  await withCategoryLock("daily_hadith", async () => {
+    try {
+      await Notifications.setNotificationCategoryAsync("daily_hadith", [
+        {
+          identifier: "open",
+          buttonTitle: "Open App",
+          options: { opensAppToForeground: true },
+        },
+      ]);
 
-    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    for (const n of scheduled) {
-      if (n.content.categoryIdentifier === "daily_hadith") {
-        try {
-          await Notifications.cancelScheduledNotificationAsync(n.identifier);
-        } catch {
-          /* already fired or cleared */
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      for (const n of scheduled) {
+        if (n.content.categoryIdentifier === "daily_hadith") {
+          try {
+            await Notifications.cancelScheduledNotificationAsync(n.identifier);
+          } catch {
+            /* already fired or cleared */
+          }
         }
       }
+
+      if (!enabled) {
+        await auditCategoryCount("daily_hadith");
+        return;
+      }
+
+      // Lazy permission request — only when the user has actually enabled the
+      // hadith reminder. Silently no-op if denied so the toggle still appears
+      // ON in Settings (the user can re-enable in iOS/Android system settings).
+      const granted = await requestNotificationPermission();
+      if (!granted) return;
+
+      const parts = time.split(":");
+      const hour = parseInt(parts[0] ?? "20");
+      const minute = parseInt(parts[1] ?? "0");
+      if (Number.isNaN(hour) || Number.isNaN(minute)) return;
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Daily Imaan",
+          body: "Your hadith for today is ready. Tap to read.",
+          categoryIdentifier: "daily_hadith",
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour,
+          minute,
+        },
+      });
+      await auditCategoryCount("daily_hadith");
+    } catch (err) {
+      if (__DEV__) console.warn("[DailyImaan] scheduleHadithNotification failed:", err);
     }
-
-    if (!enabled) return;
-
-    // Lazy permission request — only when the user has actually enabled the
-    // hadith reminder. Silently no-op if denied so the toggle still appears
-    // ON in Settings (the user can re-enable in iOS/Android system settings).
-    const granted = await requestNotificationPermission();
-    if (!granted) return;
-
-    const parts = time.split(":");
-    const hour = parseInt(parts[0] ?? "20");
-    const minute = parseInt(parts[1] ?? "0");
-    if (Number.isNaN(hour) || Number.isNaN(minute)) return;
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Daily Imaan",
-        body: "Your hadith for today is ready. Tap to read.",
-        categoryIdentifier: "daily_hadith",
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour,
-        minute,
-      },
-    });
-  } catch (err) {
-    if (__DEV__) console.warn("[DailyImaan] scheduleHadithNotification failed:", err);
-  }
+  });
 }
 
 /**
@@ -349,61 +428,68 @@ export async function scheduleHadithNotification(
  */
 export async function scheduleAdhkarNotifications(enabled: boolean): Promise<void> {
   if (Platform.OS === "web") return;
-  try {
-    await Notifications.setNotificationCategoryAsync("daily_adhkar", [
-      {
-        identifier: "open",
-        buttonTitle: "Open Adhkar",
-        options: { opensAppToForeground: true },
-      },
-    ]);
+  // Serialize concurrent callers — see `withCategoryLock` docs above.
+  await withCategoryLock("daily_adhkar", async () => {
+    try {
+      await Notifications.setNotificationCategoryAsync("daily_adhkar", [
+        {
+          identifier: "open",
+          buttonTitle: "Open Adhkar",
+          options: { opensAppToForeground: true },
+        },
+      ]);
 
-    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    for (const n of scheduled) {
-      if (n.content.categoryIdentifier === "daily_adhkar") {
-        try {
-          await Notifications.cancelScheduledNotificationAsync(n.identifier);
-        } catch {
-          /* already fired or cleared */
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      for (const n of scheduled) {
+        if (n.content.categoryIdentifier === "daily_adhkar") {
+          try {
+            await Notifications.cancelScheduledNotificationAsync(n.identifier);
+          } catch {
+            /* already fired or cleared */
+          }
         }
       }
+
+      if (!enabled) {
+        await auditCategoryCount("daily_adhkar");
+        return;
+      }
+
+      const granted = await requestNotificationPermission();
+      if (!granted) return;
+
+      // Morning adhkar — 07:00 local
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Morning Adhkar",
+          body: "Begin your day in Allah's protection.",
+          categoryIdentifier: "daily_adhkar",
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour: 7,
+          minute: 0,
+        },
+      });
+
+      // Evening adhkar — 17:30 local
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Evening Adhkar",
+          body: "Take refuge until Fajr — a few minutes of dhikr.",
+          categoryIdentifier: "daily_adhkar",
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour: 17,
+          minute: 30,
+        },
+      });
+      await auditCategoryCount("daily_adhkar");
+    } catch (err) {
+      if (__DEV__) console.warn("[DailyImaan] scheduleAdhkarNotifications failed:", err);
     }
-
-    if (!enabled) return;
-
-    const granted = await requestNotificationPermission();
-    if (!granted) return;
-
-    // Morning adhkar — 07:00 local
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Morning Adhkar",
-        body: "Begin your day in Allah's protection.",
-        categoryIdentifier: "daily_adhkar",
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour: 7,
-        minute: 0,
-      },
-    });
-
-    // Evening adhkar — 17:30 local
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Evening Adhkar",
-        body: "Take refuge until Fajr — a few minutes of dhikr.",
-        categoryIdentifier: "daily_adhkar",
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour: 17,
-        minute: 30,
-      },
-    });
-  } catch (err) {
-    if (__DEV__) console.warn("[DailyImaan] scheduleAdhkarNotifications failed:", err);
-  }
+  });
 }
 
 export async function cancelAllNotifications(): Promise<void> {

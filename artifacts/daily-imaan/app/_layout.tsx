@@ -13,8 +13,8 @@ import * as Notifications from "expo-notifications";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { router, Stack, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useCallback, useEffect, useRef } from "react";
-import { AppState, Appearance, Platform } from "react-native";
+import React, { useEffect } from "react";
+import { Appearance, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -91,17 +91,18 @@ function AppEffects() {
 
   // Daily ayah reminders are gated on the master toggle (default OFF).
   // When the toggle is off we schedule [] which clears any prior pushes.
-  const rescheduleAyatNotifs = useCallback(() => {
+  // DAILY triggers persist across days on both iOS and Android, so we don't
+  // need a foreground-AppState reschedule — the settings effect alone covers
+  // every legitimate change. Removing the AppState path also removes a
+  // race condition where it could fire concurrently with this effect on
+  // cold launch and produce duplicate scheduled notifications.
+  useEffect(() => {
     if (Platform.OS === "web") return;
     const times = state.settings.dailyAyahReminderEnabled
       ? state.settings.notificationTimes
       : [];
     scheduleAyatNotifications(times);
   }, [state.settings.dailyAyahReminderEnabled, state.settings.notificationTimes]);
-
-  useEffect(() => {
-    rescheduleAyatNotifs();
-  }, [state.settings.dailyAyahReminderEnabled, state.settings.notificationTimes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Daily hadith reminder — single optional nudge, also default OFF.
   useEffect(() => {
@@ -117,20 +118,6 @@ function AppEffects() {
     if (Platform.OS === "web") return;
     scheduleAdhkarNotifications(state.settings.adhkarReminderEnabled);
   }, [state.settings.adhkarReminderEnabled]);
-
-  // Reschedule on foreground in case the user revisits after a long absence.
-  const lastRescheduleDateRef = useRef<string>("");
-  useEffect(() => {
-    if (Platform.OS === "web") return;
-    const sub = AppState.addEventListener("change", (nextState) => {
-      if (nextState !== "active") return;
-      const today = new Date().toISOString().slice(0, 10);
-      if (lastRescheduleDateRef.current === today) return;
-      lastRescheduleDateRef.current = today;
-      rescheduleAyatNotifs();
-    });
-    return () => sub.remove();
-  }, [rescheduleAyatNotifs]);
 
   // Sync manual dark mode override with the OS Appearance API
   useEffect(() => {
