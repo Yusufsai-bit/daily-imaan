@@ -127,13 +127,13 @@ you'll have everything you need to respond in under five minutes.
 - **Attribution shown in app**: see `components/AboutContent.tsx` → "Adhan audio".
 
 ### adhan-madinah.mp3
-- **Source URL**: https://commons.wikimedia.org/wiki/File:The_Adhan_-_Muslim_Call_to_Prayer_-_Aaqib_Azeez.mp3
-- **Original file**: https://upload.wikimedia.org/wikipedia/commons/7/7d/The_Adhan_-_Muslim_Call_to_Prayer_-_Aaqib_Azeez.mp3
-- **Uploader / reciter**: Atcovi (Wikimedia user; described as "own work")
-- **License**: Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0)
+- **Source URL**: https://commons.wikimedia.org/wiki/File:Beautiful_adhan.ogg
+- **Original file**: https://upload.wikimedia.org/wikipedia/commons/b/b0/Beautiful_adhan.ogg
+- **Uploader / reciter**: Adam-synagda (Wikimedia user; uploader-asserted CC0 dedication)
+- **License**: Creative Commons Zero v1.0 Universal (CC0 / public domain dedication) — no attribution required, no share-alike obligation
 - **Date acquired**: 2026-05-04
-- **Processing**: trimmed to 30 s, 3 s fade-out, loudness-normalised to -16 LUFS, 96 kbps stereo MP3 (re-encoded via ffmpeg).
-- **Attribution shown in app**: see `components/AboutContent.tsx` → "Adhan audio".
-- **CC BY-SA reminder**: derivative works of *this audio file* must be released under CC BY-SA 4.0 or compatible. Bundling it inside the closed-source app is "mere aggregation" and does not relicense the rest of the app — but if you remix the recording itself, the remix is share-alike.
+- **Processing**: trimmed to first 30 s of the 154 s source, 3 s fade-out, EBU R128 loudness-normalised to -16 LUFS, transcoded from Ogg Vorbis (mono, 64 kbps) to 96 kbps stereo MP3 via ffmpeg.
+- **Attribution shown in app**: not required under CC0, but the file is still listed under the "Adhan audio" source card in `components/AboutContent.tsx` for transparency.
+- **License history**: this slot previously bundled "The Adhan — Muslim Call to Prayer" by Atcovi (CC BY-SA 4.0, sourced from Wikimedia Commons on 2026-05-04). It was swapped out the same day for a CC0 recording so that any future remix or re-encode of the file would not inherit a share-alike obligation.
 
-> ⚠️ The "Makkah" and "Madinah" labels in Settings are **stylistic** — they do not imply the recordings were captured inside Masjid al-Haram or Masjid an-Nabawi by the Haramain media office (those recordings are explicitly copyrighted and must not be shipped). The Makkah file is from a Wikimedia mirror of an external recording near the Great Mosque; the Madinah file is a generic muezzin recital ("own work" upload). If a rights-holder ever objects to either file, swap it out and update this section.
+> ⚠️ The "Makkah" and "Madinah" labels in Settings are **stylistic** — they do not imply the recordings were captured inside Masjid al-Haram or Masjid an-Nabawi by the Haramain media office (those recordings are explicitly copyrighted and must not be shipped). The Makkah file is from a Wikimedia mirror of an external recording near the Great Mosque; the Madinah file is a generic muezzin recital uploaded directly to Wikimedia Commons under CC0. If a rights-holder ever objects to either file, swap it out and update this section.

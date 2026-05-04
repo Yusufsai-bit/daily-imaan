@@ -24,9 +24,11 @@ interface Props {
  *    Ṣalāhuddīn Yūsuf (Darussalam edition). Bundled in-app from an open
  *    mirror of sunnah.com.
  *  - Adhan audio: two recordings sourced from Wikimedia Commons under
- *    CC BY 3.0 (Makkah, by Seyfula Islam) and CC BY-SA 4.0 (Madinah, by
- *    Atcovi). Attribution is required and shown in the "Adhan audio"
- *    source card below. Full license paper trail lives in
+ *    CC BY 3.0 (Makkah, by Seyfula Islam) and CC0 / public-domain
+ *    dedication (Madinah, by Adam-synagda). Attribution is required for
+ *    the Makkah file and shown in the "Adhan audio" source card below;
+ *    the Madinah file requires no attribution but is listed for
+ *    transparency. Full license paper trail lives in
  *    `assets/sounds/README.md`.
  */
 export function AboutContent({ C }: Props) {
@@ -94,10 +96,10 @@ export function AboutContent({ C }: Props) {
           Adhan audio
         </Text>
         <Text maxFontSizeMultiplier={1.6} style={[styles.sourceValue, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
-          Wikimedia Commons (CC BY 3.0 / CC BY-SA 4.0)
+          Wikimedia Commons (CC BY 3.0 / CC0)
         </Text>
         <Text maxFontSizeMultiplier={1.6} style={[styles.sourceNote, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-          Adhan (Makkah): "Adhan, Great Mosque of Mecca" by Seyfula Islam, CC BY 3.0. Adhan (Madinah): "The Adhan — Muslim Call to Prayer" by Atcovi, CC BY-SA 4.0. Both via Wikimedia Commons, trimmed and loudness-normalised for notification use.
+          Adhan (Makkah): "Adhan, Great Mosque of Mecca" by Seyfula Islam, CC BY 3.0. Adhan (Madinah): "Beautiful adhan" by Adam-synagda, released under CC0 (public domain). Both via Wikimedia Commons, trimmed and loudness-normalised for notification use.
         </Text>
       </View>
 
