@@ -23,6 +23,11 @@ interface Props {
  *    an-Nawawī (d. 676 AH / 1277 CE). English translation by Ḥāfiẓ
  *    Ṣalāhuddīn Yūsuf (Darussalam edition). Bundled in-app from an open
  *    mirror of sunnah.com.
+ *  - Adhan audio: two recordings sourced from Wikimedia Commons under
+ *    CC BY 3.0 (Makkah, by Seyfula Islam) and CC BY-SA 4.0 (Madinah, by
+ *    Atcovi). Attribution is required and shown in the "Adhan audio"
+ *    source card below. Full license paper trail lives in
+ *    `assets/sounds/README.md`.
  */
 export function AboutContent({ C }: Props) {
   return (
@@ -81,6 +86,18 @@ export function AboutContent({ C }: Props) {
         </Text>
         <Text maxFontSizeMultiplier={1.6} style={[styles.sourceNote, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
           English translation by Ḥāfiẓ Ṣalāhuddīn Yūsuf. Each hadith cites its primary source (Bukhārī, Muslim, etc.).
+        </Text>
+      </View>
+
+      <View style={[styles.sourceCard, { backgroundColor: C.muted }]}>
+        <Text maxFontSizeMultiplier={1.6} style={[styles.sourceLabel, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+          Adhan audio
+        </Text>
+        <Text maxFontSizeMultiplier={1.6} style={[styles.sourceValue, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
+          Wikimedia Commons (CC BY 3.0 / CC BY-SA 4.0)
+        </Text>
+        <Text maxFontSizeMultiplier={1.6} style={[styles.sourceNote, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          Adhan (Makkah): "Adhan, Great Mosque of Mecca" by Seyfula Islam, CC BY 3.0. Adhan (Madinah): "The Adhan — Muslim Call to Prayer" by Atcovi, CC BY-SA 4.0. Both via Wikimedia Commons, trimmed and loudness-normalised for notification use.
         </Text>
       </View>
 

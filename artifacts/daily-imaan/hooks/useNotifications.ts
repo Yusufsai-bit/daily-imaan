@@ -212,6 +212,17 @@ const DEFAULT_PRAYER_SOUND_ENABLED: PrayerSoundSettings = {
  * onto the channel created by `setupAndroidPrayerChannel()`. The string we
  * return here MUST match the basename + extension as registered in app.json
  * exactly — any mismatch silently falls back to the system sound.
+ *
+ * IMPORTANT: any filename returned here (e.g. `adhan-makkah.mp3`,
+ * `adhan-madinah.mp3`) must also appear, byte-identical, in the
+ * `expo-notifications` plugin's `sounds[]` array in `artifacts/daily-imaan/app.json`
+ * AND as a real file under `assets/sounds/`. The plugin only bundles assets
+ * it finds in that array at prebuild time — anything missing or mistyped
+ * silently falls back to the device's default notification sound on both
+ * iOS (the `sound` field can't resolve the resource) and Android (the
+ * per-channel sound URI doesn't resolve). The Settings UI will still show
+ * the choice as active, so the failure is invisible. Keep these three
+ * places in sync whenever you add/rename an adhan option.
  */
 function resolveAdhanSound(
   enabled: boolean,

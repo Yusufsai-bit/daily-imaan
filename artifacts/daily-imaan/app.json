@@ -28,7 +28,16 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "sounds": [
+            "./assets/sounds/adhan-makkah.mp3",
+            "./assets/sounds/adhan-madinah.mp3"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

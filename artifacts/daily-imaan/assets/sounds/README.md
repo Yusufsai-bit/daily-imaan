@@ -5,8 +5,11 @@ The in-app **Adhan Sound** picker (Settings → ADHAN SOUND) offers three option
 | Option           | Status     | Required file                |
 | ---------------- | ---------- | ---------------------------- |
 | Device default   | Always works | (none — uses system sound) |
-| Adhan — Makkah   | Disabled until file shipped | `assets/sounds/adhan-makkah.mp3` |
-| Adhan — Madinah  | Disabled until file shipped | `assets/sounds/adhan-madinah.mp3` |
+| Adhan — Makkah   | ✅ Bundled | `assets/sounds/adhan-makkah.mp3` |
+| Adhan — Madinah  | ✅ Bundled | `assets/sounds/adhan-madinah.mp3` |
+
+Both files are registered in the `expo-notifications` plugin's `sounds[]`
+array in `artifacts/daily-imaan/app.json` and ship in the native build.
 
 When a bundled adhan is missing at runtime, `expo-notifications` silently
 falls back to the device's default notification sound — the picker stays
@@ -109,3 +112,28 @@ new `## Bundled audio license` section:
 
 Apple and Google won't ask, but if a rights-holder ever files a complaint
 you'll have everything you need to respond in under five minutes.
+
+---
+
+## Bundled audio license
+
+### adhan-makkah.mp3
+- **Source URL**: https://commons.wikimedia.org/wiki/File:Adhan,_Great_Mosque_of_Mecca_-_Jan_21,_2013.webm
+- **Original file**: https://upload.wikimedia.org/wikipedia/commons/a/a7/Adhan%2C_Great_Mosque_of_Mecca_-_Jan_21%2C_2013.webm
+- **Uploader**: Seyfula Islam (originally posted to YouTube, mirrored to Wikimedia Commons)
+- **License**: Creative Commons Attribution 3.0 (CC BY 3.0) — uploader-asserted via the YouTube CC license option (pre-August 2025, when YouTube's CC default was 3.0)
+- **Date acquired**: 2026-05-04
+- **Processing**: extracted audio from the source `.webm` with ffmpeg, trimmed to 30 s (iOS notification-sound max), 3 s fade-out, EBU R128 loudness-normalised to -16 LUFS, 96 kbps stereo MP3.
+- **Attribution shown in app**: see `components/AboutContent.tsx` → "Adhan audio".
+
+### adhan-madinah.mp3
+- **Source URL**: https://commons.wikimedia.org/wiki/File:The_Adhan_-_Muslim_Call_to_Prayer_-_Aaqib_Azeez.mp3
+- **Original file**: https://upload.wikimedia.org/wikipedia/commons/7/7d/The_Adhan_-_Muslim_Call_to_Prayer_-_Aaqib_Azeez.mp3
+- **Uploader / reciter**: Atcovi (Wikimedia user; described as "own work")
+- **License**: Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0)
+- **Date acquired**: 2026-05-04
+- **Processing**: trimmed to 30 s, 3 s fade-out, loudness-normalised to -16 LUFS, 96 kbps stereo MP3 (re-encoded via ffmpeg).
+- **Attribution shown in app**: see `components/AboutContent.tsx` → "Adhan audio".
+- **CC BY-SA reminder**: derivative works of *this audio file* must be released under CC BY-SA 4.0 or compatible. Bundling it inside the closed-source app is "mere aggregation" and does not relicense the rest of the app — but if you remix the recording itself, the remix is share-alike.
+
+> ⚠️ The "Makkah" and "Madinah" labels in Settings are **stylistic** — they do not imply the recordings were captured inside Masjid al-Haram or Masjid an-Nabawi by the Haramain media office (those recordings are explicitly copyrighted and must not be shipped). The Makkah file is from a Wikimedia mirror of an external recording near the Great Mosque; the Madinah file is a generic muezzin recital ("own work" upload). If a rights-holder ever objects to either file, swap it out and update this section.
