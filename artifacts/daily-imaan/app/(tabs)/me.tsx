@@ -158,6 +158,102 @@ export default function MeScreen() {
         Two streak freezes per week, refilled every Sunday — they auto-apply when life gets in the way. Longest streak so far: {streak.longestStreak}.
       </Text>
 
+      {/* Daily Deeds — moved above Khatam so the daily habit loop is the
+          first thing users see after the stats. Khatam is a long-horizon
+          goal; Intentions are what drive tomorrow's streak. */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <View style={{ gap: 2 }}>
+            <Text style={[styles.sectionTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              Today's Intentions
+            </Text>
+            <Text style={[styles.sectionSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              Quiet accountability · resets each day
+            </Text>
+          </View>
+          {checked > 0 && (
+            <Text style={[styles.sectionCount, { color: C.primary, fontFamily: "Inter_600SemiBold" }]}>
+              {checked}/{GOOD_DEEDS.length}
+            </Text>
+          )}
+        </View>
+
+        {checked > 0 && (
+          <View style={[styles.progressBg, { backgroundColor: C.muted }]}>
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  backgroundColor: C.primary,
+                  width: `${Math.round(progress * 100)}%` as DimensionValue,
+                },
+              ]}
+            />
+          </View>
+        )}
+
+        {checked === GOOD_DEEDS.length && (
+          <View style={[styles.completionBanner, { backgroundColor: isDark ? "rgba(45,191,127,0.10)" : "rgba(26,107,74,0.07)", borderColor: C.primary + "30" }]}>
+            <Text style={{ fontSize: 18 }}>🌿</Text>
+            <Text style={[styles.completionText, { color: C.primary, fontFamily: "Inter_500Medium" }]}>
+              MashaAllah — may Allah accept your deeds today.
+            </Text>
+          </View>
+        )}
+
+        <View style={[styles.deedsList, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+          {GOOD_DEEDS.map((deed, i) => {
+            const isChecked = isDeedChecked(deed.id);
+            return (
+              <Pressable
+                key={deed.id}
+                onPress={() => handleToggle(deed.id)}
+                {...a11yChecked(deed.label, isChecked, "Toggles today's intention")}
+                style={({ pressed }) => [
+                  styles.deedRow,
+                  i < GOOD_DEEDS.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <View
+                  {...a11yDecorative}
+                  style={[
+                    styles.deedCheck,
+                    {
+                      backgroundColor: isChecked ? C.primary : "transparent",
+                      borderColor: isChecked ? C.primary : C.border,
+                    },
+                  ]}
+                >
+                  {isChecked && <Ionicons name="checkmark" size={14} color="#fff" />}
+                </View>
+                <Ionicons
+                  {...a11yDecorative}
+                  name={deed.icon}
+                  size={18}
+                  color={isChecked ? C.primary : C.mutedForeground}
+                />
+                <Text
+                  style={[
+                    styles.deedLabel,
+                    {
+                      color: isChecked ? C.foreground : C.mutedForeground,
+                      fontFamily: isChecked ? "Inter_600SemiBold" : "Inter_400Regular",
+                      textDecorationLine: isChecked ? "none" : "none",
+                    },
+                  ]}
+                >
+                  {deed.label}
+                </Text>
+                <Text style={[styles.deedTime, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {deed.time}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
       {/* Khatam progress — surfaces overall Quran reading progress as a
           gentle "you are X% through the Qur'an" gauge. The reading is
           tracked passively by `markAyahRead` calls scattered through the
@@ -216,106 +312,6 @@ export default function MeScreen() {
           />
         </View>
       </Pressable>
-
-      {/* Daily Deeds */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <View style={{ gap: 2 }}>
-            <Text style={[styles.sectionTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
-              Today's Intentions
-            </Text>
-            <Text style={[styles.sectionSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              Quiet accountability · resets each day
-            </Text>
-          </View>
-          {checked > 0 && (
-            <Text style={[styles.sectionCount, { color: C.primary, fontFamily: "Inter_600SemiBold" }]}>
-              {checked}/{GOOD_DEEDS.length}
-            </Text>
-          )}
-        </View>
-
-        {/* Progress bar — only shown once something is checked */}
-        {checked > 0 && (
-          <View style={[styles.progressBg, { backgroundColor: C.muted }]}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  backgroundColor: C.primary,
-                  width: `${Math.round(progress * 100)}%` as DimensionValue,
-                },
-              ]}
-            />
-          </View>
-        )}
-
-        {/* Gentle completion message — only when all done */}
-        {checked === GOOD_DEEDS.length && (
-          <View style={[styles.completionBanner, { backgroundColor: isDark ? "rgba(45,191,127,0.10)" : "rgba(26,107,74,0.07)", borderColor: C.primary + "30" }]}>
-            <Text style={{ fontSize: 18 }}>🌿</Text>
-            <Text style={[styles.completionText, { color: C.primary, fontFamily: "Inter_500Medium" }]}>
-              MashaAllah — may Allah accept your deeds today.
-            </Text>
-          </View>
-        )}
-
-        {/* Deeds List */}
-        <View style={[styles.deedsList, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
-          {GOOD_DEEDS.map((deed, i) => {
-            const isChecked = isDeedChecked(deed.id);
-            return (
-              <Pressable
-                key={deed.id}
-                onPress={() => handleToggle(deed.id)}
-                {...a11yChecked(deed.label, isChecked, "Toggles today's intention")}
-                style={({ pressed }) => [
-                  styles.deedRow,
-                  i < GOOD_DEEDS.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
-                  { opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <View
-                  {...a11yDecorative}
-                  style={[
-                    styles.deedCheck,
-                    {
-                      backgroundColor: isChecked ? C.primary : "transparent",
-                      borderColor: isChecked ? C.primary : C.border,
-                    },
-                  ]}
-                >
-                  {isChecked && <Ionicons name="checkmark" size={14} color="#fff" />}
-                </View>
-
-                <Ionicons
-                  {...a11yDecorative}
-                  name={deed.icon}
-                  size={18}
-                  color={isChecked ? C.primary : C.mutedForeground}
-                />
-
-                <Text
-                  style={[
-                    styles.deedLabel,
-                    {
-                      color: isChecked ? C.foreground : C.mutedForeground,
-                      fontFamily: isChecked ? "Inter_600SemiBold" : "Inter_400Regular",
-                      textDecorationLine: isChecked ? "none" : "none",
-                    },
-                  ]}
-                >
-                  {deed.label}
-                </Text>
-
-                <Text style={[styles.deedTime, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {deed.time}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
 
       {/* Quick Links */}
       <View style={styles.section}>

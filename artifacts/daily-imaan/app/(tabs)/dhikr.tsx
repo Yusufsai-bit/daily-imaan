@@ -77,6 +77,7 @@ export default function DhikrScreen() {
   const preset = state.settings.dhikrPreset;
   const targets = targetsForPreset(preset);
 
+  const [showInfo, setShowInfo] = useState(false);
   const [counts, setCounts] = useState<DhikrState>({
     subhanAllah: 0,
     alhamdulillah: 0,
@@ -249,15 +250,29 @@ export default function DhikrScreen() {
         </Pressable>
       </View>
 
-      {/* Info card — full hadith text, no truncation. Source: Sahih Muslim 597,
-          Book 5 (The Book of the Mosques and Places of Prayer), Chapter on
-          remembrance after prayer. */}
-      <View style={[styles.infoCard, { backgroundColor: C.card, borderColor: C.border }]}>
+      {/* Info card — collapsed by default so it doesn't compete with the
+          dhikr buttons. Tapping the attribution line expands the full hadith. */}
+      <Pressable
+        onPress={() => {
+          Haptics.selectionAsync();
+          setShowInfo((v) => !v);
+        }}
+        {...a11yButton(showInfo ? "Hide hadith source" : "Show hadith source — Sahih Muslim 597")}
+        style={[styles.infoCard, { backgroundColor: C.card, borderColor: C.border }]}
+      >
         <Ionicons name="information-circle-outline" size={16} color={C.mutedForeground} />
         <Text style={[styles.infoText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-          Abu Hurayrah (raḍiy Allāhu ʿanhu) reported that the Messenger of Allah ﷺ said: "Whoever glorifies Allah (SubhanAllah) thirty-three times after every prayer, and praises Allah (Alhamdulillah) thirty-three times, and magnifies Allah (Allahu Akbar) thirty-three times — that is ninety-nine — and completes the hundred by saying 'La ilaha illa Allah, wahdahu la sharika lah, lahul-mulku wa lahul-hamdu wa huwa ʿala kulli shay'in qadeer' — his sins will be forgiven even if they are like the foam of the sea." (Sahih Muslim 597)
+          Sahih Muslim 597 · Tap to {showInfo ? "collapse" : "read"}
         </Text>
-      </View>
+        <Ionicons name={showInfo ? "chevron-up" : "chevron-down"} size={14} color={C.mutedForeground} />
+      </Pressable>
+      {showInfo && (
+        <View style={[styles.infoExpanded, { backgroundColor: C.card, borderColor: C.border }]}>
+          <Text style={[styles.infoExpandedText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            Abu Hurayrah (raḍiy Allāhu ʿanhu) reported that the Messenger of Allah ﷺ said: "Whoever glorifies Allah (SubhanAllah) thirty-three times after every prayer, and praises Allah (Alhamdulillah) thirty-three times, and magnifies Allah (Allahu Akbar) thirty-three times — that is ninety-nine — and completes the hundred by saying 'La ilaha illa Allah, wahdahu la sharika lah, lahul-mulku wa lahul-hamdu wa huwa ʿala kulli shay'in qadeer' — his sins will be forgiven even if they are like the foam of the sea."
+          </Text>
+        </View>
+      )}
 
       {/* Dhikr Buttons */}
       <View style={[styles.dhikrGrid, { paddingBottom: insets.bottom + 100 }]}>
@@ -368,9 +383,13 @@ const styles = StyleSheet.create({
   presetPillText: { fontSize: 12, letterSpacing: 0.2 },
   infoCard: {
     flexDirection: "row", gap: 10, padding: 12, borderRadius: 12,
-    borderWidth: 1, marginBottom: 20, alignItems: "flex-start",
+    borderWidth: 1, marginBottom: 8, alignItems: "center",
   },
   infoText: { flex: 1, fontSize: 12, lineHeight: 18 },
+  infoExpanded: {
+    borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 12,
+  },
+  infoExpandedText: { fontSize: 12, lineHeight: 20 },
   dhikrGrid: { flex: 1, gap: 12 },
   dhikrItem: { flex: 1 },
   dhikrBtn: {

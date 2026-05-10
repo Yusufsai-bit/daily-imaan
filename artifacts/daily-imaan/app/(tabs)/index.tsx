@@ -298,7 +298,7 @@ export default function HomeScreen() {
   const handleAyatShare = useCallback(async () => {
     try {
       await Share.share({
-        message: `${ayah.arabicText}\n\n"${ayah.englishText}"\n— Quran ${ayah.surahNameEnglish} ${ayah.surahId}:${ayah.ayahNumber}\n\nShared via Daily Imaan`,
+        message: `${ayah.arabicText}\n\n"${ayah.englishText}"\n\n— ${ayah.surahNameEnglish} ${ayah.surahId}:${ayah.ayahNumber} · Saheeh International\n\nDaily Imaan · dailyimaan.com`,
       });
     } catch {
       // ignore
@@ -339,11 +339,8 @@ export default function HomeScreen() {
 
   const handleHadithShare = useCallback(async () => {
     try {
-      // Keep the share concise: just the English meaning + a single
-      // attribution line + source URL. The Arabic block was making the
-      // share preview look like a wall of text in iMessage / WhatsApp.
       await Share.share({
-        message: `"${hadith.englishText}"\n\n— ${hadith.collection} #${hadith.reference}\n${hadith.sourceUrl}\n\nvia Daily Imaan`,
+        message: `"${hadith.englishText}"\n\n— ${hadith.collection}, Hadith ${hadith.reference}\n${hadith.sourceUrl}\n\nDaily Imaan · dailyimaan.com`,
       });
     } catch {
       // ignore
@@ -493,155 +490,11 @@ export default function HomeScreen() {
         </Pressable>
       )}
 
-      {/* Prayer + Qibla pair — two primary-green pills, prayer takes the
-          flex share, Qibla a fixed-width pill on the right. */}
-      <View style={styles.pillRow}>
-        <Pressable
-          onPress={handlePrayerPillPress}
-          {...a11yButton(prayerPillTitle, "Refresh prayer times")}
-          style={({ pressed }) => [
-            styles.prayerPill,
-            { backgroundColor: C.primary, opacity: pressed ? 0.85 : 1 },
-          ]}
-        >
-          <Ionicons name="time-outline" size={16} color="rgba(255,255,255,0.85)" {...a11yDecorative} />
-          <Text numberOfLines={1} style={[styles.pillTitle, { fontFamily: "Inter_500Medium" }]}>
-            {prayerPillTitle}
-          </Text>
-          {prayerPillTime ? (
-            <Text numberOfLines={1} style={[styles.pillTime, { fontFamily: "Inter_400Regular" }]}>
-              · {prayerPillTime}
-            </Text>
-          ) : null}
-        </Pressable>
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push("/qibla" as never);
-          }}
-          {...a11yLink("Qibla compass", "Opens the Qibla compass")}
-          style={({ pressed }) => [
-            styles.qiblaPill,
-            { backgroundColor: C.primary, opacity: pressed ? 0.85 : 1 },
-          ]}
-        >
-          <Ionicons name="compass-outline" size={16} color="rgba(255,255,255,0.85)" {...a11yDecorative} />
-          <Text style={[styles.pillTitle, { fontFamily: "Inter_500Medium" }]}>Qibla</Text>
-        </Pressable>
-      </View>
-
-      {/* Soft reminder tip banner — shown only when the user has finished
-          welcome, has not dismissed the tip, and has not yet enabled either
-          of the two daily reminders. Tapping opens Settings; the X dismisses
-          permanently. Intentionally low-key so it doesn't compete with the
-          prayer/qibla pills above. */}
-      {state.welcomeSeen &&
-        !state.homeTipDismissed &&
-        !state.settings.dailyAyahReminderEnabled &&
-        !state.settings.dailyHadithReminderEnabled && (
-          <View style={[styles.tipBanner, { backgroundColor: C.secondary, borderColor: C.border }]}>
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push("/settings" as never);
-              }}
-              {...a11yButton(
-                "Enable a daily reminder",
-                "Opens Settings to turn on a daily ayah or hadith reminder",
-              )}
-              style={({ pressed }) => [styles.tipBannerBody, { opacity: pressed ? 0.7 : 1 }]}
-            >
-              <View style={[styles.tipBannerIcon, { backgroundColor: C.background }]}>
-                <Ionicons name="notifications-outline" size={16} color={C.primary} {...a11yDecorative} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  maxFontSizeMultiplier={1.5}
-                  style={[styles.tipBannerTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}
-                >
-                  Want a gentle daily nudge?
-                </Text>
-                <Text
-                  maxFontSizeMultiplier={1.5}
-                  style={[styles.tipBannerSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
-                >
-                  Turn on a daily ayah or hadith reminder in Settings.
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} {...a11yDecorative} />
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                dismissHomeTip();
-              }}
-              {...a11yButton("Dismiss tip", "Hides this reminder tip permanently")}
-              hitSlop={10}
-              style={({ pressed }) => [styles.tipBannerClose, { opacity: pressed ? 0.5 : 1 }]}
-            >
-              <Ionicons name="close" size={16} color={C.mutedForeground} {...a11yDecorative} />
-            </Pressable>
-          </View>
-        )}
-
-      {/* Resume Qur'an tile (first-run: "Start the Qur'an" / Begin with Al-Fatiha). */}
-      <Pressable
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push(resumeRoute as never);
-        }}
-        {...a11yLink(resumeTitle, resumeSubtitle)}
-        style={({ pressed }) => [
-          styles.tile,
-          { backgroundColor: C.card, opacity: pressed ? 0.85 : 1 },
-        ]}
-      >
-        <View style={[styles.tileIcon, { backgroundColor: C.secondary }]}>
-          <Feather name="book-open" size={16} color={C.primary} {...a11yDecorative} />
-        </View>
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text numberOfLines={1} style={[styles.tileTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
-            {resumeTitle}
-          </Text>
-          <Text numberOfLines={1} style={[styles.tileSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            {resumeSubtitle}
-          </Text>
-        </View>
-      </Pressable>
-
-      {/* Adhkar tile — time-aware label, routes to the dhikr counter for now.
-          A dedicated Morning/Evening adhkar list (Hisn al-Muslim) is a
-          future addition; the routing target will swap when it ships. */}
-      <Pressable
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push(adhkarRoute as never);
-        }}
-        {...a11yLink(adhkarTitle, adhkarSubtitle)}
-        style={({ pressed }) => [
-          styles.tile,
-          { backgroundColor: C.card, opacity: pressed ? 0.85 : 1 },
-        ]}
-      >
-        <View style={[styles.tileIcon, { backgroundColor: C.secondary }]}>
-          <Ionicons name={adhkarIcon} size={16} color={C.primary} {...a11yDecorative} />
-        </View>
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text numberOfLines={1} style={[styles.tileTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
-            {adhkarTitle}
-          </Text>
-          <Text numberOfLines={1} style={[styles.tileSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            {adhkarSubtitle}
-          </Text>
-        </View>
-      </Pressable>
-
-      {/* AYAT OF THE DAY */}
-      <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-        AYAT OF THE DAY
-      </Text>
+      {/* AYAT OF THE DAY — hero, first content block after the header.
+          Section label removed; the surah badge inside the card provides
+          all the context needed. heroCard gives it stronger elevation. */}
       <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
-        <View style={[styles.contentCard, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#1A6B4A" }]}>
+        <View style={[styles.contentCard, styles.heroCard, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#1A6B4A" }]}>
           <View style={[styles.surahBadge, { backgroundColor: C.secondary }]}>
             <Text style={[styles.surahBadgeText, { color: C.primary, fontFamily: "Inter_600SemiBold" }]}>
               {ayah.surahNameEnglish} · {ayah.surahId}:{ayah.ayahNumber}
@@ -813,90 +666,9 @@ export default function HomeScreen() {
         </View>
       </Animated.View>
 
-      {/* HADITH OF THE DAY — same secondary action vocabulary as the Ayat
-          card. No Listen button (no audio recitation in the app yet).
-          Always rendered: the hadith shortcut is a permanent home tile and
-          is no longer hideable from Settings. */}
-      <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-        HADITH OF THE DAY
-      </Text>
-          <View style={[styles.contentCard, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#1A6B4A" }]}>
-            <View style={styles.hadithHeaderRow}>
-              <View
-                style={[
-                  styles.hadithBadge,
-                  { backgroundColor: isDark ? "rgba(200,147,60,0.18)" : "rgba(200,147,60,0.14)" },
-                ]}
-              >
-                <Text style={[styles.hadithBadgeText, { fontFamily: "Inter_600SemiBold" }]}>
-                  {hadith.collection}
-                </Text>
-              </View>
-              <Text style={[styles.hadithRef, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                Hadith {hadith.reference}
-              </Text>
-            </View>
-            <Text style={[styles.arabicText, { color: C.foreground }]}>{hadith.arabicText}</Text>
-            <View style={[styles.divider, { backgroundColor: C.border }]} />
-            <Text style={[styles.englishText, { color: C.foreground, fontFamily: "Inter_400Regular" }]}>
-              &ldquo;{hadith.englishText}&rdquo;
-            </Text>
-            <Text style={[styles.credit, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              {hadithBookTitleEn ? `From ${hadithBookTitleEn}` : "Riyad as-Salihin"} · sunnah.com
-            </Text>
-            <View style={styles.hadithActionRow}>
-              <Pressable
-                onPress={handleHadithBookmark}
-                {...a11yButton(hadithBookmarked ? "Remove hadith bookmark" : "Bookmark this hadith")}
-                style={({ pressed }) => [
-                  styles.iconBtn,
-                  { backgroundColor: hadithBookmarked ? C.accent : C.secondary, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Ionicons
-                  name={hadithBookmarked ? "bookmark" : "bookmark-outline"}
-                  size={16}
-                  color={hadithBookmarked ? "#fff" : C.mutedForeground}
-                  {...a11yDecorative}
-                />
-              </Pressable>
-              <Pressable
-                onPress={handleHadithShare}
-                {...a11yButton("Share this hadith")}
-                style={({ pressed }) => [
-                  styles.iconBtn,
-                  { backgroundColor: C.secondary, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Ionicons name="share-outline" size={16} color={C.mutedForeground} {...a11yDecorative} />
-              </Pressable>
-              <Pressable
-                onPress={handleHadithShuffle}
-                {...a11yButton("Show a different hadith")}
-                style={({ pressed }) => [
-                  styles.iconBtn,
-                  { backgroundColor: C.secondary, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Ionicons name="shuffle-outline" size={16} color={C.mutedForeground} {...a11yDecorative} />
-              </Pressable>
-            </View>
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push("/hadith" as never);
-              }}
-              {...a11yLink("Read full hadith", "Opens the daily hadith collection")}
-              style={[styles.cardCta, { borderTopColor: C.border }]}
-            >
-              <Text style={[styles.cardCtaText, { color: C.primary, fontFamily: "Inter_500Medium" }]}>
-                Read full hadith
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={C.primary} {...a11yDecorative} />
-            </Pressable>
-          </View>
-
-      {/* Feeling hero — soft horizontal gradient, full-opacity chevron. */}
+      {/* Feeling hero — moved to second position so it immediately follows
+          the verse. The emotional check-in is what sets Daily Imaan apart
+          for Muslim Pro switchers; it should not be buried at the bottom. */}
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -923,12 +695,230 @@ export default function HomeScreen() {
               How is your heart today?
             </Text>
             <Text style={[styles.feelingSub, { color: C.foreground, fontFamily: "Inter_400Regular" }]}>
-              Find a verse or du&apos;a for what&apos;s on your heart today.
+              Find a verse or du&apos;a for what&apos;s on your heart.
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={C.primary} {...a11yDecorative} />
         </LinearGradient>
       </Pressable>
+
+      {/* Prayer + Qibla pair — secondary utilities, now below the hero content. */}
+      <View style={styles.pillRow}>
+        <Pressable
+          onPress={handlePrayerPillPress}
+          {...a11yButton(prayerPillTitle, "Refresh prayer times")}
+          style={({ pressed }) => [
+            styles.prayerPill,
+            { backgroundColor: C.primary, opacity: pressed ? 0.85 : 1 },
+          ]}
+        >
+          <Ionicons name="time-outline" size={16} color="rgba(255,255,255,0.85)" {...a11yDecorative} />
+          <Text numberOfLines={1} style={[styles.pillTitle, { fontFamily: "Inter_500Medium" }]}>
+            {prayerPillTitle}
+          </Text>
+          {prayerPillTime ? (
+            <Text numberOfLines={1} style={[styles.pillTime, { fontFamily: "Inter_400Regular" }]}>
+              · {prayerPillTime}
+            </Text>
+          ) : null}
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/qibla" as never);
+          }}
+          {...a11yLink("Qibla compass", "Opens the Qibla compass")}
+          style={({ pressed }) => [
+            styles.qiblaPill,
+            { backgroundColor: C.primary, opacity: pressed ? 0.85 : 1 },
+          ]}
+        >
+          <Ionicons name="compass-outline" size={16} color="rgba(255,255,255,0.85)" {...a11yDecorative} />
+          <Text style={[styles.pillTitle, { fontFamily: "Inter_500Medium" }]}>Qibla</Text>
+        </Pressable>
+      </View>
+
+      {/* Soft reminder tip banner. */}
+      {state.welcomeSeen &&
+        !state.homeTipDismissed &&
+        !state.settings.dailyAyahReminderEnabled &&
+        !state.settings.dailyHadithReminderEnabled && (
+          <View style={[styles.tipBanner, { backgroundColor: C.secondary, borderColor: C.border }]}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push("/settings" as never);
+              }}
+              {...a11yButton(
+                "Enable a daily reminder",
+                "Opens Settings to turn on a daily ayah or hadith reminder",
+              )}
+              style={({ pressed }) => [styles.tipBannerBody, { opacity: pressed ? 0.7 : 1 }]}
+            >
+              <View style={[styles.tipBannerIcon, { backgroundColor: C.background }]}>
+                <Ionicons name="notifications-outline" size={16} color={C.primary} {...a11yDecorative} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  maxFontSizeMultiplier={1.5}
+                  style={[styles.tipBannerTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}
+                >
+                  Want a gentle daily nudge?
+                </Text>
+                <Text
+                  maxFontSizeMultiplier={1.5}
+                  style={[styles.tipBannerSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+                >
+                  Turn on a daily ayah or hadith reminder in Settings.
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} {...a11yDecorative} />
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                dismissHomeTip();
+              }}
+              {...a11yButton("Dismiss tip", "Hides this reminder tip permanently")}
+              hitSlop={10}
+              style={({ pressed }) => [styles.tipBannerClose, { opacity: pressed ? 0.5 : 1 }]}
+            >
+              <Ionicons name="close" size={16} color={C.mutedForeground} {...a11yDecorative} />
+            </Pressable>
+          </View>
+        )}
+
+      {/* Resume Qur'an + Adhkar — compact 2-col row, secondary shortcuts. */}
+      <View style={styles.tileRow}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push(resumeRoute as never);
+          }}
+          {...a11yLink(resumeTitle, resumeSubtitle)}
+          style={({ pressed }) => [
+            styles.tile,
+            styles.tileInRow,
+            { backgroundColor: C.card, opacity: pressed ? 0.85 : 1 },
+          ]}
+        >
+          <View style={[styles.tileIcon, { backgroundColor: C.secondary }]}>
+            <Feather name="book-open" size={16} color={C.primary} {...a11yDecorative} />
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text numberOfLines={1} style={[styles.tileTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              {resumeTitle}
+            </Text>
+            <Text numberOfLines={1} style={[styles.tileSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              {resumeSubtitle}
+            </Text>
+          </View>
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push(adhkarRoute as never);
+          }}
+          {...a11yLink(adhkarTitle, adhkarSubtitle)}
+          style={({ pressed }) => [
+            styles.tile,
+            styles.tileInRow,
+            { backgroundColor: C.card, opacity: pressed ? 0.85 : 1 },
+          ]}
+        >
+          <View style={[styles.tileIcon, { backgroundColor: C.secondary }]}>
+            <Ionicons name={adhkarIcon} size={16} color={C.primary} {...a11yDecorative} />
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text numberOfLines={1} style={[styles.tileTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              {adhkarTitle}
+            </Text>
+            <Text numberOfLines={1} style={[styles.tileSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              {adhkarSubtitle}
+            </Text>
+          </View>
+        </Pressable>
+      </View>
+
+      {/* HADITH OF THE DAY — secondary content, below hero sections. */}
+      <Text style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+        HADITH OF THE DAY
+      </Text>
+      <View style={[styles.contentCard, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#1A6B4A" }]}>
+        <View style={styles.hadithHeaderRow}>
+          <View
+            style={[
+              styles.hadithBadge,
+              { backgroundColor: isDark ? "rgba(200,147,60,0.18)" : "rgba(200,147,60,0.14)" },
+            ]}
+          >
+            <Text style={[styles.hadithBadgeText, { fontFamily: "Inter_600SemiBold" }]}>
+              {hadith.collection}
+            </Text>
+          </View>
+          <Text style={[styles.hadithRef, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            Hadith {hadith.reference}
+          </Text>
+        </View>
+        <Text style={[styles.arabicText, { color: C.foreground }]}>{hadith.arabicText}</Text>
+        <View style={[styles.divider, { backgroundColor: C.border }]} />
+        <Text style={[styles.englishText, { color: C.foreground, fontFamily: "Inter_400Regular" }]}>
+          &ldquo;{hadith.englishText}&rdquo;
+        </Text>
+        <Text style={[styles.credit, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          {hadithBookTitleEn ? `From ${hadithBookTitleEn}` : "Riyad as-Salihin"} · sunnah.com
+        </Text>
+        <View style={styles.hadithActionRow}>
+          <Pressable
+            onPress={handleHadithBookmark}
+            {...a11yButton(hadithBookmarked ? "Remove hadith bookmark" : "Bookmark this hadith")}
+            style={({ pressed }) => [
+              styles.iconBtn,
+              { backgroundColor: hadithBookmarked ? C.accent : C.secondary, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Ionicons
+              name={hadithBookmarked ? "bookmark" : "bookmark-outline"}
+              size={16}
+              color={hadithBookmarked ? "#fff" : C.mutedForeground}
+              {...a11yDecorative}
+            />
+          </Pressable>
+          <Pressable
+            onPress={handleHadithShare}
+            {...a11yButton("Share this hadith")}
+            style={({ pressed }) => [
+              styles.iconBtn,
+              { backgroundColor: C.secondary, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Ionicons name="share-outline" size={16} color={C.mutedForeground} {...a11yDecorative} />
+          </Pressable>
+          <Pressable
+            onPress={handleHadithShuffle}
+            {...a11yButton("Show a different hadith")}
+            style={({ pressed }) => [
+              styles.iconBtn,
+              { backgroundColor: C.secondary, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Ionicons name="shuffle-outline" size={16} color={C.mutedForeground} {...a11yDecorative} />
+          </Pressable>
+        </View>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/hadith" as never);
+          }}
+          {...a11yLink("Read full hadith", "Opens the daily hadith collection")}
+          style={[styles.cardCta, { borderTopColor: C.border }]}
+        >
+          <Text style={[styles.cardCtaText, { color: C.primary, fontFamily: "Inter_500Medium" }]}>
+            Read full hadith
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color={C.primary} {...a11yDecorative} />
+        </Pressable>
+      </View>
       {/* Prayer schedule sheet — opens when the user taps the prayer pill at
           the top of the home screen. Lists every prayer for today (plus
           sunrise) in chronological order, with the next prayer highlighted.
@@ -1182,7 +1172,10 @@ const styles = StyleSheet.create({
   hadithRef: { fontSize: 11 },
   hadithActionRow: { flexDirection: "row", gap: 8, justifyContent: "flex-end" },
 
-  feelingWrap: { borderRadius: 16, overflow: "hidden", marginTop: 6 },
+  tileRow: { flexDirection: "row", gap: 10 },
+  tileInRow: { flex: 1 },
+  heroCard: { shadowOpacity: 0.14, shadowRadius: 20, elevation: 6 },
+  feelingWrap: { borderRadius: 16, overflow: "hidden" },
   feelingHero: {
     flexDirection: "row", alignItems: "center", gap: 14,
     paddingHorizontal: 18, paddingVertical: 18,
