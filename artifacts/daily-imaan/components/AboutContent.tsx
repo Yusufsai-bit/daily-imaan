@@ -23,13 +23,12 @@ interface Props {
  *    an-Nawawī (d. 676 AH / 1277 CE). English translation by Ḥāfiẓ
  *    Ṣalāhuddīn Yūsuf (Darussalam edition). Bundled in-app from an open
  *    mirror of sunnah.com.
- *  - Adhan audio: two recordings sourced from Wikimedia Commons under
- *    CC BY 3.0 (Makkah, by Seyfula Islam) and CC0 / public-domain
- *    dedication (Madinah, by Adam-synagda). Attribution is required for
- *    the Makkah file and shown in the "Adhan audio" source card below;
- *    the Madinah file requires no attribution but is listed for
- *    transparency. Full license paper trail lives in
- *    `assets/sounds/README.md`.
+ *  - Adhan audio: a single recording sourced from Wikimedia Commons under
+ *    a CC0 public-domain dedication (Madinah, by Adam-synagda). No
+ *    attribution is required; the source card below lists it for
+ *    transparency. The Makkah option was supported in v1-beta but
+ *    dropped pre-launch to avoid the CC BY 3.0 attribution dependency.
+ *    Full license paper trail lives in `assets/sounds/README.md`.
  */
 export function AboutContent({ C }: Props) {
   return (
@@ -96,10 +95,10 @@ export function AboutContent({ C }: Props) {
           Adhan audio
         </Text>
         <Text maxFontSizeMultiplier={1.6} style={[styles.sourceValue, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
-          Wikimedia Commons (CC BY 3.0 / CC0)
+          Wikimedia Commons (CC0)
         </Text>
         <Text maxFontSizeMultiplier={1.6} style={[styles.sourceNote, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-          Adhan (Makkah): "Adhan, Great Mosque of Mecca" by Seyfula Islam, CC BY 3.0. Adhan (Madinah): "Beautiful adhan" by Adam-synagda, released under CC0 (public domain). Both via Wikimedia Commons, trimmed and loudness-normalised for notification use.
+          Adhan (Madinah): "Beautiful adhan" by Adam-synagda, released under CC0 (public domain) via Wikimedia Commons. Trimmed and loudness-normalised for notification use.
         </Text>
       </View>
 

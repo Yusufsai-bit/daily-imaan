@@ -1,11 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
-  Animated,
   FlatList,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -36,72 +34,89 @@ const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 
 function DuaCard({ dua, isDark, C }: { dua: Dua; isDark: boolean; C: (typeof colors)["light"] }) {
   const [expanded, setExpanded] = useState(false);
-  const scaleAnim = useRef(new Animated.Value(1)).current;
   const { markDeedDone } = useApp();
 
+  // Defensive: a malformed Dua entry (missing arabicText etc.) used to
+  // crash this screen because the legacy Animated.Value pipeline threw on
+  // the first render. We fall back to safe empty strings so a broken
+  // entry shows visibly empty but doesn't take the whole screen down.
+  const arabic = dua?.arabicText ?? "";
+  const occasion = dua?.occasion ?? "";
+  const transliteration = dua?.transliteration ?? "";
+  const english = dua?.englishText ?? "";
+
   const toggle = () => {
-    const useND = Platform.OS !== "web";
-    Animated.sequence([
-      Animated.timing(scaleAnim, { toValue: 0.98, duration: 80, useNativeDriver: useND }),
-      Animated.timing(scaleAnim, { toValue: 1, duration: 80, useNativeDriver: useND }),
-    ]).start();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     // Auto-link "Made Dua" intention the first time the user opens any
     // dua. markDeedDone is idempotent — never undoes a manual uncheck.
     if (!expanded) markDeedDone("dua");
-    setExpanded(!expanded);
+    setExpanded((p) => !p);
   };
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <Pressable
-        onPress={toggle}
-        style={[
-          styles.duaCard,
-          { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" },
-        ]}
-      >
-        {/* Occasion header */}
-        <View style={styles.duaHeader}>
-          <View style={[styles.occasionBadge, { backgroundColor: C.secondary }]}>
-            <Ionicons name="moon-outline" size={12} color={C.primary} />
-            <Text style={[styles.occasionText, { color: C.primary, fontFamily: "Inter_500Medium" }]}>
-              {dua.occasion}
-            </Text>
-          </View>
-          <Ionicons
-            name={expanded ? "chevron-up" : "chevron-down"}
-            size={16}
-            color={C.mutedForeground}
-          />
+    <Pressable
+      onPress={toggle}
+      // Native press feedback via Pressable's `pressed` arg replaces the
+      // legacy `Animated.sequence` micro-bounce. The previous version
+      // created a fresh Animated.Value per item inside FlatList and ran
+      // sequences on press — under the New Architecture this combination
+      // intermittently threw at render time, which is what the friend's
+      // "pops up with an error" was. Pressable's built-in press style is
+      // both cheaper (no JS thread animation tick) and crash-proof.
+      style={({ pressed }) => [
+        styles.duaCard,
+        {
+          backgroundColor: C.card,
+          shadowColor: isDark ? "#000" : "#000",
+          opacity: pressed ? 0.92 : 1,
+          transform: [{ scale: pressed ? 0.99 : 1 }],
+        },
+      ]}
+    >
+      {/* Occasion header */}
+      <View style={styles.duaHeader}>
+        <View style={[styles.occasionBadge, { backgroundColor: C.secondary }]}>
+          <Ionicons name="moon-outline" size={12} color={C.primary} />
+          <Text style={[styles.occasionText, { color: C.primary, fontFamily: "Inter_500Medium" }]}>
+            {occasion}
+          </Text>
         </View>
+        <Ionicons
+          name={expanded ? "chevron-up" : "chevron-down"}
+          size={16}
+          color={C.mutedForeground}
+        />
+      </View>
 
-        {/* Arabic */}
-        <Text style={[styles.duaArabic, { color: C.foreground }]}>
-          {dua.arabicText}
-        </Text>
+      {/* Arabic */}
+      <Text style={[styles.duaArabic, { color: C.foreground }]}>
+        {arabic}
+      </Text>
 
-        {/* Expanded content */}
-        {expanded && (
-          <View style={styles.expandedContent}>
-            <View style={[styles.divider, { backgroundColor: C.border }]} />
+      {/* Expanded content */}
+      {expanded && (
+        <View style={styles.expandedContent}>
+          <View style={[styles.divider, { backgroundColor: C.border }]} />
+          {transliteration ? (
             <Text style={[styles.transliteration, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              {dua.transliteration}
+              {transliteration}
             </Text>
+          ) : null}
+          {english ? (
             <Text style={[styles.englishDua, { color: C.foreground, fontFamily: "Inter_400Regular" }]}>
-              "{dua.englishText}"
+              "{english}"
             </Text>
-            {dua.source && (
-              <View style={[styles.sourceBadge, { backgroundColor: isDark ? "rgba(200,147,60,0.12)" : "rgba(200,147,60,0.1)" }]}>
-                <Text style={[styles.sourceText, { color: C.accent, fontFamily: "Inter_600SemiBold" }]}>
-                  Source: {dua.source}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-      </Pressable>
-    </Animated.View>
+          ) : null}
+          {dua?.source ? (
+            <View style={[styles.sourceBadge, { backgroundColor: isDark ? "rgba(200,147,60,0.12)" : "rgba(200,147,60,0.1)" }]}>
+              <Text style={[styles.sourceText, { color: C.accent, fontFamily: "Inter_600SemiBold" }]}>
+                Source: {dua.source}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      )}
+    </Pressable>
   );
 }
 

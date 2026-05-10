@@ -171,10 +171,19 @@ export function useTafsir(
         // Ignore malformed cache and fall through to network fetch.
       }
 
-      // 2. Fetch from Quran.com Foundation API.
+      // 2. Fetch from Quran.com Foundation API. Hard 10s timeout via
+      // AbortController — without this, a slow/dead network leaves the
+      // loading spinner stuck forever and the app feels broken.
       try {
         const url = `https://api.qurancdn.com/api/qdc/tafsirs/${TAFSIR_ID}/by_ayah/${verseKey}`;
-        const res = await fetch(url);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10_000);
+        let res: Response;
+        try {
+          res = await fetch(url, { signal: controller.signal });
+        } finally {
+          clearTimeout(timeoutId);
+        }
         if (!res.ok) throw new Error(`Quran.com returned ${res.status}`);
         const data = await res.json();
         const rawText: string = data?.tafsir?.text ?? "";
@@ -261,7 +270,14 @@ export async function prewarmTafsir(
     }
 
     const url = `https://api.qurancdn.com/api/qdc/tafsirs/${TAFSIR_ID}/by_ayah/${verseKey}`;
-    const res = await fetch(url);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10_000);
+    let res: Response;
+    try {
+      res = await fetch(url, { signal: controller.signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
     if (!res.ok) return;
     const data = await res.json();
     const rawText: string = data?.tafsir?.text ?? "";

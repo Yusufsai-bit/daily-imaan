@@ -47,7 +47,7 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function AppEffects() {
-  const { state, loaded, incrementStreak, markAyahRead } = useApp();
+  const { state, loaded, recordActivity, markAyahRead } = useApp();
   const segments = useSegments();
 
   // Notification permission is requested LAZILY — only when the user actually
@@ -81,13 +81,15 @@ function AppEffects() {
       const todayAyah = getTodayAyah(state.settings.ayatOrder);
       const ayahId = getGlobalId(todayAyah.surahId, todayAyah.ayahNumber);
       markAyahRead(ayahId);
-      incrementStreak();
+      // Tapping the notification counts as today's activity for streak
+      // purposes — replaces the legacy `incrementStreak`. Idempotent.
+      recordActivity();
       if (response.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
         router.navigate("/");
       }
     });
     return () => sub.remove();
-  }, [loaded, incrementStreak, markAyahRead, state.settings.ayatOrder]);
+  }, [loaded, recordActivity, markAyahRead, state.settings.ayatOrder]);
 
   // Daily ayah reminders are gated on the master toggle (default OFF).
   // When the toggle is off we schedule [] which clears any prior pushes.
@@ -147,6 +149,7 @@ function RootLayoutNav() {
       <Stack.Screen name="hadith" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="privacy" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="adhkar" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="asma" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="about" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="welcome" options={{ headerShown: false, presentation: "fullScreenModal", gestureEnabled: false }} />
     </Stack>

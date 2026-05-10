@@ -25,13 +25,18 @@ interface DhikrState {
   allahuAkbar: number;
 }
 
+/**
+ * Per-dhikr static config. The `max` is now PRESET-DRIVEN — see
+ * `targetsForPreset` below — and read from AppContext settings rather
+ * than hardcoded here. The Sunnah preset preserves the post-salah
+ * 33-33-34 (totals 100) pattern; Extended bumps each to 100.
+ */
 const DHIKR_CONFIG = [
   {
     key: "subhanAllah" as keyof DhikrState,
     arabic: "سُبْحَانَ اللَّهِ",
     english: "SubhanAllah",
     meaning: "Glory be to Allah",
-    max: 33,
     color: "#1A6B4A",
     darkColor: "#2DBF7F",
   },
@@ -40,7 +45,6 @@ const DHIKR_CONFIG = [
     arabic: "الْحَمْدُ لِلَّهِ",
     english: "Alhamdulillah",
     meaning: "Praise be to Allah",
-    max: 33,
     color: "#C8933C",
     darkColor: "#E0A84A",
   },
@@ -49,18 +53,29 @@ const DHIKR_CONFIG = [
     arabic: "اللَّهُ أَكْبَرُ",
     english: "Allahu Akbar",
     meaning: "Allah is the Greatest",
-    max: 34,
     color: "#4A6B1A",
     darkColor: "#7FBF2D",
   },
 ];
+
+function targetsForPreset(preset: "sunnah" | "extended"): Record<keyof DhikrState, number> {
+  if (preset === "extended") {
+    return { subhanAllah: 100, alhamdulillah: 100, allahuAkbar: 100 };
+  }
+  // Sunnah default: post-salah hadith (Sahih Muslim 597) — 33 / 33 / 34
+  // (the 34 makes the total exactly 100 with a final La ilaha illa Allah).
+  return { subhanAllah: 33, alhamdulillah: 33, allahuAkbar: 34 };
+}
 
 export default function DhikrScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
   const C = isDark ? colors.dark : colors.light;
   const insets = useSafeAreaInsets();
-  const { markDeedDone } = useApp();
+  const { markDeedDone, state, updateSettings } = useApp();
+
+  const preset = state.settings.dhikrPreset;
+  const targets = targetsForPreset(preset);
 
   const [counts, setCounts] = useState<DhikrState>({
     subhanAllah: 0,
@@ -68,6 +83,22 @@ export default function DhikrScreen() {
     allahuAkbar: 0,
   });
   const [sessionTotal, setSessionTotal] = useState(0);
+
+  // When the user switches preset (e.g. Sunnah → Extended), reset the
+  // counters so a half-completed 33-cycle doesn't immediately complete
+  // because the new target is lower. Session total is preserved.
+  useEffect(() => {
+    setCounts({ subhanAllah: 0, alhamdulillah: 0, allahuAkbar: 0 });
+  }, [preset]);
+
+  const handlePresetChange = useCallback(
+    (next: "sunnah" | "extended") => {
+      if (next === preset) return;
+      Haptics.selectionAsync();
+      updateSettings({ dhikrPreset: next });
+    },
+    [preset, updateSettings],
+  );
 
   const scaleAnims = useRef(DHIKR_CONFIG.map(() => new Animated.Value(1))).current;
   const completionAnims = useRef(DHIKR_CONFIG.map(() => new Animated.Value(0))).current;
@@ -155,6 +186,69 @@ export default function DhikrScreen() {
         </Pressable>
       </View>
 
+      {/* Target preset picker. Defaults to Sunnah (33-33-34) per the
+          post-salah hadith; Extended (100/100/100) is offered for users
+          who want longer dhikr sessions. Persists in AppSettings so the
+          choice survives app restarts and reinstalls. */}
+      <View style={styles.presetRow}>
+        <Pressable
+          onPress={() => handlePresetChange("sunnah")}
+          {...a11yButton(
+            "Sunnah preset — 33, 33, 34 totalling 100",
+            "Switch the dhikr targets to the post-salah Sunnah amounts",
+          )}
+          style={({ pressed }) => [
+            styles.presetPill,
+            {
+              backgroundColor: preset === "sunnah" ? C.primary : C.muted,
+              borderColor: preset === "sunnah" ? C.primary : C.border,
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}
+        >
+          <Text
+            maxFontSizeMultiplier={1.4}
+            style={[
+              styles.presetPillText,
+              {
+                color: preset === "sunnah" ? "#fff" : C.foreground,
+                fontFamily: "Inter_600SemiBold",
+              },
+            ]}
+          >
+            Sunnah · 33 / 33 / 34
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => handlePresetChange("extended")}
+          {...a11yButton(
+            "Extended preset — 100 each",
+            "Switch the dhikr targets to 100 of each",
+          )}
+          style={({ pressed }) => [
+            styles.presetPill,
+            {
+              backgroundColor: preset === "extended" ? C.primary : C.muted,
+              borderColor: preset === "extended" ? C.primary : C.border,
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}
+        >
+          <Text
+            maxFontSizeMultiplier={1.4}
+            style={[
+              styles.presetPillText,
+              {
+                color: preset === "extended" ? "#fff" : C.foreground,
+                fontFamily: "Inter_600SemiBold",
+              },
+            ]}
+          >
+            Extended · 100 each
+          </Text>
+        </Pressable>
+      </View>
+
       {/* Info card — full hadith text, no truncation. Source: Sahih Muslim 597,
           Book 5 (The Book of the Mosques and Places of Prayer), Chapter on
           remembrance after prayer. */}
@@ -169,8 +263,10 @@ export default function DhikrScreen() {
       <View style={[styles.dhikrGrid, { paddingBottom: insets.bottom + 100 }]}>
         {DHIKR_CONFIG.map((dhikr, i) => {
           const count = counts[dhikr.key];
-          const progress = count / dhikr.max;
-          const isComplete = count >= dhikr.max;
+          // Target comes from the preset, not hardcoded on the config.
+          const max = targets[dhikr.key];
+          const progress = count / max;
+          const isComplete = count >= max;
           const btnColor = isDark ? dhikr.darkColor : dhikr.color;
 
           return (
@@ -179,10 +275,10 @@ export default function DhikrScreen() {
               style={[{ transform: [{ scale: scaleAnims[i]! }] }, styles.dhikrItem]}
             >
               <Pressable
-                onPress={() => handlePress(dhikr.key, i, dhikr.max)}
+                onPress={() => handlePress(dhikr.key, i, max)}
                 {...a11yButton(
                   `${dhikr.english}, ${dhikr.meaning}`,
-                  `Currently ${count} of ${dhikr.max}. Tap to increment.`,
+                  `Currently ${count} of ${max}. Tap to increment.`,
                 )}
                 style={[
                   styles.dhikrBtn,
@@ -200,7 +296,7 @@ export default function DhikrScreen() {
                     {count}
                   </Text>
                   <Text style={[styles.dhikrMax, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                    /{dhikr.max}
+                    /{max}
                   </Text>
                 </View>
 
@@ -237,7 +333,7 @@ export default function DhikrScreen() {
                   ]}
                 >
                   <Ionicons name="checkmark" size={12} color="#fff" />
-                  <Text style={[styles.completeBadgeText, { fontFamily: "Inter_600SemiBold" }]}>{dhikr.max} ✓</Text>
+                  <Text style={[styles.completeBadgeText, { fontFamily: "Inter_600SemiBold" }]}>{max} ✓</Text>
                 </Animated.View>
               </Pressable>
             </Animated.View>
@@ -255,6 +351,21 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 13, marginTop: 2 },
   resetBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10 },
   resetText: { fontSize: 14 },
+  presetRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 12,
+  },
+  presetPill: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  presetPillText: { fontSize: 12, letterSpacing: 0.2 },
   infoCard: {
     flexDirection: "row", gap: 10, padding: 12, borderRadius: 12,
     borderWidth: 1, marginBottom: 20, alignItems: "flex-start",

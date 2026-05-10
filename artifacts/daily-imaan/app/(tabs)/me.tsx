@@ -155,8 +155,67 @@ export default function MeScreen() {
         </Pressable>
       </View>
       <Text style={[styles.streakNote, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-        Your streak only ever goes up. Periods, illness, travel, and rest never break it.
+        Two streak freezes per week, refilled every Sunday — they auto-apply when life gets in the way. Longest streak so far: {streak.longestStreak}.
       </Text>
+
+      {/* Khatam progress — surfaces overall Quran reading progress as a
+          gentle "you are X% through the Qur'an" gauge. The reading is
+          tracked passively by `markAyahRead` calls scattered through the
+          app (audio play, opening surahs, tapping notification, etc.),
+          so the number grows organically without any explicit "I read
+          this" gesture. 6,236 is the canonical ayah count. */}
+      <Pressable
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push("/quran" as never);
+        }}
+        {...a11yLink(
+          `${Math.round((readAyatIds.length / 6236) * 100)} percent of the Qur'an read`,
+          "Opens the Qur'an tab",
+        )}
+        style={({ pressed }) => [
+          styles.khatamCard,
+          {
+            backgroundColor: C.card,
+            borderColor: C.border,
+            shadowColor: isDark ? "#000" : "#000",
+            opacity: pressed ? 0.9 : 1,
+          },
+        ]}
+      >
+        <View style={styles.khatamRow}>
+          <View style={[styles.khatamIcon, { backgroundColor: C.secondary }]}>
+            <Ionicons name="book-outline" size={18} color={C.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text
+              maxFontSizeMultiplier={1.5}
+              style={[styles.khatamTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}
+            >
+              Qur'an progress
+            </Text>
+            <Text
+              maxFontSizeMultiplier={1.5}
+              style={[styles.khatamSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+            >
+              {readAyatIds.length.toLocaleString()} of 6,236 ayat ·{" "}
+              {((readAyatIds.length / 6236) * 100).toFixed(1)}%
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} />
+        </View>
+        <View style={[styles.khatamBarBg, { backgroundColor: C.muted }]}>
+          <View
+            style={[
+              styles.khatamBarFill,
+              {
+                backgroundColor: C.primary,
+                width: `${Math.min(100, Math.max(1, (readAyatIds.length / 6236) * 100))}%` as DimensionValue,
+              },
+            ]}
+          />
+        </View>
+      </Pressable>
 
       {/* Daily Deeds */}
       <View style={styles.section}>
@@ -288,7 +347,7 @@ export default function MeScreen() {
               `Bookmarked Ayat, ${bookmarks.length} saved`,
               "Opens your bookmarked ayat",
             )}
-            style={({ pressed }) => [styles.linkRow, { borderBottomColor: C.border, borderBottomWidth: 0, opacity: pressed ? 0.7 : 1 }]}
+            style={({ pressed }) => [styles.linkRow, { borderBottomColor: C.border, opacity: pressed ? 0.7 : 1 }]}
           >
             <Ionicons name="bookmark-outline" size={20} color={C.primary} {...a11yDecorative} />
             <Text
@@ -296,6 +355,27 @@ export default function MeScreen() {
               style={[styles.linkText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
             >
               Bookmarked Ayat ({bookmarks.length})
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} style={{ marginLeft: "auto" }} {...a11yDecorative} />
+          </Pressable>
+
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/asma" as never);
+            }}
+            {...a11yLink(
+              "99 Names of Allah",
+              "Opens the Asma ul Husna list",
+            )}
+            style={({ pressed }) => [styles.linkRow, { borderBottomColor: C.border, borderBottomWidth: 0, opacity: pressed ? 0.7 : 1 }]}
+          >
+            <Ionicons name="sparkles-outline" size={20} color={C.primary} {...a11yDecorative} />
+            <Text
+              maxFontSizeMultiplier={1.5}
+              style={[styles.linkText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+            >
+              99 Names of Allah
             </Text>
             <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} style={{ marginLeft: "auto" }} {...a11yDecorative} />
           </Pressable>
@@ -323,6 +403,28 @@ const styles = StyleSheet.create({
   statNumberHero: { fontSize: 36, letterSpacing: -1 },
   statLabel: { fontSize: 11, textAlign: "center" },
   streakNote: { fontSize: 11, lineHeight: 16, textAlign: "center", marginTop: -14, paddingHorizontal: 16, fontStyle: "italic" },
+  khatamCard: {
+    borderRadius: 14,
+    padding: 14,
+    gap: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  khatamRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  khatamIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  khatamTitle: { fontSize: 14 },
+  khatamSub: { fontSize: 12, marginTop: 1 },
+  khatamBarBg: { height: 6, borderRadius: 3, overflow: "hidden" },
+  khatamBarFill: { height: "100%", borderRadius: 3 },
   section: { gap: 12 },
   sectionHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
   sectionTitle: { fontSize: 17 },

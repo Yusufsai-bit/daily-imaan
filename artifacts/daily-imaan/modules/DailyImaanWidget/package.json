@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Native widget data bridge for Daily Imaan",
   "main": "index.ts",
+  "author": "Daily Imaan <support@dailyimaan.com>",
+  "license": "MIT",
+  "private": true,
   "expo-module-config": {
     "platforms": ["ios", "android"],
     "android": {

@@ -1,4 +1,5 @@
 import * as Haptics from "expo-haptics";
+import * as Linking from "expo-linking";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React, { useCallback, useState } from "react";
@@ -24,7 +25,7 @@ import type { DimensionValue } from "react-native";
 import colors from "@/constants/colors";
 import { RECITERS } from "@/constants/reciters";
 import { useApp, type PrayerSoundSettings } from "@/context/AppContext";
-import { requestNotificationPermission } from "@/hooks/useNotifications";
+import { requestNotificationPermission, sendTestNotification } from "@/hooks/useNotifications";
 import {
   a11yButton,
   a11yChecked,
@@ -437,6 +438,74 @@ export default function SettingsScreen() {
           >
             Gentle nudges — turn on what helps you, leave the rest off
           </Text>
+        </View>
+
+        {/* Notification self-test — fires a one-shot in 10 seconds so the
+            user can verify system delivery is working. Catches the silent
+            fail caused by Android battery-savers, OEM background killers,
+            and iOS Focus modes. If it doesn't arrive, "Open system settings"
+            link below jumps to the OS notification permissions page. */}
+        <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000", marginBottom: 12 }]}>
+          <View style={styles.methodRow}>
+            <View style={{ flex: 1 }}>
+              <Text
+                maxFontSizeMultiplier={1.6}
+                style={[styles.methodLabel, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+              >
+                Test notifications
+              </Text>
+              <Text
+                maxFontSizeMultiplier={1.6}
+                style={{ color: C.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 12 }}
+              >
+                Fires a notification in 10 seconds so you can confirm delivery.
+              </Text>
+            </View>
+            <Pressable
+              onPress={async () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                const result = await sendTestNotification();
+                if (result === "scheduled") {
+                  Alert.alert(
+                    "Test notification sent",
+                    "Lock or background the app. You should see it in 10 seconds. If it doesn't arrive, open your device settings and check Daily Imaan's notification permission.",
+                    [
+                      { text: "OK", style: "default" },
+                      {
+                        text: "Open system settings",
+                        onPress: () => Linking.openSettings(),
+                      },
+                    ],
+                  );
+                } else if (result === "permission_denied") {
+                  Alert.alert(
+                    "Notifications blocked",
+                    "Enable notifications for Daily Imaan in your device settings.",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Open settings", onPress: () => Linking.openSettings() },
+                    ],
+                  );
+                } else {
+                  Alert.alert("Could not send", "Try again from a fresh app launch.");
+                }
+              }}
+              {...a11yButton("Send test notification", "Schedules a notification 10 seconds from now")}
+              style={({ pressed }) => [
+                {
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 8,
+                  backgroundColor: C.primary,
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}
+            >
+              <Text style={{ color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 13 }}>
+                Test
+              </Text>
+            </Pressable>
+          </View>
         </View>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
           <SettingRow
@@ -869,6 +938,105 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      {/* Prayer time offsets — manual minutes adjustment per prayer.
+          Lets users match their local mosque exactly when calculation
+          methods produce a slightly different time. ±15 min cap, step 1.
+          Most-requested feature in negative reviews of every prayer app
+          (see COMPETITIVE_BRIEF.md). */}
+      <View style={styles.section}>
+        <View style={{ gap: 2, marginBottom: 8 }}>
+          <Text
+            maxFontSizeMultiplier={1.4}
+            style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+          >
+            ADJUST PRAYER TIMES
+          </Text>
+          <Text
+            maxFontSizeMultiplier={1.6}
+            style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+          >
+            Nudge any prayer up to 15 minutes earlier or later to match your local mosque.
+          </Text>
+        </View>
+        <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+          {(["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"] as const).map((prayer, i, arr) => {
+            const value = settings.prayerOffsets[prayer];
+            const adjust = (delta: number) => {
+              const next = Math.max(-15, Math.min(15, value + delta));
+              if (next === value) return;
+              Haptics.selectionAsync();
+              updateSettings({
+                prayerOffsets: { ...settings.prayerOffsets, [prayer]: next },
+              });
+            };
+            const display = value === 0 ? "0 min" : value > 0 ? `+${value} min` : `${value} min`;
+            return (
+              <View
+                key={prayer}
+                style={[
+                  styles.methodRow,
+                  i < arr.length - 1 && {
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: C.border,
+                  },
+                ]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text
+                    maxFontSizeMultiplier={1.6}
+                    style={[styles.methodLabel, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+                  >
+                    {prayer}
+                  </Text>
+                  <Text
+                    maxFontSizeMultiplier={1.6}
+                    style={{
+                      color: value === 0 ? C.mutedForeground : C.primary,
+                      fontFamily: "Inter_400Regular",
+                      fontSize: 12,
+                    }}
+                  >
+                    {display}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Pressable
+                    onPress={() => adjust(-1)}
+                    {...a11yButton(`Decrease ${prayer} offset by 1 minute`)}
+                    disabled={value <= -15}
+                    hitSlop={6}
+                    style={({ pressed }) => [
+                      styles.offsetBtn,
+                      {
+                        backgroundColor: C.muted,
+                        opacity: value <= -15 ? 0.3 : pressed ? 0.6 : 1,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="remove" size={18} color={C.foreground} {...a11yDecorative} />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => adjust(1)}
+                    {...a11yButton(`Increase ${prayer} offset by 1 minute`)}
+                    disabled={value >= 15}
+                    hitSlop={6}
+                    style={({ pressed }) => [
+                      styles.offsetBtn,
+                      {
+                        backgroundColor: C.muted,
+                        opacity: value >= 15 ? 0.3 : pressed ? 0.6 : 1,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="add" size={18} color={C.foreground} {...a11yDecorative} />
+                  </Pressable>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+
       {/* Prayer Sound (Adhan with quiet hours) */}
       <View style={styles.section}>
         <View style={{ gap: 2, marginBottom: 8 }}>
@@ -936,7 +1104,6 @@ export default function SettingsScreen() {
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
           {([
             { id: "default" as const, title: "Device default", subtitle: "System notification sound — always available" },
-            { id: "makkah" as const,  title: "Adhan — Makkah", subtitle: "Bundled recitation, Masjid al-Haram style" },
             { id: "madinah" as const, title: "Adhan — Madinah", subtitle: "Bundled recitation, Masjid an-Nabawi style" },
           ] as const).map((opt, i, arr) => (
             <Pressable
@@ -1233,6 +1400,13 @@ const styles = StyleSheet.create({
   timeValue: { fontSize: 16 },
   methodRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 13 },
   methodLabel: { flex: 1, fontSize: 15 },
+  offsetBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   aboutText: { fontSize: 13, lineHeight: 20 },
   appInfo: { alignItems: "center", marginTop: 12 },
   appInfoText: { fontSize: 12, textAlign: "center", lineHeight: 18 },

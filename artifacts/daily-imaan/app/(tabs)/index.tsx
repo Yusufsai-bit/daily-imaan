@@ -122,16 +122,26 @@ export default function HomeScreen() {
     state, loaded,
     toggleBookmark, isBookmarked,
     toggleHadithBookmark, isHadithBookmarked,
-    incrementStreak, markAyahRead,
-    dismissHomeTip,
+    recordActivity, markAyahRead,
+    dismissHomeTip, acknowledgeFreezeCelebration,
   } = useApp();
   const {
     nextPrayer, prayerTimes, hijri, refresh: refreshPrayerTimes, loading: prayerLoading,
-  } = usePrayerTimes(state.settings.prayerMethod, state.settings.prayerSchool);
+  } = usePrayerTimes(
+    state.settings.prayerMethod,
+    state.settings.prayerSchool,
+    state.settings.prayerOffsets,
+  );
 
   const [ayah, setAyah] = useState<FeaturedAyah>(() => getTodayAyah(state.settings.ayatOrder));
   const [hadith, setHadith] = useState<DailyHadith>(() => getTodayHadith());
   const [sound, setSound] = useState<Audio.Sound | null>(null);
+  // Mirror `sound` into a ref so the unmount cleanup unloads whatever the
+  // CURRENT sound is, not whatever was captured in a stale closure. The
+  // previous version had a [sound]-deps useEffect cleanup that fired the
+  // wrong order on rapid shuffle (cleanup of old sound after new sound
+  // mounted), causing audio session leaks.
+  const soundRef = useRef<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioLoading, setAudioLoading] = useState(false);
   const [showTafsir, setShowTafsir] = useState(false);
@@ -149,7 +159,10 @@ export default function HomeScreen() {
       Animated.spring(scaleAnim, { toValue: 1, tension: 80, friction: 8, useNativeDriver: useND }),
     ]).start();
     if (!loaded) return;
-    incrementStreak();
+    // Record today's activity. New `recordActivity` does proper consecutive-day
+    // streak math + freeze grace days, replacing the legacy count-up-forever
+    // `incrementStreak`. Idempotent within a calendar day.
+    recordActivity();
     markAyahRead(getGlobalAyahNumber(ayah.surahId, ayah.ayahNumber));
   }, [ayah.id, loaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -215,11 +228,25 @@ export default function HomeScreen() {
     });
   }, [ayah]);
 
+  // Keep the ref in sync with the state — used by unmount cleanup.
+  useEffect(() => {
+    soundRef.current = sound;
+  }, [sound]);
+
+  // Unmount-only cleanup. Reads the current sound out of the ref so we
+  // unload the active instance even if React batches renders weirdly.
+  // Previously this re-ran on every sound state change with stale closures,
+  // racing with the new sound's load and leaking audio sessions.
   useEffect(() => {
     return () => {
-      if (sound) sound.unloadAsync();
+      const s = soundRef.current;
+      if (s) {
+        // Fire-and-forget: cleanup runs at unmount, no setState afterwards.
+        s.unloadAsync().catch(() => undefined);
+        soundRef.current = null;
+      }
     };
-  }, [sound]);
+  }, []);
 
   const handleAudio = useCallback(async () => {
     if (Platform.OS === "web") {
@@ -245,6 +272,10 @@ export default function HomeScreen() {
       newSound.setOnPlaybackStatusUpdate((status) => {
         if (status.isLoaded && status.didJustFinish) setIsPlaying(false);
       });
+      // Update ref synchronously so a shuffle/unload that fires before the
+      // next render still finds the new sound to clean up. Otherwise we get
+      // an audio session leak on rapid tap-Listen → tap-Shuffle.
+      soundRef.current = newSound;
       setSound(newSound);
       setIsPlaying(true);
     } catch {
@@ -276,10 +307,19 @@ export default function HomeScreen() {
 
   const handleAyatShuffle = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (sound) {
-      await sound.unloadAsync();
+    // Tear down audio BEFORE we mutate state. We capture the current sound
+    // ref locally so a rapid second tap that sets sound to null mid-await
+    // can't leak the same instance twice.
+    const current = soundRef.current;
+    if (current) {
+      soundRef.current = null;
       setSound(null);
       setIsPlaying(false);
+      try {
+        await current.unloadAsync();
+      } catch {
+        // already unloaded; ignore
+      }
     }
     const idx = Math.floor(Math.random() * FEATURED_AYAT.length);
     const useND = Platform.OS !== "web";
@@ -290,7 +330,7 @@ export default function HomeScreen() {
       Animated.spring(scaleAnim, { toValue: 1, tension: 80, friction: 8, useNativeDriver: useND }),
     ]).start();
     setAyah(FEATURED_AYAT[idx]!);
-  }, [sound, fadeAnim, scaleAnim]);
+  }, [fadeAnim, scaleAnim]);
 
   const handleHadithBookmark = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -358,8 +398,23 @@ export default function HomeScreen() {
       : "Set location for prayers";
   const prayerPillTime = nextPrayer ? formatTime12h(nextPrayer.time) : "";
 
-  // Streak chip never reads "0 day streak" — first-run shows "1".
-  const displayStreak = state.streak.count > 0 ? state.streak.count : 1;
+  // Streak chip — show real count once loaded; fall back to "—" before
+  // hydration so we never render a stale "1 day streak" on a returning
+  // user whose AsyncStorage read hasn't completed. After hydration, we
+  // trust state.streak.count (which the recordActivity effect bumps).
+  const displayStreak = loaded ? Math.max(1, state.streak.count) : 0;
+  const streakChipLabel = loaded ? `${displayStreak} day streak` : "loading…";
+
+  // Freeze celebration — render a one-time congrats card if a freeze was
+  // applied today and the user hasn't acknowledged the rescue yet. Uses
+  // local-date keys so timezone changes don't accidentally suppress it.
+  const todayKey = new Date();
+  const todayKeyStr = `${todayKey.getFullYear()}-${String(todayKey.getMonth() + 1).padStart(2, "0")}-${String(todayKey.getDate()).padStart(2, "0")}`;
+  const showFreezeCelebration =
+    loaded &&
+    state.streak.savedByFreezeOn != null &&
+    state.streak.savedByFreezeOn === todayKeyStr &&
+    state.streak.freezeCelebrationAcknowledgedOn !== todayKeyStr;
 
   // Hadith credit — strip the Arabic half of bookTitle for a clean English line.
   const hadithBookTitleEn = hadith.bookTitle.split("كتاب")[0]?.trim() ?? "";
@@ -390,15 +445,53 @@ export default function HomeScreen() {
         </View>
         <View
           accessible
-          accessibilityLabel={`${displayStreak} day streak`}
+          accessibilityLabel={streakChipLabel}
           style={[styles.streakBadge, { backgroundColor: C.secondary }]}
         >
           <Ionicons name="leaf" size={14} color={C.primary} {...a11yDecorative} />
           <Text style={[styles.streakText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
-            {displayStreak} day streak
+            {streakChipLabel}
           </Text>
         </View>
       </View>
+
+      {/* Streak-rescued celebration. Surfaces ONCE the first time the user
+          opens the app after a freeze was auto-applied to bridge a missed
+          day. Tapping anywhere on it acknowledges + dismisses for good. */}
+      {showFreezeCelebration && (
+        <Pressable
+          onPress={() => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            acknowledgeFreezeCelebration();
+          }}
+          {...a11yButton(
+            `We saved your ${state.streak.count} day streak. Tap to dismiss.`,
+          )}
+          style={({ pressed }) => [
+            styles.freezeBanner,
+            { backgroundColor: C.secondary, borderColor: C.primary, opacity: pressed ? 0.85 : 1 },
+          ]}
+        >
+          <View style={[styles.freezeBannerIcon, { backgroundColor: C.background }]}>
+            <Ionicons name="snow-outline" size={18} color={C.primary} {...a11yDecorative} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text
+              maxFontSizeMultiplier={1.5}
+              style={[styles.freezeBannerTitle, { color: C.foreground, fontFamily: "Inter_700Bold" }]}
+            >
+              We saved your {state.streak.count}-day streak
+            </Text>
+            <Text
+              maxFontSizeMultiplier={1.5}
+              style={[styles.freezeBannerSub, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+            >
+              A streak freeze covered the day you missed. {state.streak.freezesAvailable} left this week.
+            </Text>
+          </View>
+          <Ionicons name="close" size={16} color={C.mutedForeground} {...a11yDecorative} />
+        </Pressable>
+      )}
 
       {/* Prayer + Qibla pair — two primary-green pills, prayer takes the
           flex share, Qibla a fixed-width pill on the right. */}
@@ -983,6 +1076,18 @@ const styles = StyleSheet.create({
   },
   pillTitle: { color: "#fff", fontSize: 13 },
   pillTime: { color: "rgba(255,255,255,0.75)", fontSize: 12, flexShrink: 1 },
+
+  freezeBanner: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    borderRadius: 14, borderWidth: 1.5,
+    paddingHorizontal: 14, paddingVertical: 12,
+  },
+  freezeBannerIcon: {
+    width: 36, height: 36, borderRadius: 10,
+    alignItems: "center", justifyContent: "center",
+  },
+  freezeBannerTitle: { fontSize: 14, lineHeight: 18 },
+  freezeBannerSub: { fontSize: 12, lineHeight: 16, marginTop: 2 },
 
   tipBanner: {
     flexDirection: "row", alignItems: "center", gap: 8,

@@ -1,7 +1,50 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Platform } from "react-native";
+
+import type { PrayerOffsets } from "@/context/AppContext";
+
+const ZERO_OFFSETS: PrayerOffsets = {
+  Fajr: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0,
+};
+
+/**
+ * Shift "HH:MM" or "HH:MM (TZ)" by deltaMin minutes, wrapping at 24h.
+ * Empty input or zero delta is a no-op so consumers can pass raw values
+ * regardless of whether offsets are active. Tolerates the TZ suffix the
+ * Aladhan API sometimes appends.
+ */
+function shiftTime(timeStr: string, deltaMin: number): string {
+  if (!timeStr || deltaMin === 0) return timeStr;
+  const head = timeStr.split(" ")[0] ?? timeStr;
+  const tzSuffix = timeStr.slice(head.length); // preserves any " (EST)" tail
+  const [hStr, mStr] = head.split(":");
+  const h = parseInt(hStr ?? "", 10);
+  const m = parseInt(mStr ?? "", 10);
+  if (Number.isNaN(h) || Number.isNaN(m)) return timeStr;
+  const totalMin = h * 60 + m + deltaMin;
+  const wrappedMin = ((totalMin % 1440) + 1440) % 1440;
+  const newH = Math.floor(wrappedMin / 60);
+  const newM = wrappedMin % 60;
+  return `${String(newH).padStart(2, "0")}:${String(newM).padStart(2, "0")}${tzSuffix}`;
+}
+
+/**
+ * Apply per-prayer offsets to a raw PrayerTimes payload. Sunrise is
+ * unaffected (it's an astronomical reference point, not a prayer to be
+ * nudged for mosque parity).
+ */
+function applyOffsetsTo(raw: PrayerTimes, offsets: PrayerOffsets): PrayerTimes {
+  return {
+    Fajr: shiftTime(raw.Fajr, offsets.Fajr),
+    Sunrise: raw.Sunrise,
+    Dhuhr: shiftTime(raw.Dhuhr, offsets.Dhuhr),
+    Asr: shiftTime(raw.Asr, offsets.Asr),
+    Maghrib: shiftTime(raw.Maghrib, offsets.Maghrib),
+    Isha: shiftTime(raw.Isha, offsets.Isha),
+  };
+}
 
 export interface PrayerTimes {
   Fajr: string;
@@ -97,9 +140,14 @@ interface CachedPayload {
  */
 export function usePrayerTimes(
   method: number = 2,
-  school: number = 0
+  school: number = 0,
+  offsets: PrayerOffsets = ZERO_OFFSETS,
 ): UsePrayerTimesResult {
-  const [prayerTimes, setPrayerTimes] = useState<PrayerTimes | null>(null);
+  // Raw API/cache values. The exposed `prayerTimes` below is the
+  // offset-adjusted derivation of this — keeping raw in state means
+  // changing offsets in Settings updates the displayed times instantly
+  // without re-fetching, and the cache stays valid across offset edits.
+  const [rawPrayerTimes, setRawPrayerTimes] = useState<PrayerTimes | null>(null);
   const [nextPrayer, setNextPrayer] = useState<{ name: string; time: string } | null>(null);
   const [location, setLocation] = useState<PrayerLocation | null>(null);
   const [hijri, setHijri] = useState<HijriDate | null>(null);
@@ -107,6 +155,31 @@ export function usePrayerTimes(
   const [error, setError] = useState<string | null>(null);
   const [locationDenied, setLocationDenied] = useState(false);
   const [isStale, setIsStale] = useState(false);
+
+  // Derive the offset-adjusted view exposed to consumers. Memoised on
+  // (raw, offsets-key) so the object reference is stable across renders
+  // when nothing changed — important because consumers depend on
+  // `prayerTimes` identity for downstream effects.
+  const offsetKey = `${offsets.Fajr}|${offsets.Dhuhr}|${offsets.Asr}|${offsets.Maghrib}|${offsets.Isha}`;
+  const prayerTimes = useMemo(
+    () => (rawPrayerTimes ? applyOffsetsTo(rawPrayerTimes, offsets) : null),
+    // We deliberately key on offsetKey rather than `offsets` directly so
+    // a fresh-but-equal offsets object from Settings doesn't churn the memo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rawPrayerTimes, offsetKey],
+  );
+
+  // Recompute nextPrayer when the offset-adjusted times change. Without
+  // this, an offset change would update the schedule pill but leave the
+  // "X in Y minutes" countdown wrong until the next 60s tick.
+  useEffect(() => {
+    if (prayerTimes) setNextPrayer(getNextPrayer(prayerTimes));
+  }, [prayerTimes]);
+
+  // Local rename so the existing setPrayerTimes(payload.times) calls below
+  // continue to work without a search-and-replace. They're storing raw
+  // values into the raw state.
+  const setPrayerTimes = setRawPrayerTimes;
 
   /**
    * Best-effort: hydrate prayer times from any cache entry matching the
@@ -232,7 +305,16 @@ export function usePrayerTimes(
 
         const timestamp = Math.floor(Date.now() / 1000);
         const url = `https://api.aladhan.com/v1/timings/${timestamp}?latitude=${latitude}&longitude=${longitude}&method=${method}&school=${school}`;
-        const res = await fetch(url);
+        // Hard 10s timeout. Without this a stalled network leaves the
+        // home prayer pill stuck on "Loading prayer times…" indefinitely.
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10_000);
+        let res: Response;
+        try {
+          res = await fetch(url, { signal: controller.signal });
+        } finally {
+          clearTimeout(timeoutId);
+        }
         const json = (await res.json()) as {
           data?: {
             timings?: PrayerTimes;
@@ -316,12 +398,18 @@ export function usePrayerTimes(
         fetchTimes(true);
         return;
       }
-      setPrayerTimes((current) => {
-        if (current) setNextPrayer(getNextPrayer(current));
-        return current;
-      });
+      // Re-run getNextPrayer because the wall clock has advanced; the
+      // prayer times themselves haven't changed. Use the offset-adjusted
+      // `prayerTimes` (not raw) so the user's manual offsets are honoured
+      // in the "Next prayer" pill countdown.
+      if (prayerTimes) setNextPrayer(getNextPrayer(prayerTimes));
     }, 60_000);
     return () => clearInterval(id);
+    // prayerTimes intentionally omitted — its identity changes only when
+    // offsets or raw times change, both of which already drive the
+    // separate useEffect above. Including it here would re-create the
+    // interval every offset tweak.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchTimes]);
 
   const refresh = useCallback(() => fetchTimes(true), [fetchTimes]);

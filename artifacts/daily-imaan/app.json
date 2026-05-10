@@ -14,9 +14,29 @@
       "backgroundColor": "#1A6B4A"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.dailyimaan.app",
+      "buildNumber": "4",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Daily Imaan uses your location to calculate accurate prayer times and the Qibla direction. Your location never leaves your device.",
+        "NSMotionUsageDescription": "Daily Imaan uses motion sensors to point the Qibla compass.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
-    "android": {},
+    "android": {
+      "package": "com.dailyimaan.app",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "POST_NOTIFICATIONS",
+        "VIBRATE"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#1A6B4A"
+      }
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
@@ -24,7 +44,7 @@
       [
         "expo-router",
         {
-          "origin": "https://replit.com/"
+          "origin": "https://dailyimaan.com/"
         }
       ],
       "expo-font",
@@ -33,15 +53,36 @@
         "expo-notifications",
         {
           "sounds": [
-            "./assets/sounds/adhan-makkah.mp3",
-            "./assets/sounds/adhan-madinah.mp3"
+            "./assets/sounds/adhan_madinah.mp3"
           ]
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.0"
+          }
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": false
+    },
+    "extra": {
+      "router": {
+        "origin": "https://dailyimaan.com/"
+      },
+      "eas": {
+        "projectId": "73000d19-9e13-47c6-bd19-a5746a0a9af2"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/73000d19-9e13-47c6-bd19-a5746a0a9af2"
     }
   }
 }

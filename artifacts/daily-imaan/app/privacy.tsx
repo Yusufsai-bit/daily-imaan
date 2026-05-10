@@ -67,8 +67,10 @@ export default function PrivacyPolicyScreen() {
 
       <H C={C}>1. Information stored on your device</H>
       <P C={C}>
-        The app stores the following data locally on your device. It is never
-        uploaded to a server we control, because we do not operate a server:
+        The app stores the following data locally on your device. This is the
+        canonical copy of your data. An optional anonymous cloud mirror is
+        described in section 2 below — the cloud copy is never created
+        unless this app build was configured with cloud-sync credentials.
       </P>
       <Bullet C={C}>Your bookmarks (which ayat you've saved).</Bullet>
       <Bullet C={C}>Your reading progress and streak counter.</Bullet>
@@ -85,7 +87,24 @@ export default function PrivacyPolicyScreen() {
         used for the calculation.
       </Bullet>
 
-      <H C={C}>2. Location</H>
+      <H C={C}>2. Optional anonymous cloud sync</H>
+      <P C={C}>
+        To prevent loss of your streak and bookmarks if you reinstall or
+        change phones, the app may mirror the data above to a backend
+        service (Supabase). When active, the app silently creates an
+        anonymous session on first launch — no email, name, or login is
+        ever requested. Your identity is a randomly-generated UUID stored
+        on your device. The mirrored row is protected by row-level
+        security so only your anonymous session can read or write it.
+        Disable from Settings any time. If this build was not configured
+        with cloud-sync credentials, no data is uploaded.
+      </P>
+      <P C={C}>
+        For the full text of this policy, including your rights and how
+        to exercise them, visit dailyimaan.com/privacy.
+      </P>
+
+      <H C={C}>3. Location</H>
       <P C={C}>
         If you grant location permission, the app uses your current
         coordinates only to calculate accurate prayer times and to point the
@@ -152,7 +171,7 @@ export default function PrivacyPolicyScreen() {
 
       <H C={C}>7. Your rights</H>
       <P C={C}>
-        Because all of your data lives on your device, you can erase
+        Because the canonical copy of your data lives on your device, you can erase
         everything by uninstalling the app or by clearing the app's data from
         your system settings. We do not retain any copy.
       </P>

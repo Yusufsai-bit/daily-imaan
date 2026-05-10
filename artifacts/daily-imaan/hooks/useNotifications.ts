@@ -166,7 +166,7 @@ export async function scheduleAyatNotifications(times: string[]): Promise<void> 
         return;
       }
 
-      const body = "Your verse for today is ready. Tap to read.";
+      const body = pickRotatedBody(AYAT_BODY_POOL);
       const newIds: string[] = [];
       for (const time of times) {
         const parts = time.split(":");
@@ -191,14 +191,56 @@ export async function scheduleAyatNotifications(times: string[]): Promise<void> 
 }
 
 
-/** Default fallback if no settings are passed (matches AppContext defaults). */
+/**
+ * Default fallback if no settings are passed. **Must match AppContext's
+ * `prayerSoundEnabled` default exactly** — a previous mismatch (Fajr: false
+ * here, Fajr: true in AppContext) meant whichever path hit first decided
+ * whether Fajr made a sound, invisibly to QA.
+ */
 const DEFAULT_PRAYER_SOUND_ENABLED: PrayerSoundSettings = {
-  Fajr: false,
+  Fajr: true,
   Dhuhr: true,
   Asr: true,
   Maghrib: true,
   Isha: true,
 };
+
+/**
+ * Warmer notification copy rotated by day so a daily user doesn't see the
+ * same string for weeks. Picked deterministically from the local calendar
+ * day so push schedulers don't accidentally shuffle copy mid-day.
+ */
+function pickRotatedBody(pool: string[]): string {
+  if (pool.length === 0) return "";
+  const d = new Date();
+  const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  return pool[seed % pool.length] ?? pool[0]!;
+}
+
+const AYAT_BODY_POOL = [
+  "A verse for your heart today.",
+  "A small light for today.",
+  "Your ayah is here.",
+  "A reminder, when you're ready.",
+];
+
+const HADITH_BODY_POOL = [
+  "A hadith for today — short and good.",
+  "A word from the Prophet ﷺ for today.",
+  "A small saying, a big reminder.",
+];
+
+const ADHKAR_MORNING_POOL = [
+  "Begin in His protection.",
+  "A few minutes to start the day.",
+  "Morning adhkar — soft start.",
+];
+
+const ADHKAR_EVENING_POOL = [
+  "A few minutes of peace before sleep.",
+  "Take refuge until Fajr.",
+  "Evening adhkar — close out the day.",
+];
 
 /**
  * Resolve the chosen adhan key to the exact filename `expo-notifications`
@@ -214,7 +256,7 @@ const DEFAULT_PRAYER_SOUND_ENABLED: PrayerSoundSettings = {
  * exactly — any mismatch silently falls back to the system sound.
  *
  * IMPORTANT: any filename returned here (e.g. `adhan-makkah.mp3`,
- * `adhan-madinah.mp3`) must also appear, byte-identical, in the
+ * `adhan_madinah.mp3`) must also appear, byte-identical, in the
  * `expo-notifications` plugin's `sounds[]` array in `artifacts/daily-imaan/app.json`
  * AND as a real file under `assets/sounds/`. The plugin only bundles assets
  * it finds in that array at prebuild time — anything missing or mistyped
@@ -226,11 +268,10 @@ const DEFAULT_PRAYER_SOUND_ENABLED: PrayerSoundSettings = {
  */
 function resolveAdhanSound(
   enabled: boolean,
-  adhanSound: "default" | "makkah" | "madinah"
+  adhanSound: "default" | "madinah"
 ): boolean | string {
   if (!enabled) return false;
-  if (adhanSound === "makkah") return "adhan-makkah.mp3";
-  if (adhanSound === "madinah") return "adhan-madinah.mp3";
+  if (adhanSound === "madinah") return "adhan_madinah.mp3";
   return true; // device default
 }
 
@@ -254,15 +295,10 @@ async function setupAndroidPrayerChannels(): Promise<void> {
     importance: Notifications.AndroidImportance.HIGH,
     sound: "default",
   });
-  await Notifications.setNotificationChannelAsync("prayer-makkah", {
-    name: "Prayer reminders — Adhan (Makkah)",
-    importance: Notifications.AndroidImportance.HIGH,
-    sound: "adhan-makkah.mp3",
-  });
   await Notifications.setNotificationChannelAsync("prayer-madinah", {
     name: "Prayer reminders — Adhan (Madinah)",
     importance: Notifications.AndroidImportance.HIGH,
-    sound: "adhan-madinah.mp3",
+    sound: "adhan_madinah.mp3",
   });
   await Notifications.setNotificationChannelAsync("prayer-silent", {
     name: "Prayer reminders (silent)",
@@ -273,10 +309,9 @@ async function setupAndroidPrayerChannels(): Promise<void> {
 
 function androidChannelFor(
   enabled: boolean,
-  adhanSound: "default" | "makkah" | "madinah"
+  adhanSound: "default" | "madinah"
 ): string {
   if (!enabled) return "prayer-silent";
-  if (adhanSound === "makkah") return "prayer-makkah";
   if (adhanSound === "madinah") return "prayer-madinah";
   return "prayer-default";
 }
@@ -284,7 +319,7 @@ function androidChannelFor(
 export async function schedulePrayerNotifications(
   prayerTimes: PrayerTimes,
   prayerSoundEnabled: PrayerSoundSettings = DEFAULT_PRAYER_SOUND_ENABLED,
-  adhanSound: "default" | "makkah" | "madinah" = "default"
+  adhanSound: "default" | "madinah" = "default"
 ): Promise<void> {
   if (Platform.OS === "web") return;
   // Serialize concurrent callers — without this, a `prayerTimes` refresh that
@@ -414,7 +449,7 @@ export async function scheduleHadithNotification(
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "Daily Imaan",
-          body: "Your hadith for today is ready. Tap to read.",
+          body: pickRotatedBody(HADITH_BODY_POOL),
           categoryIdentifier: "daily_hadith",
         },
         trigger: {
@@ -473,7 +508,7 @@ export async function scheduleAdhkarNotifications(enabled: boolean): Promise<voi
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "Morning Adhkar",
-          body: "Begin your day in Allah's protection.",
+          body: pickRotatedBody(ADHKAR_MORNING_POOL),
           categoryIdentifier: "daily_adhkar",
         },
         trigger: {
@@ -487,7 +522,7 @@ export async function scheduleAdhkarNotifications(enabled: boolean): Promise<voi
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "Evening Adhkar",
-          body: "Take refuge until Fajr — a few minutes of dhikr.",
+          body: pickRotatedBody(ADHKAR_EVENING_POOL),
           categoryIdentifier: "daily_adhkar",
         },
         trigger: {
@@ -510,5 +545,46 @@ export async function cancelAllNotifications(): Promise<void> {
     await saveAyatNotifIds([]);
   } catch {
     // ignore
+  }
+}
+
+/**
+ * Fire a one-shot test notification ~10 seconds out so the user can
+ * confirm system-level delivery is actually working. Catches the #1
+ * silent-fail in the category: Android battery optimisations / OEM
+ * background-killing / iOS Focus modes that block notifications without
+ * any in-app indication.
+ *
+ * Returns:
+ *   - "scheduled" when the OS accepted the schedule
+ *   - "permission_denied" when the user denied the prompt
+ *   - "error" when something else went wrong
+ *
+ * The Settings screen surfaces a "didn't get it?" help link if the user
+ * reports it never arrived, deep-linking to the OS notification settings.
+ */
+export async function sendTestNotification(): Promise<
+  "scheduled" | "permission_denied" | "error"
+> {
+  if (Platform.OS === "web") return "error";
+  try {
+    const granted = await requestNotificationPermission();
+    if (!granted) return "permission_denied";
+    await Notifications.setNotificationCategoryAsync("test_notification", []);
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Daily Imaan — test",
+        body: "If you can read this, notifications are working. ✓",
+        categoryIdentifier: "test_notification",
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: 10,
+        repeats: false,
+      },
+    });
+    return "scheduled";
+  } catch {
+    return "error";
   }
 }

@@ -396,20 +396,189 @@ export interface FeaturedAyah {
       arabicText: "۞ يَـٰٓأَيُّهَا ٱلنَّاسُ أَنتُمُ ٱلْفُقَرَآءُ إِلَى ٱللَّهِ ۖ وَٱللَّهُ هُوَ ٱلْغَنِىُّ ٱلْحَمِيدُ",
       englishText: "O mankind, you are those in need of Allāh, while Allāh is the Free of need, the Praiseworthy.",
     },
+    // ────────────────────────────────────────────────────────────────────
+    // v1.0 expansion — 25 additional gentle, lapsed-friendly verses drawn
+    // primarily from Juz 'Amma. Every entry below is verbatim Saheeh
+    // International, audited against the bundled `quranFullData.ts` (which
+    // is itself sourced byte-exact from the Quran.com Foundation API).
+    // No paraphrasing or AI commentary. Selection criteria: warmth,
+    // mercy, dignity, refuge, hope; explicitly avoiding judgement-heavy
+    // verses on a daily-rotation surface.
+    // ────────────────────────────────────────────────────────────────────
+    {
+      id: 76, surahId: 93, surahNameEnglish: "Ad-Duha", ayahNumber: 1,
+      arabicText: "وَٱلضُّحَىٰ",
+      englishText: "By the morning brightness",
+    },
+    {
+      id: 77, surahId: 93, surahNameEnglish: "Ad-Duha", ayahNumber: 3,
+      arabicText: "مَا وَدَّعَكَ رَبُّكَ وَمَا قَلَىٰ",
+      englishText: "Your Lord has not taken leave of you, [O Muḥammad], nor has He detested [you].",
+    },
+    {
+      id: 78, surahId: 93, surahNameEnglish: "Ad-Duha", ayahNumber: 7,
+      arabicText: "وَوَجَدَكَ ضَآلًّا فَهَدَىٰ",
+      englishText: "And He found you lost and guided [you],",
+    },
+    {
+      id: 79, surahId: 93, surahNameEnglish: "Ad-Duha", ayahNumber: 11,
+      arabicText: "وَأَمَّا بِنِعْمَةِ رَبِّكَ فَحَدِّثْ",
+      englishText: "But as for the favor of your Lord, report [it].",
+    },
+    {
+      id: 80, surahId: 94, surahNameEnglish: "Ash-Sharh", ayahNumber: 1,
+      arabicText: "أَلَمْ نَشْرَحْ لَكَ صَدْرَكَ",
+      englishText: "Did We not expand for you, [O Muḥammad], your breast?",
+    },
+    {
+      id: 81, surahId: 94, surahNameEnglish: "Ash-Sharh", ayahNumber: 8,
+      arabicText: "وَإِلَىٰ رَبِّكَ فَٱرْغَب",
+      englishText: "And to your Lord direct [your] longing.",
+    },
+    {
+      id: 82, surahId: 95, surahNameEnglish: "At-Tin", ayahNumber: 4,
+      arabicText: "لَقَدْ خَلَقْنَا ٱلْإِنسَـٰنَ فِىٓ أَحْسَنِ تَقْوِيمٍ",
+      englishText: "We have certainly created man in the best of stature;",
+    },
+    {
+      id: 83, surahId: 95, surahNameEnglish: "At-Tin", ayahNumber: 6,
+      arabicText: "إِلَّا ٱلَّذِينَ ءَامَنُوا۟ وَعَمِلُوا۟ ٱلصَّـٰلِحَـٰتِ فَلَهُمْ أَجْرٌ غَيْرُ مَمْنُونٍ",
+      englishText: "Except for those who believe and do righteous deeds, for they will have a reward uninterrupted.",
+    },
+    {
+      id: 84, surahId: 99, surahNameEnglish: "Az-Zalzalah", ayahNumber: 7,
+      arabicText: "فَمَن يَعْمَلْ مِثْقَالَ ذَرَّةٍ خَيْرًا يَرَهُۥ",
+      englishText: "So whoever does an atom's weight of good will see it,",
+    },
+    {
+      id: 85, surahId: 99, surahNameEnglish: "Az-Zalzalah", ayahNumber: 8,
+      arabicText: "وَمَن يَعْمَلْ مِثْقَالَ ذَرَّةٍ شَرًّا يَرَهُۥ",
+      englishText: "And whoever does an atom's weight of evil will see it.",
+    },
+    {
+      id: 86, surahId: 110, surahNameEnglish: "An-Nasr", ayahNumber: 1,
+      arabicText: "إِذَا جَآءَ نَصْرُ ٱللَّهِ وَٱلْفَتْحُ",
+      englishText: "When the victory of Allāh has come and the conquest,",
+    },
+    {
+      id: 87, surahId: 110, surahNameEnglish: "An-Nasr", ayahNumber: 3,
+      arabicText: "فَسَبِّحْ بِحَمْدِ رَبِّكَ وَٱسْتَغْفِرْهُ ۚ إِنَّهُۥ كَانَ تَوَّابًۢا",
+      englishText: "Then exalt [Him] with praise of your Lord and ask forgiveness of Him. Indeed, He is ever Accepting of Repentance.",
+    },
+    {
+      id: 88, surahId: 112, surahNameEnglish: "Al-Ikhlas", ayahNumber: 2,
+      arabicText: "ٱللَّهُ ٱلصَّمَدُ",
+      englishText: "Allāh, the Eternal Refuge.",
+    },
+    {
+      id: 89, surahId: 112, surahNameEnglish: "Al-Ikhlas", ayahNumber: 3,
+      arabicText: "لَمْ يَلِدْ وَلَمْ يُولَدْ",
+      englishText: "He neither begets nor is born,",
+    },
+    {
+      id: 90, surahId: 112, surahNameEnglish: "Al-Ikhlas", ayahNumber: 4,
+      arabicText: "وَلَمْ يَكُن لَّهُۥ كُفُوًا أَحَدٌۢ",
+      englishText: "Nor is there to Him any equivalent.\"",
+    },
+    {
+      id: 91, surahId: 113, surahNameEnglish: "Al-Falaq", ayahNumber: 1,
+      arabicText: "قُلْ أَعُوذُ بِرَبِّ ٱلْفَلَقِ",
+      englishText: "Say, \"I seek refuge in the Lord of daybreak",
+    },
+    {
+      id: 92, surahId: 113, surahNameEnglish: "Al-Falaq", ayahNumber: 2,
+      arabicText: "مِن شَرِّ مَا خَلَقَ",
+      englishText: "From the evil of that which He created",
+    },
+    {
+      id: 93, surahId: 113, surahNameEnglish: "Al-Falaq", ayahNumber: 3,
+      arabicText: "وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ",
+      englishText: "And from the evil of darkness when it settles",
+    },
+    {
+      id: 94, surahId: 113, surahNameEnglish: "Al-Falaq", ayahNumber: 5,
+      arabicText: "وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ",
+      englishText: "And from the evil of an envier when he envies.\"",
+    },
+    {
+      id: 95, surahId: 114, surahNameEnglish: "An-Nas", ayahNumber: 1,
+      arabicText: "قُلْ أَعُوذُ بِرَبِّ ٱلنَّاسِ",
+      englishText: "Say, \"I seek refuge in the Lord of mankind,",
+    },
+    {
+      id: 96, surahId: 114, surahNameEnglish: "An-Nas", ayahNumber: 2,
+      arabicText: "مَلِكِ ٱلنَّاسِ",
+      englishText: "The Sovereign of mankind,",
+    },
+    {
+      id: 97, surahId: 114, surahNameEnglish: "An-Nas", ayahNumber: 3,
+      arabicText: "إِلَـٰهِ ٱلنَّاسِ",
+      englishText: "The God of mankind,",
+    },
+    {
+      id: 98, surahId: 92, surahNameEnglish: "Al-Layl", ayahNumber: 7,
+      arabicText: "فَسَنُيَسِّرُهُۥ لِلْيُسْرَىٰ",
+      englishText: "We will ease him toward ease.",
+    },
+    {
+      id: 99, surahId: 91, surahNameEnglish: "Ash-Shams", ayahNumber: 9,
+      arabicText: "قَدْ أَفْلَحَ مَن زَكَّىٰهَا",
+      englishText: "He has succeeded who purifies it,",
+    },
+    {
+      id: 100, surahId: 108, surahNameEnglish: "Al-Kawthar", ayahNumber: 1,
+      arabicText: "إِنَّآ أَعْطَيْنَـٰكَ ٱلْكَوْثَرَ",
+      englishText: "Indeed, We have granted you, [O Muḥammad], al-Kawthar.",
+    },
   ];
+
+  /**
+   * Day-key arithmetic: YYYYMMDD as a single integer. Lets us compute the
+   * gap between two calendar dates without falling into millisecond / DST
+   * traps that come from `(Date.getTime() - other.getTime()) / 86_400_000`.
+   *
+   * The previous implementation used the millisecond-difference trick. On
+   * DST-transition days the diff is 23 or 25 hours, so `Math.floor` would
+   * either repeat yesterday's verse or skip one. This version is timezone-
+   * stable: anchored to local-calendar day numbers, no clock arithmetic.
+   */
+  function dayKey(d: Date): number {
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  }
+
+  /**
+   * Number of distinct calendar days between two day-keys. Inclusive on the
+   * start side, exclusive on the end. Clean integer regardless of DST.
+   */
+  function daysSinceEpochKey(today: number, start: number): number {
+    // Decode both keys back into Date objects anchored at UTC noon (so DST
+    // can't shift the delta) and divide by exactly 24h.
+    const y1 = Math.floor(start / 10000);
+    const m1 = Math.floor((start % 10000) / 100) - 1;
+    const d1 = start % 100;
+    const y2 = Math.floor(today / 10000);
+    const m2 = Math.floor((today % 10000) / 100) - 1;
+    const d2 = today % 100;
+    const startUtc = Date.UTC(y1, m1, d1);
+    const todayUtc = Date.UTC(y2, m2, d2);
+    return Math.round((todayUtc - startUtc) / (1000 * 60 * 60 * 24));
+  }
 
   export function getTodayAyah(order: "sequential" | "random"): FeaturedAyah {
     const total = FEATURED_AYAT.length;
+    const today = new Date();
+    const todayKey = dayKey(today);
     if (order === "random") {
-      const today = new Date();
-      const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-      const index = seed % total;
+      // Deterministic per-day shuffle — same seed within a day, different
+      // seed every day. Identity is the day-key itself; we mod into the pool.
+      const index = todayKey % total;
       return FEATURED_AYAT[index]!;
-    } else {
-      const start = new Date(2024, 0, 1);
-      const today = new Date();
-      const diff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-      return FEATURED_AYAT[diff % total]!;
     }
+    // Sequential: index = (today - 2024-01-01) mod pool_size, computed in
+    // pure date arithmetic so DST and leap-day transitions never repeat or
+    // skip a verse.
+    const startKey = 2024 * 10000 + 1 * 100 + 1; // 20240101
+    const diff = daysSinceEpochKey(todayKey, startKey);
+    const index = ((diff % total) + total) % total; // safe-mod for negatives
+    return FEATURED_AYAT[index]!;
   }
-  

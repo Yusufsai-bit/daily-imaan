@@ -59,6 +59,22 @@ export default function QiblaScreen() {
   const [country, setCountry] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  /**
+   * True when the most recent heading reading is from `trueHeading`
+   * (magnetic + declination) rather than raw `magHeading`. The Qibla
+   * bearing is calculated as a true (geographic-north) bearing, so
+   * comparing it against a magnetic heading produces a 10–15° error in
+   * places with non-zero magnetic declination (e.g. ~12°E in eastern
+   * Australia, ~10°W in the UK). When this flag is false we surface a
+   * "compass calibration" banner so the user knows the direction is
+   * approximate until they calibrate.
+   */
+  const [headingIsTrue, setHeadingIsTrue] = useState(false);
+  /**
+   * Compass accuracy band from the OS: 0 = unreliable, 1 = low,
+   * 2 = medium, 3 = high. Used to show the calibration banner.
+   */
+  const [accuracy, setAccuracy] = useState<number>(0);
 
   const rotation = useRef(new Animated.Value(0)).current;
   const previousAngleRef = useRef(0);
@@ -111,11 +127,36 @@ export default function QiblaScreen() {
         }
 
         const sub = await Location.watchHeadingAsync((h) => {
-          // trueHeading uses magnetic + declination; magHeading is raw magnetic.
-          // trueHeading is only valid when accuracy is good (>= 1).
-          const value =
-            h.accuracy >= 1 && h.trueHeading >= 0 ? h.trueHeading : h.magHeading;
-          setHeading(value);
+          // The Qibla bearing is computed as a TRUE (geographic-north)
+          // bearing. Comparing it against `magHeading` (raw magnetic
+          // north, no declination correction) is mathematically wrong —
+          // the result is off by the local magnetic declination, which
+          // can be 10°+ in many populated regions (~12°E in Sydney,
+          // ~10°W in London). This was the bug behind "qibla shows the
+          // wrong direction".
+          //
+          // Resolution: prefer `trueHeading` whenever the OS provides
+          // it (>= 0). Only fall back to `magHeading` when trueHeading
+          // is unavailable, AND in that case we mark the reading as
+          // approximate so the UI can warn the user.
+          //
+          // Accuracy band: 0 = unreliable, 1 = low, 2 = medium, 3 = high.
+          // We accept any non-negative trueHeading regardless of band
+          // (when present, the OS has already done the math). For
+          // magHeading we require >= 2 — anything lower means the
+          // compass needs calibration.
+          const hasTrue = typeof h.trueHeading === "number" && h.trueHeading >= 0;
+          if (hasTrue) {
+            setHeading(h.trueHeading);
+            setHeadingIsTrue(true);
+          } else if (h.accuracy >= 2 && typeof h.magHeading === "number" && h.magHeading >= 0) {
+            setHeading(h.magHeading);
+            setHeadingIsTrue(false);
+          }
+          // If accuracy is too low to trust either reading, leave
+          // `heading` at its previous value rather than flickering to
+          // a bad number. The calibration banner will keep showing.
+          setAccuracy(h.accuracy ?? 0);
         });
 
         if (cancelled) {
@@ -277,6 +318,35 @@ export default function QiblaScreen() {
               <View style={[styles.centerDot, { backgroundColor: aligned ? C.primary : C.foreground }]} />
             </View>
 
+            {/* Calibration warning. Surfaces when the OS gave us only a
+                magnetic heading (not declination-corrected) OR when the
+                accuracy band is below "medium". Without this, users in
+                regions with high declination (eastern Australia, UK,
+                US west coast, etc.) saw the qibla pointing 10–15° off
+                and silently. The fix asks them to wave their phone in
+                a figure-8 — the standard iOS/Android calibration ritual. */}
+            {(!headingIsTrue || accuracy < 2) && qiblaBearing !== null && (
+              <View
+                style={[
+                  styles.calibrateBanner,
+                  { backgroundColor: C.secondary, borderColor: C.accent },
+                ]}
+              >
+                <Ionicons name="warning-outline" size={14} color={C.accent} />
+                <Text
+                  maxFontSizeMultiplier={1.4}
+                  style={[
+                    styles.calibrateText,
+                    { color: C.foreground, fontFamily: "Inter_500Medium" },
+                  ]}
+                >
+                  {!headingIsTrue
+                    ? "Direction is approximate — wave your phone in a figure-8 to calibrate."
+                    : "Compass calibration low — wave your phone in a figure-8."}
+                </Text>
+              </View>
+            )}
+
             {/* Status */}
             <View style={styles.statusBlock}>
               {aligned ? (
@@ -377,6 +447,17 @@ const styles = StyleSheet.create({
     top: 8,
   },
   centerDot: { width: 14, height: 14, borderRadius: 7 },
+  calibrateBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginHorizontal: 8,
+  },
+  calibrateText: { flex: 1, fontSize: 12, lineHeight: 16 },
   statusBlock: { alignItems: "center", gap: 8 },
   alignedText: { fontSize: 18, letterSpacing: -0.3 },
   alignText: { fontSize: 14 },
