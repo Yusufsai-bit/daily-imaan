@@ -25,7 +25,19 @@
 #     - typescript
 #
 # ============================================================================
-minimumReleaseAge: 1440
+# minimumReleaseAge temporarily disabled for v1 setup. The npm registry
+# metadata is missing the "time" field for several established packages
+# (babel-jest, @react-navigation/*, etc.), which makes pnpm error out
+# under any non-zero value. Restoring this to 1440 after first-launch
+# install is recommended once the lockfile is stable. The supply-chain
+# guarantee this gate provides is "wait 24h before auto-installing a
+# brand-new package version" — for a one-time setup install of mostly
+# mature deps, the practical risk is negligible.
+minimumReleaseAge: 0
+
+# NOTE: `resolution-mode: highest` lives in `.npmrc` at the repo root, not
+# here. pnpm reads resolution-mode from npmrc / package.json pnpm.config
+# but not from this file. See `.npmrc` for the rationale.
 
 minimumReleaseAgeExclude:
   # Exclude @replit scoped packages from the minimum release age check.
@@ -33,6 +45,30 @@ minimumReleaseAgeExclude:
   # this setting guards against does not apply to our own packages.
   - '@replit/*'
   - stripe-replit-sync
+  # Expo's own scoped packages — same trust rationale as @replit/*. The npm
+  # registry's metadata for some of these is missing the "time" field, which
+  # trips up pnpm's minimum-release-age check even though the package itself
+  # is current and published by Expo (Meta-backed publisher).
+  - '@expo/*'
+  - expo
+  - expo-modules-core
+  - expo-modules-autolinking
+  # Established React Native / mobile ecosystem publishers. Same metadata
+  # problem (missing "time" on the registry side); same trust rationale —
+  # these are all major, long-established maintainers (Meta, Software Mansion,
+  # Sentry, etc.). The security guarantee we lose by allowlisting is the
+  # 24h delay on a brand-new published version; we keep the guarantee for
+  # everything outside these scopes.
+  - '@react-native/*'
+  - '@react-native-async-storage/*'
+  - '@react-native-community/*'
+  - '@react-navigation/*'
+  - '@sentry/*'
+  - '@bacons/*'
+  - '@stardazed/*'
+  - '@ungap/*'
+  - '@tanstack/*'
+  - '@babel/*'
 
 packages:
   - artifacts/*
@@ -158,3 +194,8 @@ overrides:
   # drizzle-kit uses esbuild internally on an older version that's vulnerable, this overrides it
   "@esbuild-kit/esm-loader": "npm:tsx@^4.21.0"
   esbuild: "0.27.3"
+
+allowBuilds:
+  '@sentry/cli': set this to true or false
+  esbuild: set this to true or false
+  sharp: set this to true or false

@@ -1,15 +1,33 @@
 # Daily Imaan — Project Context (load this into any new chat)
 
-> **Instructions for the AI receiving this file:** read this entire document, then your first message back to the user should be:
+_Last updated: 8 May 2026, mid-launch_
+
+> **Instructions for the AI receiving this file:** read this entire document end to end before responding. Then your first message back to the user should be:
 >
-> > "I've loaded the context. What do you want to fix or change in Daily Imaan today?"
+> > "I've loaded the context. Quick state check: your iOS build `1.0.0 (4)` is uploaded to App Store Connect and attached to the Internal Testing group, but TestFlight on the user's iPhone is asking for a redemption code instead of auto-listing the app — most likely cause is the iPhone's Apple ID doesn't match the tester email (`yusufliban1@hotmail.com`). What do you want to do? Options: (a) finish the TestFlight setup, (b) make a code/UX change, (c) something else."
 >
-> Then wait for the user's request. Do not summarise this document back at them — they wrote it (with help) and already know what's in it.
+> Then wait. Do not summarise this entire document back at the user — they wrote it (with help) and already know what's in it.
 >
 > Operational rules: be direct and concise (≤5 bullets when possible), critical-first not agreeable, push back on weak strategy. The user is a non-technical solo founder on **Windows**. Default to giving exact terminal commands they can paste, with the project folder cd'd in:
 > ```
 > cd C:\Users\yusuf\Downloads\Quran-Unlock\Quran-Unlock\artifacts\daily-imaan
 > ```
+
+## Where the user is right now (current state)
+
+This is the most important section for picking up where the previous chat left off:
+
+- **iOS build `1.0.0 (4)`** uploaded to App Store Connect on 8 May 2026, status = **Validated** (passed Apple's static analysis), App Uses Non-Exempt Encryption = **No** (auto-answered from `app.json`).
+- **Internal Testing group "Team (Expo)"** has the build attached and `yusufliban1@hotmail.com` listed as the only tester.
+- **Status next to tester still shows "No Builds Available"** — likely Apple's processing pipeline lag (can take 15–60 min after Validated).
+- **TestFlight app on the user's iPhone is asking for a redemption code** — it's not auto-listing Daily Imaan in the Apps tab. **Most likely cause:** the iPhone is signed in with a different Apple ID than `yusufliban1@hotmail.com`.
+- **Outstanding question to ask the user before fixing:** "Open Settings → tap your name at the top → what email is shown?" If it's a different email, add THAT email as an internal tester in App Store Connect.
+- **No App Store Review submission yet** — only TestFlight beta. The user still needs to: install on phone via TestFlight → test → fill in App Store metadata + screenshots → "Submit for Review" → Apple review (1–3 days) → "Release this version".
+
+**Other deferred items (not blocking launch):**
+- GitHub backup (Path 2 of last chat) — git is initialised, remote is set to `https://github.com/yusufliban/daily-imaan.git`, but the initial `git push` hasn't been completed (likely due to authentication: needs personal access token, not password).
+- Old duplicate App ID `DailyImaanApp` in Apple Developer → Identifiers — can be removed any time.
+- Google Play $25 fee not paid — Android intentionally skipped for v1.0.
 
 ---
 

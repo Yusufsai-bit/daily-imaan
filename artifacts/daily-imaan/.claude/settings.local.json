@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(python3 -c \"import scrapling; print\\(scrapling.__version__\\)\" 2>&1)",
+      "PowerShell(python3 -c \"import playwright; print\\('playwright ok'\\)\" 2>&1; python3 -c \"import patchright; print\\('patchright ok'\\)\" 2>&1; python3 -c \"import curl_cffi; print\\('curl_cffi ok'\\)\" 2>&1)"
+    ]
+  }
+}
