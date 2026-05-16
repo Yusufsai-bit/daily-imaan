@@ -2,6 +2,8 @@
 
 _Last updated: 8 May 2026, mid-launch_
 
+**GitHub backup is live at <https://github.com/Yusufsai-bit/daily-imaan>** (private repo). Local changes are NOT automatically synced — see the auto-push rule below.
+
 > **Instructions for the AI receiving this file:** read this entire document end to end before responding. Then your first message back to the user should be:
 >
 > > "I've loaded the context. Quick state check: your iOS build `1.0.0 (4)` is uploaded to App Store Connect and attached to the Internal Testing group, but TestFlight on the user's iPhone is asking for a redemption code instead of auto-listing the app — most likely cause is the iPhone's Apple ID doesn't match the tester email (`yusufliban1@hotmail.com`). What do you want to do? Options: (a) finish the TestFlight setup, (b) make a code/UX change, (c) something else."
@@ -261,6 +263,55 @@ eas env:list
 # Check the latest build statuses
 eas build:list --limit 5
 ```
+
+## Auto-backup rule (MANDATORY — read before editing any file)
+
+The user does NOT want to remember to run git commands. After ANY session where you (the AI) edited files, you MUST end the session with a short, copy-paste-ready backup command for the user. The user runs ONE line in their terminal; everything else is your job.
+
+### Why one line and not zero
+
+Claude's isolated Linux sandbox doesn't share Windows credentials, so the AI cannot run `git push` directly. The user must run it from their own cmd. To minimise friction, give them a single combined command that does add + commit + push in one paste.
+
+### What to do at end of session
+
+If you edited files in this session, your **final message** to the user must include this block exactly (with a real commit message you've authored — see guidance below):
+
+> ### Back this up to GitHub
+> Paste in cmd (one line):
+> ```
+> cd C:\Users\yusuf\Downloads\Quran-Unlock\Quran-Unlock && git add . && git commit -m "<your one-line summary>" && git push
+> ```
+
+The user's GitHub PAT is cached in Windows Credential Manager from the first push, so this completes without an auth prompt. It takes about 5 seconds end to end.
+
+### Commit message guidance
+
+- One line, <72 chars when possible
+- Lead with what changed, not what file
+- ✓ `Fix qibla calibration warning copy`
+- ✓ `Add Yusuf Ali translation as v1.1 prep`
+- ✗ `Updated some files`
+- ✗ `Edits to app/(tabs)/index.tsx and surah.tsx`
+
+### When to skip the backup block
+
+- If you didn't edit any files this session (pure conversation).
+- If the user explicitly says "don't push yet" in this session.
+- If you only edited `PROJECT_CONTEXT.md` itself and nothing else — still include the block, because the doc IS the launch handbook and should stay current on GitHub.
+
+### Mid-session checkpoints
+
+If you finish a substantial chunk mid-session (e.g. a new screen complete), it's fine to include the backup block then too, plus another at the actual end. Frequent small commits beat one massive one.
+
+### Repo location
+
+- GitHub: <https://github.com/Yusufsai-bit/daily-imaan> (PRIVATE)
+- GitHub username: `Yusufsai-bit` (NOT `yusufliban` — that's the Expo account, different service)
+- Branch: `main`
+- Remote: `origin`
+- Local workspace root: `C:\Users\yusuf\Downloads\Quran-Unlock\Quran-Unlock`
+
+---
 
 ## Final note for the AI
 
