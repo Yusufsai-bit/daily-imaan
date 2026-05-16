@@ -38,9 +38,9 @@ import { a11yButton, a11yDecorative, a11yLink } from "@/components/a11y";
  * Home screen — graduated from the canvas mockup
  * `artifacts/mockup-sandbox/.../daily-imaan-home/FeatureAndTiles.tsx`.
  *
- * Layout: Header → Prayer + Qibla pill row → Resume Qur'an tile →
- * (Morning|Evening) Adhkar tile → Ayat of the Day card → Hadith of the Day
- * card → "How is your heart today?" feeling hero.
+ * Layout: Header → Prayer + Qibla pill row → Ayat of the Day card →
+ * "How is your heart today?" feeling hero → Resume Qur'an tile +
+ * (Morning|Evening) Adhkar tile → Hadith of the Day card.
  *
  * Design rules (mirrored from the mockup's header doc-block):
  *  - Adhkar label is time-aware off `nextPrayer.name` (Fajr→Asr = morning,
@@ -490,7 +490,45 @@ export default function HomeScreen() {
         </Pressable>
       )}
 
-      {/* AYAT OF THE DAY — hero, first content block after the header.
+      {/* Prayer + Qibla pair — utility row above the Ayah hero so users
+          who open the app to check prayer time can tap once and go. Keeps
+          the Ayah card directly below as the visual focal point. */}
+      <View style={styles.pillRow}>
+        <Pressable
+          onPress={handlePrayerPillPress}
+          {...a11yButton(prayerPillTitle, "Refresh prayer times")}
+          style={({ pressed }) => [
+            styles.prayerPill,
+            { backgroundColor: C.primary, opacity: pressed ? 0.85 : 1 },
+          ]}
+        >
+          <Ionicons name="time-outline" size={16} color="rgba(255,255,255,0.85)" {...a11yDecorative} />
+          <Text numberOfLines={1} style={[styles.pillTitle, { fontFamily: "Inter_500Medium" }]}>
+            {prayerPillTitle}
+          </Text>
+          {prayerPillTime ? (
+            <Text numberOfLines={1} style={[styles.pillTime, { fontFamily: "Inter_400Regular" }]}>
+              · {prayerPillTime}
+            </Text>
+          ) : null}
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/qibla" as never);
+          }}
+          {...a11yLink("Qibla compass", "Opens the Qibla compass")}
+          style={({ pressed }) => [
+            styles.qiblaPill,
+            { backgroundColor: C.primary, opacity: pressed ? 0.85 : 1 },
+          ]}
+        >
+          <Ionicons name="compass-outline" size={16} color="rgba(255,255,255,0.85)" {...a11yDecorative} />
+          <Text style={[styles.pillTitle, { fontFamily: "Inter_500Medium" }]}>Qibla</Text>
+        </Pressable>
+      </View>
+
+      {/* AYAT OF THE DAY — hero verse, sits below the prayer/qibla pills.
           Section label removed; the surah badge inside the card provides
           all the context needed. heroCard gives it stronger elevation. */}
       <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
@@ -701,42 +739,6 @@ export default function HomeScreen() {
           <Ionicons name="chevron-forward" size={20} color={C.primary} {...a11yDecorative} />
         </LinearGradient>
       </Pressable>
-
-      {/* Prayer + Qibla pair — secondary utilities, now below the hero content. */}
-      <View style={styles.pillRow}>
-        <Pressable
-          onPress={handlePrayerPillPress}
-          {...a11yButton(prayerPillTitle, "Refresh prayer times")}
-          style={({ pressed }) => [
-            styles.prayerPill,
-            { backgroundColor: C.primary, opacity: pressed ? 0.85 : 1 },
-          ]}
-        >
-          <Ionicons name="time-outline" size={16} color="rgba(255,255,255,0.85)" {...a11yDecorative} />
-          <Text numberOfLines={1} style={[styles.pillTitle, { fontFamily: "Inter_500Medium" }]}>
-            {prayerPillTitle}
-          </Text>
-          {prayerPillTime ? (
-            <Text numberOfLines={1} style={[styles.pillTime, { fontFamily: "Inter_400Regular" }]}>
-              · {prayerPillTime}
-            </Text>
-          ) : null}
-        </Pressable>
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push("/qibla" as never);
-          }}
-          {...a11yLink("Qibla compass", "Opens the Qibla compass")}
-          style={({ pressed }) => [
-            styles.qiblaPill,
-            { backgroundColor: C.primary, opacity: pressed ? 0.85 : 1 },
-          ]}
-        >
-          <Ionicons name="compass-outline" size={16} color="rgba(255,255,255,0.85)" {...a11yDecorative} />
-          <Text style={[styles.pillTitle, { fontFamily: "Inter_500Medium" }]}>Qibla</Text>
-        </Pressable>
-      </View>
 
       {/* Soft reminder tip banner. */}
       {state.welcomeSeen &&
