@@ -1,4 +1,3 @@
-import { Audio } from "expo-av";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
@@ -17,6 +16,11 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import TrackPlayer, {
+  State,
+  useActiveTrack,
+  usePlaybackState,
+} from "react-native-track-player";
 
 import colors from "@/constants/colors";
 import { ARABIC_FONT_REGULAR } from "@/constants/fonts";
@@ -25,6 +29,7 @@ import { SURAHS, getSurahById } from "@/data/surahsData";
 import { getQuranSurah, QURAN_TRANSLATION_LABEL } from "@/data/quranFull";
 import { isSajdahVerse } from "@/data/sajdahData";
 import { useTafsir } from "@/hooks/useTafsir";
+import { playSurah, playSingleAyah, parseTrackId } from "@/lib/trackPlayer";
 
 interface ParsedAyah {
   number: number;
@@ -33,11 +38,6 @@ interface ParsedAyah {
   english: string;
 }
 
-/**
- * Inline tafsir row for a single ayah. Hosting the hook in a child component
- * keeps the network request scoped to the ayah the user actually expanded —
- * we never issue 286 fetches when scrolling Al-Baqarah.
- */
 function AyahTafsir({
   surahId,
   ayahNumber,
@@ -117,57 +117,23 @@ export default function SurahDetailScreen() {
   const mushafMode = state.settings.mushafMode;
   const fontSize = state.settings.arabicFontSize;
   const continuousPlay = state.settings.continuousPlay;
+  const reciter = state.settings.reciter;
 
-  // Arabic line-height + size for the chosen preset. Values picked to keep
-  // the diacritic baseline readable at every step. Small accommodates more
-  // ayat per screen for fast scrollers; Large is for older readers and
-  // matches Muslim Pro's max comfortably.
   const arabicSize = fontSize === "small" ? 20 : fontSize === "large" ? 30 : 24;
   const arabicLine = fontSize === "small" ? 40 : fontSize === "large" ? 56 : 48;
 
   const [ayat, setAyat] = useState<ParsedAyah[]>([]);
   const [loading, setLoading] = useState(true);
-  const [playingAyah, setPlayingAyah] = useState<number | null>(null);
   const [openTafsir, setOpenTafsir] = useState<number | null>(null);
-  // Repeat-count picker state. Per ayah memorisation aid: tap "×N" to set
-  // 1 / 3 / 5 / 7 / 10 — when audio finishes, replay until count exhausted.
-  // Stored per-surah-mount, not persisted globally.
-  const [repeatTarget, setRepeatTarget] = useState<number>(1);
-  const [repeatRemaining, setRepeatRemaining] = useState<number>(0);
   const [copiedFor, setCopiedFor] = useState<number | null>(null);
-  const soundRef = useRef<Audio.Sound | null>(null);
 
-  const cycleRepeat = useCallback(() => {
-    Haptics.selectionAsync();
-    const order = [1, 3, 5, 7, 10];
-    setRepeatTarget((prev) => {
-      const i = order.indexOf(prev);
-      return order[(i + 1) % order.length] ?? 1;
-    });
-  }, []);
-
-  const handleCopy = useCallback(
-    async (ayah: ParsedAyah) => {
-      Haptics.selectionAsync();
-      try {
-        const text = `${ayah.arabic}\n\n"${ayah.english}"\n— Qur'an ${surahId}:${ayah.numberInSurah}`;
-        await Clipboard.setStringAsync(text);
-        setCopiedFor(ayah.numberInSurah);
-        // Auto-clear the "Copied" pill after a short window so the row
-        // doesn't sit in a stale "Copied" state for the rest of the
-        // session.
-        setTimeout(() => {
-          setCopiedFor((current) =>
-            current === ayah.numberInSurah ? null : current,
-          );
-        }, 1500);
-      } catch {
-        Alert.alert("Couldn't copy", "Try again or share instead.");
-      }
-    },
-    [surahId],
-  );
-  const reciter = state.settings.reciter;
+  // RNTP state — which ayah is highlighted on THIS surah screen
+  const activeTrack = useActiveTrack();
+  const { state: playbackState } = usePlaybackState();
+  const isRNTPPlaying = playbackState === State.Playing || playbackState === State.Buffering;
+  const activeParsed = parseTrackId(activeTrack?.id);
+  const activeAyahOnThisSurah =
+    activeParsed?.surahId === surahId ? activeParsed.ayahN : null;
 
   const cycleFontSize = useCallback(() => {
     Haptics.selectionAsync();
@@ -181,18 +147,74 @@ export default function SurahDetailScreen() {
     updateSettings({ continuousPlay: !continuousPlay });
   }, [continuousPlay, updateSettings]);
 
-  useEffect(() => {
-    return () => {
-      soundRef.current?.unloadAsync();
-    };
-  }, []);
+  const handleCopy = useCallback(
+    async (ayah: ParsedAyah) => {
+      Haptics.selectionAsync();
+      try {
+        const text = `${ayah.arabic}\n\n"${ayah.english}"\n— Qur'an ${surahId}:${ayah.numberInSurah}`;
+        await Clipboard.setStringAsync(text);
+        setCopiedFor(ayah.numberInSurah);
+        setTimeout(() => {
+          setCopiedFor((current) =>
+            current === ayah.numberInSurah ? null : current,
+          );
+        }, 1500);
+      } catch {
+        Alert.alert("Couldn't copy", "Try again or share instead.");
+      }
+    },
+    [surahId],
+  );
 
-  // Load surah from bundled data and update Continue Reading + intentions.
-  // The full Saheeh International + Uthmani text lives in quranFullData.ts
-  // and is loaded lazily via dynamic import (see data/quranFull.ts) so the
-  // 2.3 MB payload doesn't parse during cold start of unrelated screens.
-  // First call into this surah pays the parse cost once; subsequent calls
-  // hit the in-memory index.
+  // Tap "Listen" on an individual ayah
+  const handleAyahListen = useCallback(
+    async (ayah: ParsedAyah) => {
+      if (Platform.OS === "web") {
+        Alert.alert("Audio", "Audio is available on the mobile app.");
+        return;
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      try {
+        // If this ayah is already playing, toggle pause/play
+        if (activeAyahOnThisSurah === ayah.numberInSurah) {
+          if (isRNTPPlaying) {
+            await TrackPlayer.pause();
+          } else {
+            await TrackPlayer.play();
+          }
+          return;
+        }
+        // If continuousPlay is on, load the surah from this ayah and run through
+        if (continuousPlay) {
+          await playSurah(surahId, reciter, ayah.numberInSurah);
+        } else {
+          await playSingleAyah(surahId, ayah.numberInSurah, reciter);
+        }
+        markAyahRead(ayah.number);
+        markDeedDone("quran");
+      } catch {
+        Alert.alert("Audio Error", "Could not load audio. Check your connection.");
+      }
+    },
+    [activeAyahOnThisSurah, isRNTPPlaying, continuousPlay, surahId, reciter, markAyahRead, markDeedDone],
+  );
+
+  // "Play Surah" — loads all ayahs from the beginning
+  const handlePlaySurah = useCallback(async () => {
+    if (Platform.OS === "web") return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      if (activeParsed?.surahId === surahId && isRNTPPlaying) {
+        await TrackPlayer.pause();
+      } else {
+        await playSurah(surahId, reciter, 1);
+        markDeedDone("quran");
+      }
+    } catch {
+      Alert.alert("Audio Error", "Could not load audio. Check your connection.");
+    }
+  }, [activeParsed, surahId, isRNTPPlaying, reciter, markDeedDone]);
+
   useEffect(() => {
     if (!surahId || !surah) {
       setLoading(false);
@@ -204,9 +226,7 @@ export default function SurahDetailScreen() {
       try {
         localData = await getQuranSurah(surahId);
       } catch {
-        // Lazy module load failed — treat as missing surah and stop the
-        // spinner rather than leaving the screen in a perpetual loading
-        // state. The user sees the standard "Surah not found" empty UI.
+        // Lazy load failed — show empty UI rather than infinite spinner.
       }
       if (cancelled) return;
       if (localData) {
@@ -217,18 +237,12 @@ export default function SurahDetailScreen() {
           english: a.e,
         }));
         setAyat(parsed);
-        // Update "Continue reading" position to the start of this surah on
-        // mount. Tracking actual scroll offset would add a lot of complexity
-        // for marginal benefit — first-ayah of the most recent surah is a
-        // sensible resume point.
         setLastReadPosition({
           surahId,
           ayahNumber: 1,
           surahName: surah.nameEnglish,
           updatedAt: Date.now(),
         });
-        // Auto-link the "Read Quran" intention. markDeedDone is idempotent —
-        // it never undoes a manual check.
         markDeedDone("quran");
       }
       setLoading(false);
@@ -238,110 +252,27 @@ export default function SurahDetailScreen() {
     };
   }, [surahId, surah, setLastReadPosition, markDeedDone]);
 
-  // Stash the latest ayat list in a ref so the audio finish-handler can
-  // look up the next ayah without recreating playAyah on every list change.
-  const ayatRef = useRef<ParsedAyah[]>([]);
-  useEffect(() => {
-    ayatRef.current = ayat;
-  }, [ayat]);
-
-  // Reference to playAyah for use inside the audio finish-callback. We
-  // assign after definition so the recursive auto-play works without
-  // stale closures.
-  const playAyahRef = useRef<((a: ParsedAyah) => Promise<void>) | null>(null);
-
-  const playAyah = useCallback(
-    async (ayah: ParsedAyah) => {
-      if (Platform.OS === "web") {
-        Alert.alert("Audio", "Audio is available on the mobile app.");
-        return;
-      }
-      try {
-        if (soundRef.current) {
-          await soundRef.current.unloadAsync();
-          soundRef.current = null;
-        }
-        if (playingAyah === ayah.numberInSurah) {
-          setPlayingAyah(null);
-          return;
-        }
-        setPlayingAyah(ayah.numberInSurah);
-        await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-        const surahData = SURAHS.find((s) => s.id === surahId);
-        const globalNum = (surahData?.startingAyah ?? 1) + ayah.numberInSurah - 1;
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: `https://cdn.alquran.cloud/media/audio/ayah/${reciter}/${globalNum}` },
-          { shouldPlay: true }
-        );
-        soundRef.current = sound;
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded && status.didJustFinish) {
-            setPlayingAyah(null);
-            // Repeat-N takes priority over continuous play: if the user
-            // asked for N repeats of THIS ayah, finish all N before
-            // moving on. Once exhausted, fall through to the continuous-
-            // play branch below if enabled.
-            setRepeatRemaining((remaining) => {
-              if (remaining > 1) {
-                setTimeout(() => {
-                  void playAyahRef.current?.(ayah);
-                }, 60);
-                return remaining - 1;
-              }
-              // Repeat exhausted (or 1-shot). Optional auto-advance.
-              if (continuousPlay) {
-                const list = ayatRef.current;
-                const idx = list.findIndex(
-                  (a) => a.numberInSurah === ayah.numberInSurah,
-                );
-                const next = idx >= 0 ? list[idx + 1] : undefined;
-                if (next) {
-                  setTimeout(() => {
-                    void playAyahRef.current?.(next);
-                  }, 60);
-                }
-              }
-              return 0;
-            });
-          }
-        });
-        // Mark the ayah as "read" the moment the user actively engages with
-        // it via audio — explicit signal, less aggressive than marking on
-        // scroll into view.
-        markAyahRead(ayah.number);
-      } catch {
-        setPlayingAyah(null);
-        Alert.alert("Audio Error", "Could not load audio.");
-      }
-    },
-    [playingAyah, surahId, reciter, markAyahRead, continuousPlay]
-  );
-
-  useEffect(() => {
-    playAyahRef.current = playAyah;
-  }, [playAyah]);
-
   const renderAyah = ({ item }: { item: ParsedAyah }) => {
-    const isPlaying = playingAyah === item.numberInSurah;
+    const isPlaying = activeAyahOnThisSurah === item.numberInSurah && isRNTPPlaying;
+    const isActive = activeAyahOnThisSurah === item.numberInSurah;
     const bookmarked = isBookmarked(item.number);
     const tafsirOpen = openTafsir === item.numberInSurah;
-    // Sajdah badge — flagged on the 14–15 prostration verses of the Qur'an.
-    // Surfaced as a small caption above the Arabic so the reader knows to
-    // perform sajdah at-tilāwah on encountering it.
     const isSajdah = isSajdahVerse(surahId, item.numberInSurah);
+
     return (
       <View
         style={[
           styles.ayahRow,
           { borderBottomColor: C.border },
           bookmarked && { backgroundColor: isDark ? "rgba(45,191,127,0.06)" : "rgba(26,107,74,0.04)" },
+          isActive && !isPlaying && { backgroundColor: isDark ? "rgba(45,191,127,0.04)" : "rgba(26,107,74,0.02)" },
         ]}
       >
-        <View style={[styles.ayahBadge, { backgroundColor: bookmarked ? C.primary : C.secondary }]}>
+        <View style={[styles.ayahBadge, { backgroundColor: bookmarked ? C.primary : isActive ? C.primary : C.secondary }]}>
           <Text
             style={[
               styles.ayahNumber,
-              { color: bookmarked ? "#fff" : C.primary, fontFamily: "Inter_600SemiBold" },
+              { color: bookmarked || isActive ? "#fff" : C.primary, fontFamily: "Inter_600SemiBold" },
             ]}
           >
             {item.numberInSurah}
@@ -362,16 +293,12 @@ export default function SurahDetailScreen() {
               accessibilityLabel="Sajdah verse — prostration is performed when this verse is recited"
             >
               <Ionicons name="star" size={12} color={C.accent} />
-              <Text
-                style={[
-                  styles.sajdahBadgeText,
-                  { color: C.accent, fontFamily: "Inter_600SemiBold" },
-                ]}
-              >
+              <Text style={[styles.sajdahBadgeText, { color: C.accent, fontFamily: "Inter_600SemiBold" }]}>
                 Sajdah · prostration verse
               </Text>
             </View>
           )}
+
           <Text
             style={[
               styles.arabicAyah,
@@ -385,6 +312,7 @@ export default function SurahDetailScreen() {
           >
             {item.arabic}
           </Text>
+
           {!mushafMode && (
             <Text style={[styles.englishAyah, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
               {item.english}
@@ -392,30 +320,18 @@ export default function SurahDetailScreen() {
           )}
 
           <View style={styles.ayahActions}>
-            {!mushafMode && Platform.OS !== "web" && (
+            {/* Listen — always visible, works in mushaf mode too */}
+            {Platform.OS !== "web" && (
               <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  // Fresh play (not pause): seed the repeat counter so the
-                  // finish handler knows how many times to loop.
-                  if (!isPlaying) {
-                    setRepeatRemaining(repeatTarget);
-                  }
-                  playAyah(item);
-                }}
+                onPress={() => handleAyahListen(item)}
                 accessibilityLabel={isPlaying ? "Pause recitation" : "Play recitation"}
-                accessibilityHint={
-                  repeatTarget > 1
-                    ? `Will repeat ${repeatTarget} times`
-                    : undefined
-                }
                 style={({ pressed }) => [
                   styles.iconBtn,
                   { backgroundColor: isPlaying ? C.primary : C.muted, opacity: pressed ? 0.7 : 1 },
                 ]}
               >
                 <Ionicons
-                  name={isPlaying ? "pause" : "play"}
+                  name={isPlaying ? "pause" : isActive && !isRNTPPlaying ? "play" : "play"}
                   size={12}
                   color={isPlaying ? "#fff" : C.mutedForeground}
                 />
@@ -425,55 +341,19 @@ export default function SurahDetailScreen() {
                     { color: isPlaying ? "#fff" : C.mutedForeground, fontFamily: "Inter_500Medium" },
                   ]}
                 >
-                  {isPlaying
-                    ? repeatRemaining > 1
-                      ? `Pause · ${repeatRemaining}×`
-                      : "Pause"
-                    : repeatTarget > 1
-                      ? `Listen · ${repeatTarget}×`
-                      : "Listen"}
+                  {isPlaying ? "Pause" : "Listen"}
                 </Text>
               </Pressable>
             )}
 
-            {/* Repeat-N picker — shows only on the playing ayah's row to
-                keep the action row uncluttered for ayahs the user isn't
-                interacting with. Tap to cycle through 1 / 3 / 5 / 7 / 10.
-                Helps with memorisation without the full memorisation
-                tracker shipping in v1.1. */}
-            {!mushafMode && Platform.OS !== "web" && (
-              <Pressable
-                onPress={cycleRepeat}
-                accessibilityLabel={`Repeat target: ${repeatTarget} time${repeatTarget === 1 ? "" : "s"}`}
-                accessibilityHint="Tap to cycle through repeat counts: 1, 3, 5, 7, 10"
-                style={({ pressed }) => [
-                  styles.iconBtn,
-                  { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Ionicons name="repeat" size={12} color={C.mutedForeground} />
-                <Text
-                  style={[
-                    styles.iconBtnText,
-                    { color: C.mutedForeground, fontFamily: "Inter_500Medium" },
-                  ]}
-                >
-                  ×{repeatTarget}
-                </Text>
-              </Pressable>
-            )}
-
-            {/* Copy text — Arabic + English + reference. Cheap memorisation
-                helper for users who want to paste an ayah into a journal,
-                a chat, or a screensaver. */}
+            {/* Copy — always visible */}
             <Pressable
               onPress={() => handleCopy(item)}
               accessibilityLabel="Copy ayah text"
               style={({ pressed }) => [
                 styles.iconBtn,
                 {
-                  backgroundColor:
-                    copiedFor === item.numberInSurah ? C.secondary : C.muted,
+                  backgroundColor: copiedFor === item.numberInSurah ? C.secondary : C.muted,
                   opacity: pressed ? 0.7 : 1,
                 },
               ]}
@@ -487,8 +367,7 @@ export default function SurahDetailScreen() {
                 style={[
                   styles.iconBtnText,
                   {
-                    color:
-                      copiedFor === item.numberInSurah ? C.primary : C.mutedForeground,
+                    color: copiedFor === item.numberInSurah ? C.primary : C.mutedForeground,
                     fontFamily: "Inter_500Medium",
                   },
                 ]}
@@ -497,6 +376,7 @@ export default function SurahDetailScreen() {
               </Text>
             </Pressable>
 
+            {/* Tafsir — hidden in mushaf mode */}
             {!mushafMode && (
               <Pressable
                 onPress={() => {
@@ -525,6 +405,7 @@ export default function SurahDetailScreen() {
               </Pressable>
             )}
 
+            {/* Bookmark */}
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -567,6 +448,8 @@ export default function SurahDetailScreen() {
     );
   }
 
+  const surahIsPlaying = activeParsed?.surahId === surahId && isRNTPPlaying;
+
   return (
     <View style={[styles.container, { backgroundColor: C.background }]}>
       <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: C.primary }]}>
@@ -577,6 +460,7 @@ export default function SurahDetailScreen() {
         >
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
+
         <View style={styles.headerCenter}>
           <Text style={[styles.surahName, { fontFamily: "Inter_700Bold" }]}>{surah.nameEnglish}</Text>
           <Text style={[styles.surahArabic, { fontFamily: ARABIC_FONT_REGULAR }]}>{surah.name}</Text>
@@ -584,20 +468,14 @@ export default function SurahDetailScreen() {
             {surah.nameTranslation} · {surah.ayahCount} Ayat · {surah.revelationType}
           </Text>
         </View>
-        {/* Reading tools — font size cycle, continuous play, mushaf mode.
-            Three compact icon buttons. Each persists its setting to
-            AppContext so the user's preferred reading mode survives
-            across surahs and sessions. */}
+
+        {/* Font size */}
         <Pressable
           onPress={cycleFontSize}
-          accessibilityRole="button"
           accessibilityLabel={`Arabic font size — ${fontSize}. Tap to cycle.`}
           style={({ pressed }) => [
             styles.toolBtn,
-            {
-              backgroundColor: "rgba(255,255,255,0.12)",
-              opacity: pressed ? 0.7 : 1,
-            },
+            { backgroundColor: "rgba(255,255,255,0.12)", opacity: pressed ? 0.7 : 1 },
           ]}
         >
           <Text
@@ -610,34 +488,56 @@ export default function SurahDetailScreen() {
             Aa
           </Text>
         </Pressable>
-        <Pressable
-          onPress={toggleContinuousPlay}
-          accessibilityRole="switch"
-          accessibilityLabel="Continuous play"
-          accessibilityHint="When on, audio auto-advances to the next ayah after the current one finishes"
-          accessibilityState={{ checked: continuousPlay }}
-          style={({ pressed }) => [
-            styles.toolBtn,
-            {
-              backgroundColor: continuousPlay ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.12)",
-              opacity: pressed ? 0.7 : 1,
-            },
-          ]}
-        >
-          <Ionicons name={continuousPlay ? "infinite" : "infinite-outline"} size={16} color="#fff" />
-        </Pressable>
-        {/* Mushaf-mode toggle. When ON the English translation and the
-            Tafsir/Listen actions are hidden so the page reads like a printed
-            mushaf — Arabic only. Setting persists across screens via
-            AppContext. */}
+
+        {/* Play Surah — new button */}
+        {Platform.OS !== "web" && (
+          <Pressable
+            onPress={handlePlaySurah}
+            accessibilityLabel={surahIsPlaying ? "Pause surah recitation" : "Play full surah"}
+            style={({ pressed }) => [
+              styles.toolBtn,
+              {
+                backgroundColor: surahIsPlaying ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.12)",
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
+          >
+            <Ionicons
+              name={surahIsPlaying ? "pause" : "play"}
+              size={16}
+              color="#fff"
+            />
+          </Pressable>
+        )}
+
+        {/* Auto (continuous play) — now labelled */}
+        {Platform.OS !== "web" && (
+          <Pressable
+            onPress={toggleContinuousPlay}
+            accessibilityRole="switch"
+            accessibilityLabel="Auto-advance: when on, tapping Listen continues to the next ayah automatically"
+            accessibilityState={{ checked: continuousPlay }}
+            style={({ pressed }) => [
+              styles.toolBtnTall,
+              {
+                backgroundColor: continuousPlay ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.12)",
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
+          >
+            <Ionicons name="infinite" size={14} color="#fff" />
+            <Text style={styles.toolBtnLabel}>Auto</Text>
+          </Pressable>
+        )}
+
+        {/* Mushaf mode */}
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             updateSettings({ mushafMode: !mushafMode });
           }}
           accessibilityRole="switch"
-          accessibilityLabel="Mushaf mode"
-          accessibilityHint="Hides the English translation and shows Arabic only"
+          accessibilityLabel="Mushaf mode — hides translation and shows Arabic only"
           accessibilityState={{ checked: mushafMode }}
           style={({ pressed }) => [
             styles.toolBtn,
@@ -670,7 +570,7 @@ export default function SurahDetailScreen() {
           data={ayat}
           keyExtractor={(item) => String(item.numberInSurah)}
           renderItem={renderAyah}
-          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 20 }]}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={() => (
             <View style={styles.listHeader}>
@@ -681,9 +581,6 @@ export default function SurahDetailScreen() {
                   </Text>
                 </View>
               )}
-              {/* Translator attribution. The English text on every ayah row
-                  is verbatim from this translation, served by the Quran.com
-                  Foundation API. */}
               <View style={[styles.translatorBadge, { backgroundColor: C.muted }]}>
                 <Ionicons name="language-outline" size={12} color={C.mutedForeground} />
                 <Text style={[styles.translatorText, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}>
@@ -702,13 +599,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingBottom: 16, paddingHorizontal: 16, flexDirection: "row", alignItems: "center" },
   backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
-  mushafToggle: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   toolBtn: {
     width: 32,
     height: 32,
@@ -716,6 +606,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 4,
+  },
+  // Taller variant for the "Auto" button which has icon + text label
+  toolBtnTall: {
+    width: 38,
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 4,
+    gap: 1,
+  },
+  toolBtnLabel: {
+    color: "#fff",
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 8,
+    letterSpacing: 0.4,
   },
   headerCenter: { flex: 1, alignItems: "center", gap: 2 },
   surahName: { color: "#fff", fontSize: 18 },
@@ -803,4 +709,11 @@ const styles = StyleSheet.create({
   tafsirLoading: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 4 },
   tafsirLoadingText: { fontSize: 13 },
   tafsirErrorText: { fontSize: 13, lineHeight: 20 },
+  mushafToggle: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });
