@@ -178,5 +178,69 @@ export interface FeelingEntry {
       source: "Sunan Abi Dawud 5081 — quoting Surah At-Tawbah 9:129",
     },
     },
+  {
+    key: "grief",
+    label: "I have lost someone",
+    subtitle: "When the heart is broken by loss",
+    ayah: {
+      arabic: "الَّذِينَ إِذَا أَصَابَتْهُم مُّصِيبَةٌ قَالُوا إِنَّا لِلَّهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ",
+      english: "Those who, when disaster strikes them, say, 'Indeed we belong to Allah, and indeed to Him we will return.'",
+      reference: "Surah Al-Baqarah 2:156",
+    },
+    dua: {
+      arabic: "اللَّهُمَّ أْجُرْنِي فِي مُصِيبَتِي وَأَخْلِفْ لِي خَيْرًا مِنْهَا",
+      transliteration: "Allahumma-jurni fi museebati wa akhlif li khayran minha",
+      english: "O Allah, reward me in my affliction and replace it with something better.",
+      source: "Sahih Muslim 918 — Umm Salamah رضي الله عنها",
+    },
+  },
+  {
+    key: "overwhelmed",
+    label: "I feel overwhelmed",
+    subtitle: "When everything feels too heavy",
+    ayah: {
+      arabic: "وَمَن يَتَوَكَّلْ عَلَى اللَّهِ فَهُوَ حَسْبُهُ ۚ إِنَّ اللَّهَ بَالِغُ أَمْرِهِ ۚ قَدْ جَعَلَ اللَّهُ لِكُلِّ شَيْءٍ قَدْرًا",
+      english: "And whoever relies upon Allah — then He is sufficient for him. Indeed, Allah will accomplish His purpose. Allah has already set for everything a decreed extent.",
+      reference: "Surah At-Talaq 65:3",
+    },
+    dua: {
+      arabic: "اللَّهُمَّ لَا سَهْلَ إِلَّا مَا جَعَلْتَهُ سَهْلًا وَأَنْتَ تَجْعَلُ الْحَزْنَ إِذَا شِئْتَ سَهْلًا",
+      transliteration: "Allahumma la sahla illa ma ja'altahu sahlan, wa anta taj'alul-hazna itha shi'ta sahla",
+      english: "O Allah, there is nothing easy except what You make easy, and You make the difficult easy if You wish.",
+      source: "Ibn Hibban (graded sahih by al-Albani)",
+    },
+  },
+  {
+    key: "angry",
+    label: "I am feeling angry",
+    subtitle: "When the anger rises",
+    ayah: {
+      arabic: "وَالْكَاظِمِينَ الْغَيْظَ وَالْعَافِينَ عَنِ النَّاسِ ۗ وَاللَّهُ يُحِبُّ الْمُحْسِنِينَ",
+      english: "...and who restrain anger and who pardon the people — and Allah loves the doers of good.",
+      reference: "Surah Al-Imran 3:134",
+    },
+    dua: {
+      arabic: "أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ",
+      transliteration: "A'udhu billahi minash-shaytanir-rajeem",
+      english: "I seek refuge in Allah from the accursed devil. The Prophet ﷺ prescribed this when anger arises — say it, sit down if standing, lie down if sitting.",
+      source: "Sahih al-Bukhari 3282, Muslim 2610",
+    },
+  },
+  {
+    key: "impatient",
+    label: "I am struggling to be patient",
+    subtitle: "When patience is running thin",
+    ayah: {
+      arabic: "يَا أَيُّهَا الَّذِينَ آمَنُوا اسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ ۚ إِنَّ اللَّهَ مَعَ الصَّابِرِينَ",
+      english: "O you who have believed, seek help through patience and prayer. Indeed, Allah is with the patient.",
+      reference: "Surah Al-Baqarah 2:153",
+    },
+    dua: {
+      arabic: "رَبَّنَا أَفْرِغْ عَلَيْنَا صَبْرًا وَثَبِّتْ أَقْدَامَنَا وَانصُرْنَا عَلَى الْقَوْمِ الْكَافِرِينَ",
+      transliteration: "Rabbana afrigh 'alayna sabran wa thabbit aqdamana wansurna 'alal-qawmil-kafirin",
+      english: "Our Lord, pour upon us patience, plant firmly our feet, and give us victory over the disbelieving people.",
+      source: "Surah Al-Baqarah 2:250",
+    },
+  },
 ];
   
