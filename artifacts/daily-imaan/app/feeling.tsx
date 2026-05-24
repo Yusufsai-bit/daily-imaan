@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import colors from "@/constants/colors";
+import { ARABIC_FONT_REGULAR } from "@/constants/fonts";
 import { FEELINGS } from "@/data/feelingsData";
 
 if (
@@ -306,7 +307,7 @@ const styles = StyleSheet.create({
     textAlign: "right",
     writingDirection: "rtl",
     marginTop: 2,
-    fontFamily: "NotoNaskhArabic_400Regular",
+    fontFamily: ARABIC_FONT_REGULAR,
   },
   translit: { fontSize: 13, lineHeight: 20, fontStyle: "italic" },
   english: { fontSize: 14, lineHeight: 22 },
