@@ -49,19 +49,13 @@ export interface AppSettings {
   /**
    * Which audio file plays when a prayer-time reminder fires with sound on.
    *  - "default":  device's default notification sound (always available).
-   *  - "madinah":  bundled adhan-madinah.mp3 (CC0 public domain, requires
-   *                no attribution — chosen over Makkah for v1 to keep the
-   *                in-app About screen tighter).
+   *  - "madinah":  bundled adhan_madinah.mp3 (CC0 public domain).
+   *  - "makkah":   bundled adhan_makkah.mp3 (CC BY 3.0, Wikimedia Commons).
    * Falls back to "default" if the chosen audio file is missing at runtime
    * (expo-notifications silently uses the system sound when a referenced
    * filename isn't found in the bundle).
-   *
-   * NOTE: "makkah" was supported in v1-beta but is dropped before launch
-   * to simplify CC BY 3.0 attribution requirements. AppContext migration
-   * coerces any persisted "makkah" value back to "default" so old clients
-   * upgrade cleanly.
    */
-  adhanSound: "default" | "madinah";
+  adhanSound: "default" | "madinah" | "makkah";
   /**
    * Audio reciter for ayah playback. Stored as the alquran.cloud edition
    * code (e.g. "ar.alafasy"). See constants/reciters.ts for the catalogue.
@@ -327,14 +321,7 @@ function migrateState(saved: Partial<AppState>): AppState {
   //   savedByFreezeOn, freezeCelebrationAcknowledgedOn). Existing users keep
   //   their count + longestStreak, get 2 fresh freezes, and lastActiveDate
   //   carries over so the consecutive-day calc works on first new launch.
-  // Coerce dropped adhan-sound value. v1-beta supported "makkah" but the
-  // CC BY 3.0 attribution requirement was dropped pre-launch. Persisted
-  // "makkah" values become "default" rather than crashing the type-narrowed
-  // path in useNotifications.
   const savedSettings = saved.settings ?? {};
-  if ((savedSettings as { adhanSound?: string }).adhanSound === "makkah") {
-    (savedSettings as { adhanSound?: string }).adhanSound = "default";
-  }
 
   return {
     ...DEFAULT_STATE,
