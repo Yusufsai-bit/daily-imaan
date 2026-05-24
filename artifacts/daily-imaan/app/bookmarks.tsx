@@ -14,6 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import colors from "@/constants/colors";
+import { ARABIC_FONT_REGULAR } from "@/constants/fonts";
 import { useApp } from "@/context/AppContext";
 import { SURAHS } from "@/data/surahsData";
 import { getQuranSurah } from "@/data/quranFull";
@@ -367,7 +368,7 @@ const styles = StyleSheet.create({
   surahBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   surahBadgeText: { fontSize: 12 },
   removeBtn: { padding: 4 },
-  arabic: { fontSize: 22, lineHeight: 42, textAlign: "right", writingDirection: "rtl", fontFamily: "NotoNaskhArabic_400Regular" },
+  arabic: { fontSize: 22, lineHeight: 42, textAlign: "right", writingDirection: "rtl", fontFamily: ARABIC_FONT_REGULAR },
   english: { fontSize: 14, lineHeight: 22 },
   tabBar: {
     flexDirection: "row",
