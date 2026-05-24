@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -13,8 +15,10 @@ import {
 } from "react-native";
 
 import colors from "@/constants/colors";
+import { ARABIC_FONT_REGULAR } from "@/constants/fonts";
 import { useApp } from "@/context/AppContext";
 import { DUA_CATEGORIES, DUAS, Dua } from "@/data/duasData";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 /**
  * Per-category icon mapping. Keep keys in sync with DUA_CATEGORIES — any
@@ -32,7 +36,30 @@ const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   Sleep: "bed-outline",
 };
 
-function DuaCard({ dua, isDark, C }: { dua: Dua; isDark: boolean; C: (typeof colors)["light"] }) {
+/**
+ * Per-card fallback. Keeps a single broken Dua entry from taking the whole
+ * tab down. Shown in place of the card so the user can still scroll the
+ * rest of the list. The full error surfaces via the inline message in
+ * components/ErrorFallback.tsx (TEMP block) while we diagnose the
+ * intermittent expand-crash a tester reported in 1.0.0 (4).
+ */
+function DuaCardErrorFallback({ error }: { error: Error; resetError: () => void }) {
+  return (
+    <View style={{
+      padding: 14, borderRadius: 14, marginBottom: 4,
+      backgroundColor: "rgba(239,68,68,0.06)", borderWidth: 1, borderColor: "rgba(239,68,68,0.3)",
+    }}>
+      <Text style={{ fontSize: 13, color: "#B91C1C", fontFamily: "Inter_600SemiBold" }}>
+        This du'a couldn't be displayed
+      </Text>
+      <Text selectable style={{ fontSize: 11, color: "#B91C1C", marginTop: 4, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" }}>
+        {String(error?.message ?? "unknown error")}
+      </Text>
+    </View>
+  );
+}
+
+function DuaCardInner({ dua, isDark, C }: { dua: Dua; isDark: boolean; C: (typeof colors)["light"] }) {
   const [expanded, setExpanded] = useState(false);
   const { markDeedDone } = useApp();
 
@@ -40,16 +67,29 @@ function DuaCard({ dua, isDark, C }: { dua: Dua; isDark: boolean; C: (typeof col
   // crash this screen because the legacy Animated.Value pipeline threw on
   // the first render. We fall back to safe empty strings so a broken
   // entry shows visibly empty but doesn't take the whole screen down.
-  const arabic = dua?.arabicText ?? "";
-  const occasion = dua?.occasion ?? "";
-  const transliteration = dua?.transliteration ?? "";
-  const english = dua?.englishText ?? "";
+  // String() guards against any non-string slipping in from future data
+  // edits — React Native's <Text> children throw if they receive objects.
+  const arabic = String(dua?.arabicText ?? "");
+  const occasion = String(dua?.occasion ?? "");
+  const transliteration = String(dua?.transliteration ?? "");
+  const english = String(dua?.englishText ?? "");
+  const source = dua?.source != null ? String(dua.source) : "";
+
+  // Auto-link the "Made Dua" intention the first time a card is opened.
+  // We run this in an effect rather than synchronously inside the tap
+  // handler — otherwise markDeedDone's AppContext write fires on the
+  // same tick as setExpanded, every other DuaCard in the FlatList
+  // re-renders mid-commit, and the New Architecture occasionally trips
+  // a render-time error that lands in the ErrorBoundary as
+  // "Something went wrong". Decoupling the side-effect avoids the
+  // cascade entirely. markDeedDone is idempotent — never undoes a
+  // manual uncheck.
+  useEffect(() => {
+    if (expanded) markDeedDone("dua");
+  }, [expanded, markDeedDone]);
 
   const toggle = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Auto-link "Made Dua" intention the first time the user opens any
-    // dua. markDeedDone is idempotent — never undoes a manual uncheck.
-    if (!expanded) markDeedDone("dua");
     setExpanded((p) => !p);
   };
 
@@ -104,19 +144,39 @@ function DuaCard({ dua, isDark, C }: { dua: Dua; isDark: boolean; C: (typeof col
           ) : null}
           {english ? (
             <Text style={[styles.englishDua, { color: C.foreground, fontFamily: "Inter_400Regular" }]}>
-              "{english}"
+              {`"${english}"`}
             </Text>
           ) : null}
-          {dua?.source ? (
+          {source ? (
             <View style={[styles.sourceBadge, { backgroundColor: isDark ? "rgba(200,147,60,0.12)" : "rgba(200,147,60,0.1)" }]}>
               <Text style={[styles.sourceText, { color: C.accent, fontFamily: "Inter_600SemiBold" }]}>
-                Source: {dua.source}
+                {`Source: ${source}`}
               </Text>
             </View>
           ) : null}
         </View>
       )}
     </Pressable>
+  );
+}
+
+// React.memo so DuaCards only re-render when their dua/isDark/C props
+// change by reference — without this, every AppContext write (markDeedDone,
+// markAyahRead, recordActivity from anywhere in the app) re-runs every
+// rendered DuaCard's render path. Bigger lists got slow and, more
+// importantly, every concurrent re-render is another chance for the
+// expand-crash to trigger. dua/isDark/C are all stable references so the
+// default shallow comparison is sufficient.
+const MemoDuaCard = React.memo(DuaCardInner);
+
+// Wrapper component: a per-card ErrorBoundary so a single malformed entry
+// can't take the entire Duas tab down. The fallback shows the actual
+// error message inline so beta testers can report it.
+function DuaCard(props: { dua: Dua; isDark: boolean; C: (typeof colors)["light"] }) {
+  return (
+    <ErrorBoundary FallbackComponent={DuaCardErrorFallback}>
+      <MemoDuaCard {...props} />
+    </ErrorBoundary>
   );
 }
 
@@ -148,6 +208,14 @@ export default function DuasScreen() {
       })),
     [],
   );
+
+  const tilePairs = useMemo(() => {
+    const pairs: [typeof categoryTiles[0], typeof categoryTiles[0] | null][] = [];
+    for (let i = 0; i < categoryTiles.length; i += 2) {
+      pairs.push([categoryTiles[i]!, categoryTiles[i + 1] ?? null]);
+    }
+    return pairs;
+  }, [categoryTiles]);
 
   const filtered = useMemo(() => {
     if (isSearching) {
@@ -241,47 +309,54 @@ export default function DuasScreen() {
       {/* Body — either the 2-column category grid, or the drilled-in
           dua list, or cross-category search results. */}
       {showCategoryGrid ? (
-        <FlatList
-          data={categoryTiles}
-          keyExtractor={(item) => item.name}
-          numColumns={2}
-          columnWrapperStyle={styles.gridRow}
+        <ScrollView
           contentContainerStyle={[styles.grid, { paddingBottom: insets.bottom + 100 }]}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => handleCategoryTap(item.name)}
-              accessibilityRole="button"
-              accessibilityLabel={`${item.name}, ${item.count} du'as`}
-              style={({ pressed }) => [
-                styles.categoryTile,
-                {
-                  backgroundColor: C.card,
-                  borderColor: C.border,
-                  opacity: pressed ? 0.85 : 1,
-                  shadowColor: "#000",
-                },
-              ]}
-            >
-              <View style={[styles.categoryIconWrap, { backgroundColor: C.secondary }]}>
-                <Ionicons name={item.icon} size={22} color={C.primary} />
-              </View>
-              <Text
-                style={[styles.categoryName, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}
-                numberOfLines={2}
-              >
-                {item.name}
-              </Text>
-              <Text
-                style={[styles.categoryCount, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
-              >
-                {item.count} {item.count === 1 ? "du'a" : "du'as"}
-              </Text>
-            </Pressable>
-          )}
-        />
+        >
+          {tilePairs.map(([left, right]) => (
+            <View key={left.name} style={styles.gridRow}>
+              {[left, right].map((item) =>
+                item ? (
+                  <Pressable
+                    key={item.name}
+                    onPress={() => handleCategoryTap(item.name)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${item.name}, ${item.count} du'as`}
+                    style={({ pressed }) => [
+                      styles.categoryTile,
+                      {
+                        backgroundColor: C.card,
+                        borderColor: C.border,
+                        opacity: pressed ? 0.85 : 1,
+                        shadowColor: "#000",
+                      },
+                    ]}
+                  >
+                    <View style={[styles.categoryIconWrap, { backgroundColor: C.secondary }]}>
+                      <Ionicons name={item.icon} size={22} color={C.primary} />
+                    </View>
+                    <Text
+                      style={[styles.categoryName, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}
+                      numberOfLines={2}
+                    >
+                      {item.name}
+                    </Text>
+                    <Text
+                      style={[styles.categoryCount, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+                    >
+                      {item.count} {item.count === 1 ? "du'a" : "du'as"}
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <View key="empty" style={{ flex: 1 }} />
+                )
+              )}
+            </View>
+          ))}
+        </ScrollView>
       ) : (
         <FlatList
+          key="duas-list"
           data={filtered}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <DuaCard dua={item} isDark={isDark} C={C} />}
@@ -363,10 +438,15 @@ const styles = StyleSheet.create({
   duaHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   occasionBadge: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   occasionText: { fontSize: 12 },
-  duaArabic: { fontSize: 24, lineHeight: 46, textAlign: "right", writingDirection: "rtl", fontFamily: "NotoNaskhArabic_400Regular" },
+  duaArabic: { fontSize: 24, lineHeight: 46, textAlign: "right", writingDirection: "rtl", fontFamily: ARABIC_FONT_REGULAR },
   expandedContent: { gap: 10 },
   divider: { height: StyleSheet.hairlineWidth },
-  transliteration: { fontSize: 13, lineHeight: 20, fontStyle: "italic" },
+  // `fontStyle: "italic"` was dropped here — applied to a custom font
+  // (Inter_400Regular) without an italic variant, it spams warnings on
+  // iOS and on some configs has been linked to render-time errors. The
+  // transliteration is now visually distinguished by its smaller size,
+  // muted color, and line spacing alone — still clearly secondary.
+  transliteration: { fontSize: 13, lineHeight: 20 },
   englishDua: { fontSize: 15, lineHeight: 24 },
   sourceBadge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   sourceText: { fontSize: 12 },
