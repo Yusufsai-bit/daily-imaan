@@ -39,7 +39,7 @@ import { a11yButton, a11yDecorative, a11yLink } from "@/components/a11y";
  * `artifacts/mockup-sandbox/.../daily-imaan-home/FeatureAndTiles.tsx`.
  *
  * Layout: Header → Prayer + Qibla pill row → Ayat of the Day card →
- * "How is your heart today?" feeling hero → Resume Qur'an tile +
+ * "How are you feeling today?" feeling hero → Resume Qur'an tile +
  * (Morning|Evening) Adhkar tile → Hadith of the Day card.
  *
  * Design rules (mirrored from the mockup's header doc-block):
@@ -712,7 +712,7 @@ export default function HomeScreen() {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push("/feeling" as never);
         }}
-        {...a11yLink("How is your heart today?", "Opens a list of feelings to find a verse or dua")}
+        {...a11yLink("How are you feeling today?", "Opens a list of feelings to find a verse or dua")}
         style={({ pressed }) => [styles.feelingWrap, { opacity: pressed ? 0.9 : 1 }]}
       >
         <LinearGradient
@@ -730,7 +730,7 @@ export default function HomeScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.feelingTitle, { color: C.primary, fontFamily: "Inter_600SemiBold" }]}>
-              How is your heart today?
+              How are you feeling today?
             </Text>
             <Text style={[styles.feelingSub, { color: C.foreground, fontFamily: "Inter_400Regular" }]}>
               Find a verse or du&apos;a for what&apos;s on your heart.
