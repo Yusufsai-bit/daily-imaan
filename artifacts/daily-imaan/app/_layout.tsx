@@ -30,6 +30,7 @@ import {
   scheduleAyatNotifications,
   scheduleHadithNotification,
   scheduleAdhkarNotifications,
+  scheduleWuduNotifications,
 } from "@/hooks/useNotifications";
 import {
   initSentry,
@@ -57,6 +58,30 @@ const queryClient = new QueryClient();
 
 function AppEffects() {
   const { state, loaded, recordActivity, markAyahRead } = useApp();
+
+  // Wudu reminder — reschedule whenever enabled/offset/prayer times change.
+  // Prayer times aren't available in AppEffects (they live in usePrayerTimes
+  // on the home tab), so we store the last known prayer times in AsyncStorage
+  // and read them here. This is a best-effort reminder: if no prayer times are
+  // cached yet, no wudu notifications are scheduled until the home tab loads.
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    import("@react-native-async-storage/async-storage").then(({ default: AS }) =>
+      AS.getItem("@daily_imaan_prayer_cache").then((raw) => {
+        try {
+          const cached = raw ? JSON.parse(raw) : null;
+          const pt = cached?.prayerTimes ?? null;
+          scheduleWuduNotifications(
+            state.settings.wuduReminderEnabled,
+            state.settings.wuduReminderMinutes,
+            pt
+          );
+        } catch {
+          scheduleWuduNotifications(state.settings.wuduReminderEnabled, state.settings.wuduReminderMinutes, null);
+        }
+      })
+    );
+  }, [state.settings.wuduReminderEnabled, state.settings.wuduReminderMinutes]);
   const segments = useSegments();
 
   // Notification permission is requested LAZILY — only when the user actually
@@ -160,6 +185,7 @@ function RootLayoutNav() {
       <Stack.Screen name="adhkar" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="asma" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="about" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="fasting" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="welcome" options={{ headerShown: false, presentation: "fullScreenModal", gestureEnabled: false }} />
     </Stack>
   );
