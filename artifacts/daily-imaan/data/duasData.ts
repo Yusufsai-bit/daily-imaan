@@ -163,6 +163,66 @@ export const DUAS: Dua[] = [
     source: "Sahih al-Bukhari 6307",
   },
 
+  // Morning-specific additions
+  {
+    id: "morning-4",
+    category: "Morning & Evening",
+    occasion: "Morning declaration of faith (upon the fitrah)",
+    arabicText: "أَصْبَحْنَا عَلَى فِطْرَةِ الْإِسْلَامِ وَعَلَى كَلِمَةِ الْإِخْلَاصِ وَعَلَى دِينِ نَبِيِّنَا مُحَمَّدٍ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ وَعَلَى مِلَّةِ أَبِينَا إِبْرَاهِيمَ حَنِيفًا وَمَا كَانَ مِنَ الْمُشْرِكِينَ",
+    transliteration: "Asbahna 'ala fitratiI-Islam, wa 'ala kalimatiI-ikhlas, wa 'ala dini Nabiyyina Muhammadin sallallahu 'alayhi wa sallam, wa 'ala millati Abina Ibrahima hanifan, wa ma kana minal-mushrikin",
+    englishText: "We have risen upon the innate disposition of Islam, upon the word of sincerity (tawhid), upon the religion of our Prophet Muhammad ﷺ, and upon the way of our forefather Ibrahim, who was upright and was not among the polytheists.",
+    source: "Ahmad 3/406 (graded sahih by al-Albani)",
+  },
+
+  // Evening-specific additions
+  {
+    id: "evening-3",
+    category: "Morning & Evening",
+    occasion: "Evening declaration of faith (upon the fitrah)",
+    arabicText: "أَمْسَيْنَا عَلَى فِطْرَةِ الْإِسْلَامِ وَعَلَى كَلِمَةِ الْإِخْلَاصِ وَعَلَى دِينِ نَبِيِّنَا مُحَمَّدٍ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ وَعَلَى مِلَّةِ أَبِينَا إِبْرَاهِيمَ حَنِيفًا وَمَا كَانَ مِنَ الْمُشْرِكِينَ",
+    transliteration: "Amsayna 'ala fitratil-Islam, wa 'ala kalimatiI-ikhlas, wa 'ala dini Nabiyyina Muhammadin sallallahu 'alayhi wa sallam, wa 'ala millati Abina Ibrahima hanifan, wa ma kana minal-mushrikin",
+    englishText: "We have entered the evening upon the innate disposition of Islam, upon the word of sincerity (tawhid), upon the religion of our Prophet Muhammad ﷺ, and upon the way of our forefather Ibrahim, who was upright and was not among the polytheists.",
+    source: "Ahmad 3/406 (graded sahih by al-Albani)",
+  },
+
+  // Morning AND Evening shared additions (id starts with "morning-evening-")
+  {
+    id: "morning-evening-11",
+    category: "Morning & Evening",
+    occasion: "Ayat al-Kursi (1x — protection until evening / until morning)",
+    arabicText: "اللَّهُ لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَنْ ذَا الَّذِي يَشْفَعُ عِنْدَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ",
+    transliteration: "Allahu la ilaha illa huwal-Hayyul-Qayyoom, la ta'khudhuhu sinatun wa la nawm, lahu ma fis-samawati wa ma fil-ard, man dhal-lathee yashfa'u 'indahu illa bi-idhnih, ya'lamu ma bayna aydihim wa ma khalfahum, wa la yuhituna bi-shay'in min 'ilmihi illa bima sha', wasi'a kursiyyuhus-samawati wal-ard, wa la ya'uduhu hifzuhuma, wa huwal-'Aliyyul-'Azeem",
+    englishText: "Allah — there is no deity except Him, the Ever-Living, the Sustainer of existence. Neither drowsiness nor sleep overtakes Him. To Him belongs whatever is in the heavens and whatever is on the earth. Who can intercede with Him except by His permission? He knows what is before them and what will be after them, and they encompass nothing of His knowledge except what He wills. His Throne extends over the heavens and the earth, and their preservation tires Him not. And He is the Most High, the Most Great.",
+    source: "Quran 2:255 — Abu Hurairah reported: whoever recites it morning and evening will be protected until evening/morning (Al-Hakim, graded sahih)",
+  },
+  {
+    id: "morning-evening-12",
+    category: "Morning & Evening",
+    occasion: "Surah Al-Ikhlas (3x morning & evening — equals one-third of the Quran)",
+    arabicText: "قُلْ هُوَ اللَّهُ أَحَدٌ ۝ اللَّهُ الصَّمَدُ ۝ لَمْ يَلِدْ وَلَمْ يُولَدْ ۝ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ",
+    transliteration: "Qul huwa Allahu Ahad, Allahus-Samad, lam yalid wa lam yulad, wa lam yakun lahu kufuwan ahad",
+    englishText: "Say: He is Allah, [who is] One, Allah, the Eternal Refuge. He neither begets nor is born, nor is there to Him any equivalent.",
+    source: "Quran 112:1-4 — recite 3× each morning and evening (Abu Dawud 5082, Tirmidhi 3575)",
+  },
+  {
+    id: "morning-evening-13",
+    category: "Morning & Evening",
+    occasion: "Surah Al-Falaq (3x morning & evening — refuge from all created harm)",
+    arabicText: "قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ ۝ مِن شَرِّ مَا خَلَقَ ۝ وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ ۝ وَمِن شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ ۝ وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ",
+    transliteration: "Qul a'udhu bi-Rabbil-falaq, min sharri ma khalaq, wa min sharri ghasiqin itha waqab, wa min sharrin-naffathati fil-'uqad, wa min sharri hasidin itha hasad",
+    englishText: "Say: I seek refuge in the Lord of daybreak, from the evil of that which He created, and from the evil of darkness when it settles, and from the evil of those who blow on knots, and from the evil of an envier when he envies.",
+    source: "Quran 113:1-5 — recite 3× each morning and evening (Abu Dawud 5082, Tirmidhi 3575)",
+  },
+  {
+    id: "morning-evening-14",
+    category: "Morning & Evening",
+    occasion: "Surah An-Nas (3x morning & evening — refuge from the whisperer)",
+    arabicText: "قُلْ أَعُوذُ بِرَبِّ النَّاسِ ۝ مَلِكِ النَّاسِ ۝ إِلَهِ النَّاسِ ۝ مِن شَرِّ الْوَسْوَاسِ الْخَنَّاسِ ۝ الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ ۝ مِنَ الْجِنَّةِ وَالنَّاسِ",
+    transliteration: "Qul a'udhu bi-Rabbin-nas, Malikin-nas, Ilahin-nas, min sharril-waswasil-khannas, alladhee yuwaswisu fi sudorin-nas, minal-jinnati wan-nas",
+    englishText: "Say: I seek refuge in the Lord of mankind, the Sovereign of mankind, the God of mankind, from the evil of the retreating whisperer, who whispers [evil] into the chests of mankind — from among jinn and mankind.",
+    source: "Quran 114:1-6 — recite 3× each morning and evening (Abu Dawud 5082, Tirmidhi 3575)",
+  },
+
   // Prayer
   {
     id: "prayer-1",
