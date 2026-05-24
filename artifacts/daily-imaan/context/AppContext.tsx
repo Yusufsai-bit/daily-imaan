@@ -230,7 +230,9 @@ interface AppContextType {
 // v2 schema: real consecutive-day streak with freeze grace days. v1 had only
 // a count-up "Days with Allah" counter. Migration preserves the count and
 // longestStreak; new freeze fields default to 2 freezes available.
-const CURRENT_STATE_VERSION = 2;
+// v3 schema: shifts default daily ayah notification time from 07:00 to 08:30
+// to prevent it clashing with the morning adhkar reminder (07:15).
+const CURRENT_STATE_VERSION = 3;
 
 const DEFAULT_STATE: AppState = {
   version: CURRENT_STATE_VERSION,
@@ -248,7 +250,7 @@ const DEFAULT_STATE: AppState = {
   goodDeeds: {},
   settings: {
     ayatOrder: "sequential",
-    notificationTimes: ["07:00", "13:00", "18:00"],
+    notificationTimes: ["08:30", "13:00", "18:00"],
     prayerMethod: 1,
     prayerSchool: 0,
     darkMode: false,
@@ -323,7 +325,7 @@ function migrateState(saved: Partial<AppState>): AppState {
   //   carries over so the consecutive-day calc works on first new launch.
   const savedSettings = saved.settings ?? {};
 
-  return {
+  const merged: AppState = {
     ...DEFAULT_STATE,
     ...saved,
     settings: { ...DEFAULT_STATE.settings, ...savedSettings },
@@ -341,6 +343,21 @@ function migrateState(saved: Partial<AppState>): AppState {
       typeof saved.homeTipDismissed === "boolean" ? saved.homeTipDismissed : false,
     version: CURRENT_STATE_VERSION,
   };
+
+  // v2 → v3: shift default ayah time from 07:00 to 08:30 so it no longer
+  // clashes with the morning adhkar notification (now hardcoded at 07:15).
+  // Only migrates users still on the old default — manual 07:00 is collateral.
+  if ((saved.version ?? 0) < 3) {
+    const times = merged.settings.notificationTimes;
+    if (times[0] === "07:00") {
+      merged.settings = {
+        ...merged.settings,
+        notificationTimes: ["08:30", ...times.slice(1)],
+      };
+    }
+  }
+
+  return merged;
 }
 
 /**
