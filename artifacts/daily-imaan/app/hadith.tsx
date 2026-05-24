@@ -1,3 +1,4 @@
+import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
@@ -16,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import colors from "@/constants/colors";
+import { ARABIC_FONT_REGULAR } from "@/constants/fonts";
 import {
   DAILY_HADITH,
   DailyHadith,
@@ -33,6 +35,7 @@ export default function HadithScreen() {
   // browse the corpus without changing what tomorrow surfaces.
   const todays = useMemo(() => getTodayHadith(), []);
   const [hadith, setHadith] = useState<DailyHadith>(todays);
+  const [copied, setCopied] = useState(false);
 
   const handleShuffle = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -49,6 +52,15 @@ export default function HadithScreen() {
       );
     });
   }, [hadith.sourceUrl]);
+
+  const handleCopy = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await Clipboard.setStringAsync(
+      `"${hadith.englishText}"\n\n— ${hadith.collection} ${hadith.reference}${hadith.grade ? ` · ${hadith.grade}` : ""}\n\nvia Daily Imaan`,
+    );
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }, [hadith]);
 
   const handleShare = useCallback(async () => {
     try {
@@ -178,20 +190,31 @@ export default function HadithScreen() {
         {/* Action row */}
         <View style={styles.actionRow}>
           <Pressable
-            onPress={handleShare}
-            {...a11yButton("Share this hadith")}
+            onPress={handleCopy}
+            {...a11yButton("Copy this hadith")}
             style={({ pressed }) => [
               styles.actionBtn,
               { backgroundColor: C.secondary, opacity: pressed ? 0.7 : 1 },
             ]}
           >
-            <Ionicons name="share-outline" size={18} color={C.primary} {...a11yDecorative} />
+            <Ionicons name={copied ? "checkmark" : "copy-outline"} size={18} color={C.primary} {...a11yDecorative} />
             <Text
               maxFontSizeMultiplier={1.4}
               style={[styles.actionBtnText, { color: C.primary, fontFamily: "Inter_500Medium" }]}
             >
-              Share
+              {copied ? "Copied!" : "Copy"}
             </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={handleShare}
+            {...a11yButton("Share this hadith")}
+            style={({ pressed }) => [
+              styles.actionBtnSmall,
+              { backgroundColor: C.secondary, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Ionicons name="share-outline" size={18} color={C.mutedForeground} {...a11yDecorative} />
           </Pressable>
 
           <Pressable
@@ -239,7 +262,7 @@ const styles = StyleSheet.create({
   badge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
   badgeText: { fontSize: 11 },
   arabicText: {
-    fontFamily: "NotoNaskhArabic_400Regular",
+    fontFamily: ARABIC_FONT_REGULAR,
     fontSize: 24,
     lineHeight: 46,
     textAlign: "right",
