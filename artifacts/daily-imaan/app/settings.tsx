@@ -1105,6 +1105,7 @@ export default function SettingsScreen() {
           {([
             { id: "default" as const, title: "Device default", subtitle: "System notification sound — always available" },
             { id: "madinah" as const, title: "Adhan — Madinah", subtitle: "Bundled recitation, Masjid an-Nabawi style" },
+            { id: "makkah" as const, title: "Adhan — Makkah", subtitle: "Bundled recitation, Masjid al-Haram style" },
           ] as const).map((opt, i, arr) => (
             <Pressable
               key={opt.id}
@@ -1143,7 +1144,7 @@ export default function SettingsScreen() {
           maxFontSizeMultiplier={1.6}
           style={[styles.hint, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
         >
-          The Madinah adhan is bundled with the app and plays offline.
+          Both adhans are bundled with the app and play offline.
         </Text>
       </View>
 
