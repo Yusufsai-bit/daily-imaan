@@ -17,9 +17,13 @@ import { Appearance, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import TrackPlayer from "react-native-track-player";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider, useApp } from "@/context/AppContext";
+import { QuranMiniPlayer } from "@/components/QuranMiniPlayer";
+import { PlaybackService } from "../service";
+import { setupPlayer } from "@/lib/trackPlayer";
 import { getTodayAyah } from "@/data/featuredAyat";
 import { SURAHS } from "@/data/surahsData";
 import {
@@ -35,6 +39,12 @@ import {
 } from "@/lib/sentry";
 
 initSentry();
+
+// Register RNTP background service once at module load. Must happen before
+// any setupPlayer() call so the service is ready before audio starts.
+if (Platform.OS !== "web") {
+  TrackPlayer.registerPlaybackService(() => PlaybackService);
+}
 
 function getGlobalId(surahId: number, ayahNumber: number): number {
   const surah = SURAHS.find((s) => s.id === surahId);
@@ -177,6 +187,12 @@ function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
+  useEffect(() => {
+    if (Platform.OS !== "web") {
+      setupPlayer();
+    }
+  }, []);
+
   if (!fontsLoaded && !fontError) return null;
 
   return (
@@ -188,6 +204,7 @@ function RootLayout() {
               <AppProvider>
                 <AppEffects />
                 <RootLayoutNav />
+                {Platform.OS !== "web" && <QuranMiniPlayer />}
               </AppProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
