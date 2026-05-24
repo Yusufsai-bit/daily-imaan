@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React, { useEffect, useMemo, useState } from "react";
@@ -61,7 +62,17 @@ function DuaCardErrorFallback({ error }: { error: Error; resetError: () => void 
 
 function DuaCardInner({ dua, isDark, C }: { dua: Dua; isDark: boolean; C: (typeof colors)["light"] }) {
   const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { markDeedDone } = useApp();
+
+  const handleCopy = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const parts = [dua.arabicText, dua.transliteration, `"${dua.englishText}"`];
+    if (dua.source) parts.push(`— ${dua.source}`);
+    await Clipboard.setStringAsync(parts.join("\n\n"));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   // Defensive: a malformed Dua entry (missing arabicText etc.) used to
   // crash this screen because the legacy Animated.Value pipeline threw on
@@ -154,6 +165,19 @@ function DuaCardInner({ dua, isDark, C }: { dua: Dua; isDark: boolean; C: (typeo
               </Text>
             </View>
           ) : null}
+          <Pressable
+            onPress={handleCopy}
+            accessibilityLabel="Copy this du'a"
+            style={({ pressed }) => [
+              styles.copyBtn,
+              { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Ionicons name={copied ? "checkmark" : "copy-outline"} size={14} color={C.mutedForeground} />
+            <Text style={[styles.copyBtnText, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              {copied ? "Copied!" : "Copy"}
+            </Text>
+          </Pressable>
         </View>
       )}
     </Pressable>
@@ -450,6 +474,17 @@ const styles = StyleSheet.create({
   englishDua: { fontSize: 15, lineHeight: 24 },
   sourceBadge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   sourceText: { fontSize: 12 },
+  copyBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginTop: 2,
+  },
+  copyBtnText: { fontSize: 12 },
   empty: { alignItems: "center", paddingTop: 80, gap: 12 },
   emptyText: { fontSize: 15 },
 });
