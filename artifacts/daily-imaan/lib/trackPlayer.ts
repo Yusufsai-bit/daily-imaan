@@ -1,4 +1,4 @@
-import TrackPlayer, { Capability, RepeatMode } from "react-native-track-player";
+import TrackPlayer, { Capability, RepeatMode, Event } from "react-native-track-player";
 import { SURAHS } from "@/data/surahsData";
 import { getReciterById } from "@/constants/reciters";
 
@@ -67,27 +67,42 @@ export async function playSurah(
   await TrackPlayer.play();
 }
 
-/** Play a single ayah then stop. */
+/**
+ * Play a single ayah. Pass repeatCount > 1 to queue the same ayah N times
+ * (for memorisation / A-B loop). Pass Infinity for continuous repeat.
+ */
 export async function playSingleAyah(
   surahId: number,
   ayahN: number,
   reciter: string,
+  repeatCount: number = 1,
 ): Promise<void> {
   const surah = SURAHS.find((s) => s.id === surahId);
   if (!surah) return;
   const reciterInfo = getReciterById(reciter);
 
+  const url = ayahUrl(surahId, ayahN, reciter);
+  const title = `${surah.nameEnglish} · Ayah ${ayahN}`;
+
   await TrackPlayer.reset();
-  await TrackPlayer.add([
-    {
-      id: `${surahId}:${ayahN}`,
-      url: ayahUrl(surahId, ayahN, reciter),
-      title: `${surah.nameEnglish} · Ayah ${ayahN}`,
+
+  if (repeatCount === Infinity) {
+    await TrackPlayer.add([{ id: `${surahId}:${ayahN}`, url, title, artist: reciterInfo.name, album: surah.nameEnglish }]);
+    await TrackPlayer.setRepeatMode(RepeatMode.Track);
+  } else {
+    // Queue N copies with unique IDs so RNTP treats them as separate tracks.
+    const count = Math.max(1, Math.min(repeatCount, 50));
+    const tracks = Array.from({ length: count }, (_, i) => ({
+      id: i === 0 ? `${surahId}:${ayahN}` : `${surahId}:${ayahN}:r${i}`,
+      url,
+      title,
       artist: reciterInfo.name,
       album: surah.nameEnglish,
-    },
-  ]);
-  await TrackPlayer.setRepeatMode(RepeatMode.Off);
+    }));
+    await TrackPlayer.add(tracks);
+    await TrackPlayer.setRepeatMode(RepeatMode.Off);
+  }
+
   await TrackPlayer.play();
 }
 
