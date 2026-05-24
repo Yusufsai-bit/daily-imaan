@@ -8,10 +8,12 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   useColorScheme,
   View,
 } from "react-native";
@@ -113,7 +115,7 @@ export default function SurahDetailScreen() {
   const C = isDark ? colors.dark : colors.light;
   const insets = useSafeAreaInsets();
 
-  const { state, toggleBookmark, isBookmarked, setLastReadPosition, markDeedDone, markAyahRead, updateSettings } = useApp();
+  const { state, toggleBookmark, isBookmarked, setLastReadPosition, markDeedDone, markAyahRead, updateSettings, setAyahNote } = useApp();
   const mushafMode = state.settings.mushafMode;
   const fontSize = state.settings.arabicFontSize;
   const continuousPlay = state.settings.continuousPlay;
@@ -126,6 +128,20 @@ export default function SurahDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [openTafsir, setOpenTafsir] = useState<number | null>(null);
   const [copiedFor, setCopiedFor] = useState<number | null>(null);
+
+  // A-B loop: how many times to repeat a single ayah. 0 = off.
+  const REPEAT_OPTIONS: { label: string; value: number }[] = [
+    { label: "×1", value: 1 },
+    { label: "×3", value: 3 },
+    { label: "×5", value: 5 },
+    { label: "×10", value: 10 },
+    { label: "∞", value: Infinity },
+  ];
+  const [repeatIdx, setRepeatIdx] = useState(0); // index into REPEAT_OPTIONS
+  const repeatCount = REPEAT_OPTIONS[repeatIdx]?.value ?? 1;
+
+  // Verse notes modal
+  const [noteModal, setNoteModal] = useState<{ ayahId: number; globalId: number; draft: string } | null>(null);
 
   // RNTP state — which ayah is highlighted on THIS surah screen
   const activeTrack = useActiveTrack();
@@ -188,7 +204,7 @@ export default function SurahDetailScreen() {
         if (continuousPlay) {
           await playSurah(surahId, reciter, ayah.numberInSurah);
         } else {
-          await playSingleAyah(surahId, ayah.numberInSurah, reciter);
+          await playSingleAyah(surahId, ayah.numberInSurah, reciter, repeatCount);
         }
         markAyahRead(ayah.number);
         markDeedDone("quran");
@@ -196,7 +212,7 @@ export default function SurahDetailScreen() {
         Alert.alert("Audio Error", "Could not load audio. Check your connection.");
       }
     },
-    [activeAyahOnThisSurah, isRNTPPlaying, continuousPlay, surahId, reciter, markAyahRead, markDeedDone],
+    [activeAyahOnThisSurah, isRNTPPlaying, continuousPlay, surahId, reciter, repeatCount, markAyahRead, markDeedDone],
   );
 
   // "Play Surah" — loads all ayahs from the beginning
@@ -258,6 +274,7 @@ export default function SurahDetailScreen() {
     const bookmarked = isBookmarked(item.number);
     const tafsirOpen = openTafsir === item.numberInSurah;
     const isSajdah = isSajdahVerse(surahId, item.numberInSurah);
+    const hasNote = !!state.ayahNotes[item.number];
 
     return (
       <View
@@ -405,6 +422,21 @@ export default function SurahDetailScreen() {
               </Pressable>
             )}
 
+            {/* Note */}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setNoteModal({ ayahId: item.numberInSurah, globalId: item.number, draft: state.ayahNotes[item.number] ?? "" });
+              }}
+              accessibilityLabel={hasNote ? "Edit note" : "Add note"}
+              style={({ pressed }) => [
+                styles.bookmarkBtn,
+                { backgroundColor: hasNote ? "rgba(45,191,127,0.18)" : C.muted, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Ionicons name={hasNote ? "document-text" : "document-text-outline"} size={14} color={hasNote ? C.primary : C.mutedForeground} />
+            </Pressable>
+
             {/* Bookmark */}
             <Pressable
               onPress={() => {
@@ -530,6 +562,27 @@ export default function SurahDetailScreen() {
           </Pressable>
         )}
 
+        {/* Repeat (A-B loop) — cycles Off → ×3 → ×5 → ×10 → ∞ → Off */}
+        {Platform.OS !== "web" && (
+          <Pressable
+            onPress={() => {
+              Haptics.selectionAsync();
+              setRepeatIdx((i) => (i + 1) % REPEAT_OPTIONS.length);
+            }}
+            accessibilityLabel={`Repeat mode: ${REPEAT_OPTIONS[repeatIdx]?.label}. Tap to cycle.`}
+            style={({ pressed }) => [
+              styles.toolBtnTall,
+              {
+                backgroundColor: repeatIdx > 0 ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.12)",
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
+          >
+            <Ionicons name="repeat" size={13} color="#fff" />
+            <Text style={styles.toolBtnLabel}>{REPEAT_OPTIONS[repeatIdx]?.label}</Text>
+          </Pressable>
+        )}
+
         {/* Mushaf mode */}
         <Pressable
           onPress={() => {
@@ -591,6 +644,47 @@ export default function SurahDetailScreen() {
           )}
         />
       )}
+
+      {/* Verse note modal */}
+      <Modal
+        visible={noteModal !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setNoteModal(null)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setNoteModal(null)}>
+          <Pressable style={[styles.modalSheet, { backgroundColor: C.card, borderColor: C.border }]} onPress={() => {}}>
+            <Text style={[styles.modalTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              {surah?.nameEnglish} {noteModal?.ayahId ? `· Ayah ${noteModal.ayahId}` : ""}
+            </Text>
+            <TextInput
+              value={noteModal?.draft ?? ""}
+              onChangeText={(t) => setNoteModal((m) => m ? { ...m, draft: t } : m)}
+              placeholder="Write your reflection…"
+              placeholderTextColor={C.mutedForeground}
+              multiline
+              autoFocus
+              style={[styles.noteInput, { color: C.foreground, borderColor: C.border, fontFamily: "Inter_400Regular" }]}
+            />
+            <View style={styles.modalBtns}>
+              {noteModal && state.ayahNotes[noteModal.globalId] && (
+                <Pressable
+                  onPress={() => { setAyahNote(noteModal.globalId, ""); setNoteModal(null); }}
+                  style={[styles.modalBtn, { backgroundColor: C.muted }]}
+                >
+                  <Text style={[styles.modalBtnText, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}>Delete</Text>
+                </Pressable>
+              )}
+              <Pressable
+                onPress={() => { if (noteModal) { setAyahNote(noteModal.globalId, noteModal.draft); } setNoteModal(null); }}
+                style={[styles.modalBtn, { backgroundColor: C.primary, flex: 1 }]}
+              >
+                <Text style={[styles.modalBtnText, { color: "#fff", fontFamily: "Inter_600SemiBold" }]}>Save</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -716,4 +810,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 20,
+    gap: 14,
+  },
+  modalTitle: { fontSize: 15 },
+  noteInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 14,
+    lineHeight: 22,
+    minHeight: 100,
+    textAlignVertical: "top",
+  },
+  modalBtns: { flexDirection: "row", gap: 10 },
+  modalBtn: {
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18,
+  },
+  modalBtnText: { fontSize: 14 },
 });
