@@ -891,6 +891,63 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      {/* Wudu reminder */}
+      <View style={[styles.section, { marginTop: -14 }]}>
+        <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+          <SettingRow
+            icon="water-outline"
+            title="Wudu reminder"
+            subtitle={
+              settings.wuduReminderEnabled
+                ? `Reminds you ${settings.wuduReminderMinutes} min before each prayer`
+                : "Off — get a heads-up before each prayer to make wudu"
+            }
+            C={C}
+            right={
+              <Switch
+                value={settings.wuduReminderEnabled}
+                onValueChange={async (val) => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  if (val && Platform.OS !== "web") {
+                    const granted = await requestNotificationPermission();
+                    if (!granted) {
+                      Alert.alert("Notifications blocked", "Enable notifications for Daily Imaan in your device settings.");
+                      return;
+                    }
+                  }
+                  updateSettings({ wuduReminderEnabled: val });
+                }}
+                trackColor={{ false: C.border, true: C.primary }}
+                thumbColor="#fff"
+              />
+            }
+          />
+          {settings.wuduReminderEnabled && (
+            <View style={[styles.settingRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border }]}>
+              <Text style={[styles.settingTitle, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
+                How far before?
+              </Text>
+              <View style={{ flexDirection: "row", gap: 6 }}>
+                {([5, 10, 15, 20] as const).map((m) => (
+                  <Pressable
+                    key={m}
+                    onPress={() => { Haptics.selectionAsync(); updateSettings({ wuduReminderMinutes: m }); }}
+                    style={[
+                      styles.chipBtn,
+                      { backgroundColor: settings.wuduReminderMinutes === m ? C.primary : C.muted },
+                    ]}
+                  >
+                    <Text style={[styles.chipText, { color: settings.wuduReminderMinutes === m ? "#fff" : C.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {m}m
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
+      </View>
+
       {/* Prayer Method */}
       <View style={styles.section}>
         <View style={{ gap: 2, marginBottom: 8 }}>
@@ -1411,4 +1468,6 @@ const styles = StyleSheet.create({
   aboutText: { fontSize: 13, lineHeight: 20 },
   appInfo: { alignItems: "center", marginTop: 12 },
   appInfoText: { fontSize: 12, textAlign: "center", lineHeight: 18 },
+  chipBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  chipText: { fontSize: 13 },
 });
