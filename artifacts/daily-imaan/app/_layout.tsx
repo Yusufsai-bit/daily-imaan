@@ -6,9 +6,8 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import {
-  NotoNaskhArabic_400Regular,
-  NotoNaskhArabic_700Bold,
-} from "@expo-google-fonts/noto-naskh-arabic";
+  AmiriQuran_400Regular,
+} from "@expo-google-fonts/amiri-quran";
 import * as Notifications from "expo-notifications";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { router, Stack, useSegments } from "expo-router";
@@ -162,13 +161,14 @@ function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
-    // Noto Naskh Arabic — modern naskh face designed specifically for
-    // on-screen reading. Used everywhere we render Quranic text, ahadith,
-    // and du'a so the script stays clear at body sizes. We previously
-    // used Amiri here, but its ornate strokes were hard to read on phone
-    // screens. Amiri remains in the brand kit for marketing graphics.
-    NotoNaskhArabic_400Regular,
-    NotoNaskhArabic_700Bold,
+    // Amiri Quran — Mushaf-style Quranic typeface used everywhere we render
+    // Arabic (ayat, ahadith, du'a, dhikr, asma ul husna). It renders the
+    // Uthmani waqf signs and Quranic markings in proper Quranic form, which
+    // Noto Naskh Arabic flattened into generic naskh shapes. Amiri Quran is
+    // a specialised sibling of regular Amiri — its body strokes are tuned
+    // for screen reading at ayah sizes, addressing the readability issue
+    // that pushed us off plain Amiri previously.
+    AmiriQuran_400Regular,
   });
 
   useEffect(() => {
