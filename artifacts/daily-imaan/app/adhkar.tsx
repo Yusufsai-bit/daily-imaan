@@ -41,7 +41,9 @@ export default function AdhkarScreen() {
   const items = useMemo(
     () =>
       DUAS.filter((d) =>
-        period === "morning" ? d.id.startsWith("morning-") : d.id.startsWith("evening-"),
+        period === "morning"
+          ? d.id.startsWith("morning-") || d.id.startsWith("morning-evening-")
+          : d.id.startsWith("evening-") || d.id.startsWith("morning-evening-"),
       ),
     [period],
   );
