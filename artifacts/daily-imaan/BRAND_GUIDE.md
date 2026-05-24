@@ -82,23 +82,36 @@ or system Arabic fonts for either of them.
 
 ### Loading the fonts in Expo
 
-Use `expo-font` with `useFonts` in the root layout. Show the splash screen until
-fonts resolve so we never flash a system serif under an Arabic verse.
+Use `useFonts` in the root layout (`app/_layout.tsx`). Show the splash screen
+until fonts resolve so we never flash a system serif under an Arabic verse.
+
+Fonts are pulled from `@expo-google-fonts/*` packages — no manual `.ttf` files
+in `assets/fonts/`. This keeps lockfile-driven updates and avoids checking
+binary assets into git.
 
 ```ts
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold }
+  from "@expo-google-fonts/inter";
+import { AmiriQuran_400Regular } from "@expo-google-fonts/amiri-quran";
+
 useFonts({
-  "Lora-Regular": require("@/assets/fonts/Lora-Regular.ttf"),
-  "Lora-Medium":  require("@/assets/fonts/Lora-Medium.ttf"),
-  "Inter-Regular": require("@/assets/fonts/Inter-Regular.ttf"),
-  "Inter-Medium":  require("@/assets/fonts/Inter-Medium.ttf"),
-  "NotoNaskhArabic-Regular": require("@/assets/fonts/NotoNaskhArabic-Regular.ttf"),
-  "NotoNaskhArabic-Bold":    require("@/assets/fonts/NotoNaskhArabic-Bold.ttf"),
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  AmiriQuran_400Regular,
 });
 ```
 
-Download the static `.ttf` files from fonts.google.com and check them into
-`assets/fonts/`. (Variable fonts work in Expo SDK 50+ but static files are simpler
-and have no edge cases on older devices.)
+**Arabic face:** Amiri Quran (specialised Mushaf-style variant of Khaled Hosny's
+Amiri). Used for every Arabic block — Quran ayat, hadith Arabic, du'a, dhikr,
+Asma ul Husna. Reference it via the `ARABIC_FONT_REGULAR` constant in
+`constants/fonts.ts`, never as a raw string. Amiri Quran ships Regular only;
+Quranic text shouldn't be bolded.
+
+Previous Arabic face was Noto Naskh Arabic, which rendered Uthmani waqf signs
+and superscript markings in generic naskh form. Swapped to Amiri Quran in
+v1.0.x so the verses look Mushaf-correct on device.
 
 ---
 
