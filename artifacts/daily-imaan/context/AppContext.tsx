@@ -122,6 +122,23 @@ export interface AppSettings {
    * one place and the change propagates everywhere.
    */
   prayerOffsets: PrayerOffsets;
+  wuduReminderEnabled: boolean;
+  /** Minutes before each prayer to send the wudu reminder. */
+  wuduReminderMinutes: 5 | 10 | 15 | 20;
+}
+
+export interface QadaFast {
+  id: string;
+  /** YYYY-MM-DD the fast was missed. */
+  date: string;
+  reason: string;
+  madeUp: boolean;
+}
+
+export interface FastingState {
+  /** YYYY-MM-DD → true if the user fasted that day. */
+  days: Record<string, boolean>;
+  qada: QadaFast[];
 }
 
 export interface StreakData {
@@ -192,6 +209,9 @@ export interface AppState {
    * via render-time check when the user has actually enabled a reminder.
    */
   homeTipDismissed: boolean;
+  /** Personal reflections keyed by global ayah ID (1-based, 1–6236). */
+  ayahNotes: Record<number, string>;
+  fasting: FastingState;
 }
 
 interface AppContextType {
@@ -224,6 +244,16 @@ interface AppContextType {
   setWelcomeSeen: () => void;
   /** Permanently dismiss the home-screen reminder tip banner. Idempotent. */
   dismissHomeTip: () => void;
+  /** Save or update a personal note on a specific ayah. Pass empty string to delete. */
+  setAyahNote: (globalAyahId: number, text: string) => void;
+  /** Toggle whether today was a fasting day. */
+  toggleFastingDay: (dateKey: string) => void;
+  /** Add a new qada fast entry. */
+  addQadaFast: (entry: Omit<QadaFast, "id">) => void;
+  /** Toggle madeUp on a qada fast by id. */
+  markQadaMadeUp: (id: string) => void;
+  /** Remove a qada fast entry by id. */
+  deleteQadaFast: (id: string) => void;
   loaded: boolean;
 }
 
@@ -232,7 +262,8 @@ interface AppContextType {
 // longestStreak; new freeze fields default to 2 freezes available.
 // v3 schema: shifts default daily ayah notification time from 07:00 to 08:30
 // to prevent it clashing with the morning adhkar reminder (07:15).
-const CURRENT_STATE_VERSION = 3;
+// v4 schema: adds ayahNotes, fasting state, wudu reminder settings.
+const CURRENT_STATE_VERSION = 4;
 
 const DEFAULT_STATE: AppState = {
   version: CURRENT_STATE_VERSION,
@@ -273,11 +304,15 @@ const DEFAULT_STATE: AppState = {
     arabicFontSize: "medium",
     continuousPlay: false,
     prayerOffsets: { Fajr: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0 },
+    wuduReminderEnabled: false,
+    wuduReminderMinutes: 10,
   },
   readAyatIds: [],
   lastReadPosition: null,
   welcomeSeen: false,
   homeTipDismissed: false,
+  ayahNotes: {},
+  fasting: { days: {}, qada: [] },
 };
 
 const STORAGE_KEY = "@daily_imaan_state";
@@ -341,6 +376,14 @@ function migrateState(saved: Partial<AppState>): AppState {
     welcomeSeen: typeof saved.welcomeSeen === "boolean" ? saved.welcomeSeen : false,
     homeTipDismissed:
       typeof saved.homeTipDismissed === "boolean" ? saved.homeTipDismissed : false,
+    ayahNotes:
+      typeof saved.ayahNotes === "object" && saved.ayahNotes !== null
+        ? saved.ayahNotes
+        : {},
+    fasting:
+      typeof saved.fasting === "object" && saved.fasting !== null
+        ? { days: saved.fasting.days ?? {}, qada: Array.isArray(saved.fasting.qada) ? saved.fasting.qada : [] }
+        : { days: {}, qada: [] },
     version: CURRENT_STATE_VERSION,
   };
 
@@ -745,6 +788,81 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     );
   }, [updateState]);
 
+  const setAyahNote = useCallback(
+    (globalAyahId: number, text: string) => {
+      updateState((prev) => {
+        const notes = { ...prev.ayahNotes };
+        if (text.trim() === "") {
+          delete notes[globalAyahId];
+        } else {
+          notes[globalAyahId] = text.trim();
+        }
+        return { ...prev, ayahNotes: notes };
+      });
+    },
+    [updateState]
+  );
+
+  const toggleFastingDay = useCallback(
+    (dateKey: string) => {
+      updateState((prev) => {
+        const currentlyFasted = prev.fasting.days[dateKey] ?? false;
+        return {
+          ...prev,
+          fasting: {
+            ...prev.fasting,
+            days: { ...prev.fasting.days, [dateKey]: !currentlyFasted },
+          },
+        };
+      });
+    },
+    [updateState]
+  );
+
+  const addQadaFast = useCallback(
+    (entry: Omit<QadaFast, "id">) => {
+      updateState((prev) => ({
+        ...prev,
+        fasting: {
+          ...prev.fasting,
+          qada: [
+            ...prev.fasting.qada,
+            { ...entry, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
+          ],
+        },
+      }));
+    },
+    [updateState]
+  );
+
+  const markQadaMadeUp = useCallback(
+    (id: string) => {
+      updateState((prev) => ({
+        ...prev,
+        fasting: {
+          ...prev.fasting,
+          qada: prev.fasting.qada.map((q) =>
+            q.id === id ? { ...q, madeUp: !q.madeUp } : q
+          ),
+        },
+      }));
+    },
+    [updateState]
+  );
+
+  const deleteQadaFast = useCallback(
+    (id: string) => {
+      updateState((prev) => ({
+        ...prev,
+        fasting: {
+          ...prev.fasting,
+          qada: prev.fasting.qada.filter((q) => q.id !== id),
+        },
+      }));
+    },
+    [updateState]
+  );
+
   const setLastReadPosition = useCallback(
     (pos: LastReadPosition) => {
       updateState((prev) => {
@@ -783,6 +901,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setLastReadPosition,
         setWelcomeSeen,
         dismissHomeTip,
+        setAyahNote,
+        toggleFastingDay,
+        addQadaFast,
+        markQadaMadeUp,
+        deleteQadaFast,
         loaded,
       }}
     >
