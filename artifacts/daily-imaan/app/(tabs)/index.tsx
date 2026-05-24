@@ -29,6 +29,7 @@ import { DAILY_HADITH, DailyHadith, getTodayHadith } from "@/data/hadithData";
 import { SURAHS } from "@/data/surahsData";
 import { usePrayerTimes } from "@/hooks/usePrayerTimes";
 import { schedulePrayerNotifications } from "@/hooks/useNotifications";
+import { updateWidgetData } from "@/lib/widgetData";
 import { useTafsir, prewarmTafsir } from "@/hooks/useTafsir";
 import colors from "@/constants/colors";
 import { ARABIC_FONT_REGULAR } from "@/constants/fonts";
@@ -194,6 +195,23 @@ export default function HomeScreen() {
     return () => handle.cancel();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prayerTimesKey, state.settings.prayerSoundEnabled, state.settings.adhanSound]);
+
+  // Keep widget data current whenever prayer times or the daily ayah change.
+  useEffect(() => {
+    if (!prayerTimes) return;
+    const surahNames: Record<number, string> = {};
+    try {
+      const { SURAHS: S } = require("@/data/surahsData");
+      (S as { id: number; nameEnglish: string }[]).forEach((s) => { surahNames[s.id] = s.nameEnglish; });
+    } catch { /* ignore */ }
+    const surahName = surahNames[ayah.surahId] ?? "";
+    updateWidgetData({
+      arabic: ayah.arabic,
+      english: ayah.english,
+      surahRef: `${surahName} ${ayah.surahId}:${ayah.ayahNumber}`,
+      nextPrayer: nextPrayer ? `${nextPrayer.name} at ${nextPrayer.time}` : "",
+    }).catch(() => undefined);
+  }, [prayerTimesKey, ayah]);
 
   // Pre-warm the tafsir cache for the currently displayed ayah after the
   // first interaction frame so the "Show tafsir" tap renders instantly.
