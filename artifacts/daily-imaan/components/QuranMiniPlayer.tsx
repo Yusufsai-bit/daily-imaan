@@ -1,6 +1,6 @@
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Platform,
@@ -36,6 +36,44 @@ export function QuranMiniPlayer() {
   const { state } = usePlaybackState();
   const slideAnim = useRef(new Animated.Value(100)).current;
 
+  // Sleep timer — auto-pauses after the chosen number of minutes.
+  // null = off, otherwise countdown in whole minutes (updated every 30s).
+  const [sleepMinutes, setSleepMinutes] = useState<number | null>(null);
+  const sleepEndRef = useRef<number | null>(null);
+  const sleepTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startSleepTimer = (minutes: number) => {
+    if (sleepTickRef.current) clearInterval(sleepTickRef.current);
+    const end = Date.now() + minutes * 60 * 1000;
+    sleepEndRef.current = end;
+    setSleepMinutes(minutes);
+    sleepTickRef.current = setInterval(() => {
+      const remaining = Math.ceil((end - Date.now()) / 60000);
+      if (remaining <= 0) {
+        clearInterval(sleepTickRef.current!);
+        sleepTickRef.current = null;
+        sleepEndRef.current = null;
+        setSleepMinutes(null);
+        TrackPlayer.pause();
+      } else {
+        setSleepMinutes(remaining);
+      }
+    }, 30000);
+  };
+
+  const cancelSleepTimer = () => {
+    if (sleepTickRef.current) clearInterval(sleepTickRef.current);
+    sleepTickRef.current = null;
+    sleepEndRef.current = null;
+    setSleepMinutes(null);
+  };
+
+  const cycleSleepTimer = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (sleepMinutes !== null) { cancelSleepTimer(); return; }
+    startSleepTimer(15);
+  };
+
   const isPlaying = state === State.Playing || state === State.Buffering;
   const hasTrack = !!track;
 
@@ -46,7 +84,11 @@ export function QuranMiniPlayer() {
       tension: 80,
       friction: 12,
     }).start();
+    if (!hasTrack) cancelSleepTimer();
   }, [hasTrack, slideAnim]);
+
+  // Cleanup timer on unmount
+  useEffect(() => () => { if (sleepTickRef.current) clearInterval(sleepTickRef.current); }, []);
 
   if (!hasTrack) return null;
 
@@ -152,6 +194,22 @@ export function QuranMiniPlayer() {
           <Ionicons name="play-skip-forward" size={20} color={C.mutedForeground} />
         </Pressable>
 
+        {/* Sleep timer — tap to set 15 min, tap again to cancel */}
+        <Pressable
+          onPress={cycleSleepTimer}
+          hitSlop={8}
+          style={styles.ctrlBtn}
+          accessibilityLabel={sleepMinutes ? `Sleep timer: ${sleepMinutes} min remaining — tap to cancel` : "Set sleep timer (15 min)"}
+        >
+          {sleepMinutes !== null ? (
+            <Text style={[styles.sleepLabel, { color: C.primary, fontFamily: "Inter_600SemiBold" }]}>
+              {sleepMinutes}m
+            </Text>
+          ) : (
+            <Ionicons name="moon-outline" size={18} color={C.mutedForeground} />
+          )}
+        </Pressable>
+
         <Pressable
           onPress={handleStop}
           hitSlop={8}
@@ -223,5 +281,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
+  },
+  sleepLabel: {
+    fontSize: 11,
+    letterSpacing: 0.2,
   },
 });
