@@ -218,10 +218,11 @@ function pickRotatedBody(pool: string[]): string {
 }
 
 const AYAT_BODY_POOL = [
-  "A verse for your heart today.",
-  "A small light for today.",
-  "Your ayah is here.",
-  "A reminder, when you're ready.",
+  "Start your day with Allah's words.",
+  "Take a moment with Allah's words.",
+  "Take a moment to reflect on an ayah.",
+  "Your daily ayah is waiting.",
+  "Pause and read today's ayah.",
 ];
 
 const HADITH_BODY_POOL = [
@@ -511,7 +512,7 @@ export async function scheduleAdhkarNotifications(enabled: boolean): Promise<voi
       const granted = await requestNotificationPermission();
       if (!granted) return;
 
-      // Morning adhkar — 07:00 local
+      // Morning adhkar — 07:15 local (offset from the 08:30 daily ayah default)
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "Morning Adhkar",
@@ -521,7 +522,7 @@ export async function scheduleAdhkarNotifications(enabled: boolean): Promise<voi
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
           hour: 7,
-          minute: 0,
+          minute: 15,
         },
       });
 
