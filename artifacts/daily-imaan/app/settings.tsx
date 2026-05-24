@@ -1105,7 +1105,7 @@ export default function SettingsScreen() {
           {([
             { id: "default" as const, title: "Device default", subtitle: "System notification sound — always available" },
             { id: "madinah" as const, title: "Adhan — Madinah", subtitle: "Bundled recitation, Masjid an-Nabawi style" },
-            { id: "makkah" as const, title: "Adhan — Makkah", subtitle: "Bundled recitation, Masjid al-Haram style" },
+            { id: "makkah" as const, title: "Adhan", subtitle: "Full adhan recitation — Aaqib Azeez (CC BY-SA 4.0)" },
           ] as const).map((opt, i, arr) => (
             <Pressable
               key={opt.id}

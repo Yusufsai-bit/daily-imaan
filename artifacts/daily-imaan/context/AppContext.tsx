@@ -50,7 +50,7 @@ export interface AppSettings {
    * Which audio file plays when a prayer-time reminder fires with sound on.
    *  - "default":  device's default notification sound (always available).
    *  - "madinah":  bundled adhan_madinah.mp3 (CC0 public domain).
-   *  - "makkah":   bundled adhan_makkah.mp3 (CC BY 3.0, Wikimedia Commons).
+   *  - "makkah":   bundled adhan_makkah.mp3 (CC BY-SA 4.0, Aaqib Azeez via Wikimedia Commons).
    * Falls back to "default" if the chosen audio file is missing at runtime
    * (expo-notifications silently uses the system sound when a referenced
    * filename isn't found in the bundle).
