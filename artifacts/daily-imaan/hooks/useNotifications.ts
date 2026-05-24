@@ -268,10 +268,11 @@ const ADHKAR_EVENING_POOL = [
  */
 function resolveAdhanSound(
   enabled: boolean,
-  adhanSound: "default" | "madinah"
+  adhanSound: "default" | "madinah" | "makkah"
 ): boolean | string {
   if (!enabled) return false;
   if (adhanSound === "madinah") return "adhan_madinah.mp3";
+  if (adhanSound === "makkah") return "adhan_makkah.mp3";
   return true; // device default
 }
 
@@ -300,6 +301,11 @@ async function setupAndroidPrayerChannels(): Promise<void> {
     importance: Notifications.AndroidImportance.HIGH,
     sound: "adhan_madinah.mp3",
   });
+  await Notifications.setNotificationChannelAsync("prayer-makkah", {
+    name: "Prayer reminders — Adhan (Makkah)",
+    importance: Notifications.AndroidImportance.HIGH,
+    sound: "adhan_makkah.mp3",
+  });
   await Notifications.setNotificationChannelAsync("prayer-silent", {
     name: "Prayer reminders (silent)",
     importance: Notifications.AndroidImportance.DEFAULT,
@@ -309,17 +315,18 @@ async function setupAndroidPrayerChannels(): Promise<void> {
 
 function androidChannelFor(
   enabled: boolean,
-  adhanSound: "default" | "madinah"
+  adhanSound: "default" | "madinah" | "makkah"
 ): string {
   if (!enabled) return "prayer-silent";
   if (adhanSound === "madinah") return "prayer-madinah";
+  if (adhanSound === "makkah") return "prayer-makkah";
   return "prayer-default";
 }
 
 export async function schedulePrayerNotifications(
   prayerTimes: PrayerTimes,
   prayerSoundEnabled: PrayerSoundSettings = DEFAULT_PRAYER_SOUND_ENABLED,
-  adhanSound: "default" | "madinah" = "default"
+  adhanSound: "default" | "madinah" | "makkah" = "default"
 ): Promise<void> {
   if (Platform.OS === "web") return;
   // Serialize concurrent callers — without this, a `prayerTimes` refresh that
