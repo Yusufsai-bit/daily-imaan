@@ -364,18 +364,27 @@ export default function MeScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push("/asma" as never);
             }}
-            {...a11yLink(
-              "99 Names of Allah",
-              "Opens the Asma ul Husna list",
-            )}
-            style={({ pressed }) => [styles.linkRow, { borderBottomColor: C.border, borderBottomWidth: 0, opacity: pressed ? 0.7 : 1 }]}
+            {...a11yLink("99 Names of Allah", "Opens the Asma ul Husna list")}
+            style={({ pressed }) => [styles.linkRow, { borderBottomColor: C.border, opacity: pressed ? 0.7 : 1 }]}
           >
             <Ionicons name="sparkles-outline" size={20} color={C.primary} {...a11yDecorative} />
-            <Text
-              maxFontSizeMultiplier={1.5}
-              style={[styles.linkText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
-            >
+            <Text maxFontSizeMultiplier={1.5} style={[styles.linkText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
               99 Names of Allah
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} style={{ marginLeft: "auto" }} {...a11yDecorative} />
+          </Pressable>
+
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/fasting" as never);
+            }}
+            {...a11yLink("Fasting Tracker", "Track fasts and qada")}
+            style={({ pressed }) => [styles.linkRow, { borderBottomColor: C.border, borderBottomWidth: 0, opacity: pressed ? 0.7 : 1 }]}
+          >
+            <Ionicons name="moon-outline" size={20} color={C.primary} {...a11yDecorative} />
+            <Text maxFontSizeMultiplier={1.5} style={[styles.linkText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}>
+              Fasting Tracker
             </Text>
             <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} style={{ marginLeft: "auto" }} {...a11yDecorative} />
           </Pressable>
