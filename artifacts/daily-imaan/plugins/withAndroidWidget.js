@@ -2,7 +2,7 @@
 // Adds DailyAyatAppWidget receiver to AndroidManifest.xml and writes
 // the Kotlin provider, XML layout, and widget info XML into the android/ tree.
 
-const { withAndroidManifest, withDangerousMod } = require("@expo/config-plugins");
+const { withAndroidManifest, withDangerousMod } = require("expo/config-plugins");
 const fs = require("fs");
 const path = require("path");
 
