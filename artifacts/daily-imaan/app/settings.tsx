@@ -1050,7 +1050,7 @@ export default function SettingsScreen() {
             maxFontSizeMultiplier={1.6}
             style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
           >
-            Choose which prayer reminders make sound. Fajr is silent by default — quiet hours for the household.
+            All prayer reminders make sound by default. Turn off any prayer you'd like to receive silently.
           </Text>
         </View>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
@@ -1143,7 +1143,7 @@ export default function SettingsScreen() {
           maxFontSizeMultiplier={1.6}
           style={[styles.hint, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
         >
-          Bundled adhans require audio files in assets/sounds/ and a rebuild — see assets/sounds/README.md.
+          The Madinah adhan is bundled with the app and plays offline.
         </Text>
       </View>
 
