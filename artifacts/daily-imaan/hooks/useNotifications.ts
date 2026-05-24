@@ -546,6 +546,70 @@ export async function scheduleAdhkarNotifications(enabled: boolean): Promise<voi
   });
 }
 
+/**
+ * Schedule (or cancel) wudu reminder notifications — one per prayer, fired
+ * `minutesBefore` minutes before each prayer time. When `enabled` is false
+ * or `prayerTimes` is null, any existing wudu_reminder notifications are
+ * cancelled and nothing new is scheduled.
+ */
+export async function scheduleWuduNotifications(
+  enabled: boolean,
+  minutesBefore: number,
+  prayerTimes: { Fajr: string; Dhuhr: string; Asr: string; Maghrib: string; Isha: string } | null
+): Promise<void> {
+  if (Platform.OS === "web") return;
+  await withCategoryLock("wudu_reminder", async () => {
+    try {
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      for (const n of scheduled) {
+        if (n.content.categoryIdentifier === "wudu_reminder") {
+          await Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => undefined);
+        }
+      }
+
+      if (!enabled || !prayerTimes) return;
+
+      const granted = await requestNotificationPermission();
+      if (!granted) return;
+
+      const prayers = [
+        { name: "Fajr", time: prayerTimes.Fajr },
+        { name: "Dhuhr", time: prayerTimes.Dhuhr },
+        { name: "Asr", time: prayerTimes.Asr },
+        { name: "Maghrib", time: prayerTimes.Maghrib },
+        { name: "Isha", time: prayerTimes.Isha },
+      ];
+
+      for (const prayer of prayers) {
+        const parts = prayer.time.split(":");
+        let hour = parseInt(parts[0] ?? "0");
+        const rawMin = (parts[1] ?? "00").split(" ")[0] ?? "00";
+        let minute = parseInt(rawMin) - minutesBefore;
+
+        if (minute < 0) {
+          minute += 60;
+          hour = (hour - 1 + 24) % 24;
+        }
+
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: `${prayer.name} in ${minutesBefore} min`,
+            body: "Time to make wudu.",
+            categoryIdentifier: "wudu_reminder",
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour,
+            minute,
+          },
+        });
+      }
+    } catch (err) {
+      if (__DEV__) console.warn("[DailyImaan] scheduleWuduNotifications failed:", err);
+    }
+  });
+}
+
 export async function cancelAllNotifications(): Promise<void> {
   if (Platform.OS === "web") return;
   try {
