@@ -28,6 +28,11 @@ const GOOD_DEEDS = [
   { id: "sadaqah", label: "Gave Sadaqah", icon: "heart-outline" as const, time: "Daily" },
   { id: "parents", label: "Called a Loved One", icon: "call-outline" as const, time: "Daily" },
   { id: "dhikr", label: "Completed Dhikr", icon: "refresh-outline" as const, time: "Daily" },
+  // Catch-all row so users can mark any good deed not covered above
+  // (a kind word, helping a stranger, holding back anger, etc.). Kept
+  // deliberately unlabelled beyond "Other" — the point is quiet
+  // accountability with the self, not journaling.
+  { id: "other", label: "Other", icon: "ellipsis-horizontal-outline" as const, time: "Anytime" },
 ];
 
 export default function MeScreen() {
@@ -73,29 +78,28 @@ export default function MeScreen() {
         </Pressable>
       </View>
 
-      {/* Stats Row — soft, gain-only metrics. No "best" or "broken" framing.
-          The hero metric ("Streak") gets a wider card and larger number so
-          the soft streak feels primary; secondary stats are tappable to
-          take the user to their full lists. */}
+      {/* Stats Row — three equal-width cards. We previously gave the
+          Streak card a hero treatment (flex 1.4, larger icon, larger
+          number), but on-device the size jump was small enough to read
+          as inconsistency rather than emphasis. All three cards are now
+          uniform: same width, same icon size, same number size, same
+          padding. Visual hierarchy comes from order (Streak first) and
+          the streak note immediately below this row. */}
       <View style={styles.statsRow}>
         <View
           accessible
           accessibilityLabel={`${streak.count} day streak`}
           style={[
             styles.statCard,
-            styles.statCardHero,
             { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" },
           ]}
         >
-          <Ionicons name="leaf" size={30} color={C.primary} {...a11yDecorative} />
+          <Ionicons name="leaf" size={26} color={C.primary} {...a11yDecorative} />
           <Text
             maxFontSizeMultiplier={1.5}
-            style={[
-              styles.statNumberHero,
-              { color: C.foreground, fontFamily: "Inter_700Bold" },
-            ]}
+            style={[styles.statNumber, { color: C.foreground, fontFamily: "Inter_700Bold" }]}
           >
-            {streak.count}
+            {Math.max(1, streak.count)}
           </Text>
           <Text
             maxFontSizeMultiplier={1.5}
@@ -155,7 +159,7 @@ export default function MeScreen() {
         </Pressable>
       </View>
       <Text style={[styles.streakNote, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-        Two streak freezes per week, refilled every Sunday — they auto-apply when life gets in the way. Longest streak so far: {streak.longestStreak}.
+        Two streak freezes per week, refilled every Sunday — they auto-apply when life gets in the way.{streak.longestStreak > 1 ? ` Longest streak so far: ${streak.longestStreak}.` : ""}
       </Text>
 
       {/* Daily Deeds — moved above Khatam so the daily habit loop is the
@@ -389,14 +393,11 @@ const styles = StyleSheet.create({
   settingsBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   statsRow: { flexDirection: "row", gap: 10 },
   statCard: {
-    flex: 1, borderRadius: 14, padding: 14, alignItems: "center", gap: 4,
+    flex: 1, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 12,
+    alignItems: "center", gap: 6,
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
-  // Wider hero card for the primary "Streak" metric — communicates
-  // importance without changing colour weight.
-  statCardHero: { flex: 1.4, paddingVertical: 18 },
-  statNumber: { fontSize: 24, letterSpacing: -0.5 },
-  statNumberHero: { fontSize: 36, letterSpacing: -1 },
+  statNumber: { fontSize: 28, letterSpacing: -0.5 },
   statLabel: { fontSize: 11, textAlign: "center" },
   streakNote: { fontSize: 11, lineHeight: 16, textAlign: "center", marginTop: -14, paddingHorizontal: 16, fontStyle: "italic" },
   khatamCard: {
