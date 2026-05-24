@@ -77,6 +77,22 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           Please reload the app to continue.
         </Text>
 
+        {/* TEMP: surface the actual error message in production so beta
+            testers can report what's actually broken. Remove this block
+            once the Dua-card crash is diagnosed (search "TEMP:" to find
+            it). The dev-only modal below remains for full stack traces. */}
+        {error?.message ? (
+          <Text
+            selectable
+            style={[
+              styles.errorInline,
+              { color: colors.destructive, backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            {String(error.message)}
+          </Text>
+        ) : null}
+
         <Pressable
           onPress={handleRestart}
           style={({ pressed }) => [
@@ -227,6 +243,18 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
     fontSize: 16,
+  },
+  // TEMP — inline error message style for beta diagnostics.
+  errorInline: {
+    fontSize: 12,
+    lineHeight: 18,
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    textAlign: "left",
+    width: "100%",
+    maxWidth: 480,
+    fontFamily: Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" }),
   },
   modalOverlay: {
     flex: 1,
