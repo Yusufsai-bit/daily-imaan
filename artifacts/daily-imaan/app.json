@@ -16,7 +16,10 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.dailyimaan.app",
-      "buildNumber": "6",
+      "buildNumber": "9",
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.com.dailyimaan.app"]
+      },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Daily Imaan uses your location to calculate accurate prayer times and the Qibla direction. Your location never leaves your device.",
         "NSMotionUsageDescription": "Daily Imaan uses motion sensors to point the Qibla compass.",
@@ -72,7 +75,7 @@
         }
       ],
       "./plugins/withAndroidWidget",
-      "./plugins/withIOSWidget"
+      "@bacons/apple-targets"
     ],
     "experiments": {
       "typedRoutes": true,
