@@ -106,19 +106,28 @@ function AppEffects() {
     router.replace("/welcome");
   }, [loaded, state.welcomeSeen, segments]);
 
-  // Compute today's ayah fresh on interaction (DAILY-trigger payloads go stale
-  // across days). Default tap opens the app; "Mark as Read" is dismiss-only.
+  // Deep-link routing on notification tap. Routes to the screen that matches
+  // the notification category so tapping a hadith nudge opens /hadith, an
+  // adhkar nudge opens /adhkar, etc. Ayah taps also mark the verse as read
+  // and record activity for streak purposes.
   useEffect(() => {
     if (Platform.OS === "web") return;
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       if (!loaded) return;
-      const todayAyah = getTodayAyah(state.settings.ayatOrder);
-      const ayahId = getGlobalId(todayAyah.surahId, todayAyah.ayahNumber);
-      markAyahRead(ayahId);
-      // Tapping the notification counts as today's activity for streak
-      // purposes — replaces the legacy `incrementStreak`. Idempotent.
-      recordActivity();
-      if (response.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
+      if (response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
+      const category = response.notification.request.content.categoryIdentifier;
+      if (category === "daily_ayat") {
+        const todayAyah = getTodayAyah(state.settings.ayatOrder);
+        markAyahRead(getGlobalId(todayAyah.surahId, todayAyah.ayahNumber));
+        recordActivity();
+        router.navigate("/");
+      } else if (category === "daily_hadith") {
+        recordActivity();
+        router.navigate("/hadith");
+      } else if (category === "daily_adhkar") {
+        router.navigate("/adhkar");
+      } else {
+        // prayer_time, wudu_reminder → home
         router.navigate("/");
       }
     });
