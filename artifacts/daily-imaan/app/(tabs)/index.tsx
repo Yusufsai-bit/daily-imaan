@@ -434,6 +434,10 @@ export default function HomeScreen() {
   // Hadith credit — strip the Arabic half of bookTitle for a clean English line.
   const hadithBookTitleEn = hadith.bookTitle.split("كتاب")[0]?.trim() ?? "";
 
+  const fs = state.settings.arabicFontSize;
+  const arabicSize = fs === "small" ? 20 : fs === "large" ? 30 : 24;
+  const arabicLine = fs === "small" ? 40 : fs === "large" ? 56 : 48;
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: C.background }]}
@@ -556,7 +560,7 @@ export default function HomeScreen() {
               {ayah.surahNameEnglish} · {ayah.surahId}:{ayah.ayahNumber}
             </Text>
           </View>
-          <Text style={[styles.arabicText, { color: C.foreground }]}>{ayah.arabicText}</Text>
+          <Text style={[styles.arabicText, { color: C.foreground, fontSize: arabicSize, lineHeight: arabicLine }]}>{ayah.arabicText}</Text>
           <View style={[styles.divider, { backgroundColor: C.border }]} />
           <Text style={[styles.englishText, { color: C.foreground, fontFamily: "Inter_400Regular" }]}>
             &ldquo;{ayah.englishText}&rdquo;
@@ -880,7 +884,7 @@ export default function HomeScreen() {
             Hadith {hadith.reference}
           </Text>
         </View>
-        <Text style={[styles.arabicText, { color: C.foreground }]}>{hadith.arabicText}</Text>
+        <Text style={[styles.arabicText, { color: C.foreground, fontSize: arabicSize, lineHeight: arabicLine }]}>{hadith.arabicText}</Text>
         <View style={[styles.divider, { backgroundColor: C.border }]} />
         <Text style={[styles.englishText, { color: C.foreground, fontFamily: "Inter_400Regular" }]}>
           &ldquo;{hadith.englishText}&rdquo;

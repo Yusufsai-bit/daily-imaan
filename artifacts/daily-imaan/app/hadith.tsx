@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import colors from "@/constants/colors";
 import { ARABIC_FONT_REGULAR } from "@/constants/fonts";
+import { useApp } from "@/context/AppContext";
 import {
   DAILY_HADITH,
   DailyHadith,
@@ -30,6 +31,10 @@ export default function HadithScreen() {
   const isDark = scheme === "dark";
   const C = isDark ? colors.dark : colors.light;
   const insets = useSafeAreaInsets();
+  const { state } = useApp();
+  const fs = state.settings.arabicFontSize;
+  const arabicSize = fs === "small" ? 20 : fs === "large" ? 30 : 24;
+  const arabicLine = fs === "small" ? 40 : fs === "large" ? 56 : 48;
 
   // Today's hadith is the seeded daily rotation; "shuffle" lets the user
   // browse the corpus without changing what tomorrow surfaces.
@@ -130,7 +135,7 @@ export default function HadithScreen() {
         </View>
 
         {/* Arabic */}
-        <Text style={[styles.arabicText, { color: C.foreground }]}>
+        <Text style={[styles.arabicText, { color: C.foreground, fontSize: arabicSize, lineHeight: arabicLine }]}>
           {hadith.arabicText}
         </Text>
 
