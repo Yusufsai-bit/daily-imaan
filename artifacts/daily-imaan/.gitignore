@@ -9,9 +9,12 @@ dist/
 web-build/
 expo-env.d.ts
 
-# Native
+# Native (generated Xcode/Android Studio projects)
 ios/
 android/
+# Allow handwritten native module source to be tracked
+!modules/DailyImaanWidget/ios/
+!modules/DailyImaanWidget/android/
 *.orig.*
 *.jks
 *.p8
