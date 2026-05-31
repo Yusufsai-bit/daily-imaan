@@ -52,8 +52,6 @@ export async function getSupabase(): Promise<SupabaseClient | null> {
     try {
       // Dynamic import so the SDK is optional. If `@supabase/supabase-js` is
       // not installed, this throws and we silently fall back to local-only.
-      // @ts-expect-error — package may not be installed in fresh checkouts;
-      // the failure path is the intended one.
       const mod = await import("@supabase/supabase-js");
       const client = mod.createClient(URL, ANON_KEY, {
         auth: {
