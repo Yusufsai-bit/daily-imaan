@@ -2,7 +2,7 @@ import WidgetKit
 import SwiftUI
 
 // Reads ayat data written by the Daily Imaan app via App Group UserDefaults.
-// The JS bridge writes to "group.com.dailyimaan" on every ayah change.
+// The JS bridge writes to "group.com.dailyimaan.app" on every ayah change.
 
 struct DailyAyatEntry: TimelineEntry {
     let date: Date
@@ -12,7 +12,7 @@ struct DailyAyatEntry: TimelineEntry {
 }
 
 struct DailyAyatProvider: TimelineProvider {
-    private let suiteName = "group.com.dailyimaan"
+    private let suiteName = "group.com.dailyimaan.app"
 
     func placeholder(in context: Context) -> DailyAyatEntry {
         DailyAyatEntry(
