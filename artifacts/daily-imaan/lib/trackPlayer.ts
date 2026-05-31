@@ -21,7 +21,7 @@ export async function setupPlayer(): Promise<boolean> {
         Capability.Pause,
         Capability.SkipToNext,
       ],
-      progressUpdateEventThrottle: 500,
+      progressUpdateEventInterval: 500,
     });
     playerReady = true;
     return true;
