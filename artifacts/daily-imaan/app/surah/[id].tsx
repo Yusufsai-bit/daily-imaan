@@ -1,9 +1,11 @@
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
+import * as Sharing from "expo-sharing";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { captureRef } from "react-native-view-shot";
 import {
   ActivityIndicator,
   Alert,
@@ -27,6 +29,7 @@ import TrackPlayer, {
 import colors from "@/constants/colors";
 import { ARABIC_FONT_REGULAR } from "@/constants/fonts";
 import { useApp } from "@/context/AppContext";
+import ShareAyahCard from "@/components/ShareAyahCard";
 import { SURAHS, getSurahById } from "@/data/surahsData";
 import { getQuranSurah, QURAN_TRANSLATION_LABEL } from "@/data/quranFull";
 import { isSajdahVerse } from "@/data/sajdahData";
@@ -128,6 +131,8 @@ export default function SurahDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [openTafsir, setOpenTafsir] = useState<number | null>(null);
   const [copiedFor, setCopiedFor] = useState<number | null>(null);
+  const [sharingAyah, setSharingAyah] = useState<ParsedAyah | null>(null);
+  const shareCardRef = useRef<View>(null);
 
   // A-B loop: how many times to repeat a single ayah. 0 = off.
   const REPEAT_OPTIONS: { label: string; value: number }[] = [
@@ -180,6 +185,28 @@ export default function SurahDetailScreen() {
       }
     },
     [surahId],
+  );
+
+  const handleShareAsImage = useCallback(
+    async (ayah: ParsedAyah) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setSharingAyah(ayah);
+      // Give one frame for the off-screen card to render before capturing
+      await new Promise((r) => setTimeout(r, 80));
+      try {
+        const uri = await captureRef(shareCardRef, {
+          format: "jpg",
+          quality: 0.95,
+          result: "tmpfile",
+        });
+        await Sharing.shareAsync(uri, { mimeType: "image/jpeg" });
+      } catch {
+        Alert.alert("Couldn't create image", "Please try again.");
+      } finally {
+        setSharingAyah(null);
+      }
+    },
+    [],
   );
 
   // Tap "Listen" on an individual ayah
@@ -393,6 +420,23 @@ export default function SurahDetailScreen() {
               </Text>
             </Pressable>
 
+            {/* Share as image */}
+            {Platform.OS !== "web" && (
+              <Pressable
+                onPress={() => handleShareAsImage(item)}
+                accessibilityLabel="Share ayah as image"
+                style={({ pressed }) => [
+                  styles.iconBtn,
+                  { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Ionicons name="image-outline" size={12} color={C.mutedForeground} />
+                <Text style={[styles.iconBtnText, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  Share
+                </Text>
+              </Pressable>
+            )}
+
             {/* Tafsir — hidden in mushaf mode */}
             {!mushafMode && (
               <Pressable
@@ -484,6 +528,18 @@ export default function SurahDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: C.background }]}>
+      {/* Off-screen card used for image capture — never visible to the user */}
+      {sharingAyah && (
+        <View style={styles.offScreen} pointerEvents="none">
+          <ShareAyahCard
+            ref={shareCardRef}
+            arabic={sharingAyah.arabic}
+            english={sharingAyah.english}
+            reference={`${surah?.nameEnglish ?? ""} ${surahId}:${sharingAyah.numberInSurah}`}
+          />
+        </View>
+      )}
+
       <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: C.primary }]}>
         <Pressable
           onPress={() => router.back()}
@@ -691,6 +747,7 @@ export default function SurahDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  offScreen: { position: "absolute", top: -9999, left: -9999 },
   header: { paddingBottom: 16, paddingHorizontal: 16, flexDirection: "row", alignItems: "center" },
   backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   toolBtn: {
