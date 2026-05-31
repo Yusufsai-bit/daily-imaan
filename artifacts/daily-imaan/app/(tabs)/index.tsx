@@ -29,7 +29,6 @@ import { DAILY_HADITH, DailyHadith, getTodayHadith } from "@/data/hadithData";
 import { SURAHS } from "@/data/surahsData";
 import { usePrayerTimes } from "@/hooks/usePrayerTimes";
 import { schedulePrayerNotifications } from "@/hooks/useNotifications";
-import { updateWidgetData } from "@/lib/widgetData";
 import { useTafsir, prewarmTafsir } from "@/hooks/useTafsir";
 import colors from "@/constants/colors";
 import { ARABIC_FONT_REGULAR } from "@/constants/fonts";
@@ -196,23 +195,6 @@ export default function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prayerTimesKey, state.settings.prayerSoundEnabled, state.settings.adhanSound]);
 
-  // Keep widget data current whenever prayer times or the daily ayah change.
-  useEffect(() => {
-    if (!prayerTimes) return;
-    const surahNames: Record<number, string> = {};
-    try {
-      const { SURAHS: S } = require("@/data/surahsData");
-      (S as { id: number; nameEnglish: string }[]).forEach((s) => { surahNames[s.id] = s.nameEnglish; });
-    } catch { /* ignore */ }
-    const surahName = surahNames[ayah.surahId] ?? "";
-    updateWidgetData({
-      arabic: ayah.arabic,
-      english: ayah.english,
-      surahRef: `${surahName} ${ayah.surahId}:${ayah.ayahNumber}`,
-      nextPrayer: nextPrayer ? `${nextPrayer.name} at ${nextPrayer.time}` : "",
-    }).catch(() => undefined);
-  }, [prayerTimesKey, ayah]);
-
   // Pre-warm the tafsir cache for the currently displayed ayah after the
   // first interaction frame so the "Show tafsir" tap renders instantly.
   useEffect(() => {
@@ -234,17 +216,18 @@ export default function HomeScreen() {
     return () => sub.remove();
   }, [state.settings.ayatOrder]);
 
-  // Sync ayah data to the native widget bridge whenever it changes.
+  // Sync ayah data to the native widget bridge whenever the ayah or next prayer changes.
   useEffect(() => {
     if (Platform.OS === "web") return;
     const surahRef = `${ayah.surahNameEnglish} ${ayah.surahId}:${ayah.ayahNumber}`;
     const englishShort = ayah.englishText.length > 140
       ? ayah.englishText.slice(0, 137) + "…"
       : ayah.englishText;
+    const nextPrayerStr = nextPrayer ? `${nextPrayer.name} at ${nextPrayer.time}` : "";
     import("@/modules/DailyImaanWidget").then(({ setWidgetData }) => {
-      setWidgetData(ayah.arabicText, englishShort, surahRef).catch(() => undefined);
+      setWidgetData(ayah.arabicText, englishShort, surahRef, nextPrayerStr).catch(() => undefined);
     });
-  }, [ayah]);
+  }, [ayah, nextPrayer]);
 
   // Keep the ref in sync with the state — used by unmount cleanup.
   useEffect(() => {
