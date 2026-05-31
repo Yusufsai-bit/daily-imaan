@@ -68,8 +68,8 @@ export async function hydrateRemoteState(): Promise<unknown | null> {
   const userId = await ensureAnonymousUser();
   if (!userId) return null;
   try {
-    // @ts-expect-error — see ensureAnonymousUser
-    const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
       .from(TABLE)
       .select("state")
       .eq("user_id", userId)
