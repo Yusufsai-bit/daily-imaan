@@ -1,0 +1,131 @@
+name: Deploy Privacy Policy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build privacy page
+        run: |
+          mkdir -p _site
+          cat > _site/privacy.html << 'HTMLEOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>Privacy Policy — Daily Imaan</title>
+            <style>
+              *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+              body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1b12; color: #e8f0eb; line-height: 1.7; padding: 2rem 1rem 4rem; }
+              .container { max-width: 680px; margin: 0 auto; }
+              header { margin-bottom: 2.5rem; }
+              .app-name { font-size: 0.85rem; font-weight: 600; color: #2fc182; letter-spacing: 0.08em; text-transform: uppercase; }
+              h1 { font-size: 1.75rem; font-weight: 700; margin-top: 0.4rem; color: #fff; }
+              .effective { font-size: 0.85rem; color: #7a9e8a; margin-top: 0.3rem; }
+              .intro { background: #162b1e; border-left: 3px solid #2fc182; padding: 1rem 1.25rem; border-radius: 0 6px 6px 0; margin-bottom: 2rem; font-size: 0.95rem; color: #c5ddd0; }
+              h2 { font-size: 1.05rem; font-weight: 600; color: #2fc182; margin: 2rem 0 0.6rem; }
+              p { margin-bottom: 0.8rem; color: #c5ddd0; }
+              ul { margin: 0.4rem 0 0.8rem 1.4rem; color: #c5ddd0; }
+              li { margin-bottom: 0.35rem; }
+              a { color: #2fc182; text-decoration: none; }
+              a:hover { text-decoration: underline; }
+              strong { color: #e8f0eb; }
+              footer { margin-top: 3rem; font-size: 0.8rem; color: #4a7a5e; border-top: 1px solid #1e3828; padding-top: 1rem; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <header>
+                <div class="app-name">Daily Imaan</div>
+                <h1>Privacy Policy</h1>
+                <div class="effective">Effective: May 2, 2026</div>
+              </header>
+              <div class="intro">Daily Imaan is built to respect your privacy. The app uses no advertising, no third-party analytics, and no behavioural tracking. We do not ask you to create an account, share an email, or sign in.</div>
+              <h2>1. Information stored on your device</h2>
+              <p>The app stores the following data locally on your device using standard mobile storage (AsyncStorage):</p>
+              <ul>
+                <li>Your bookmarks (saved ayat and saved hadith).</li>
+                <li>Your reading progress and consecutive-day streak (including streak-freeze grace days).</li>
+                <li>Your daily intentions / good-deed checkmarks (kept for the most recent 365 days, then automatically pruned).</li>
+                <li>Your settings (dark mode, reciter, prayer calculation method, juristic school, daily reminder times, dhikr target preset, Arabic font size, continuous-play preference).</li>
+                <li>Cached tafsir text (Ibn Kathir, Abridged) for offline reading.</li>
+                <li>Cached prayer times for your area, including the rounded coordinates used for the calculation.</li>
+                <li>The most recent surah you opened.</li>
+              </ul>
+              <h2>2. Optional cloud sync (anonymous)</h2>
+              <p>To prevent loss of your streak and bookmarks on reinstall, Daily Imaan can optionally mirror your data to Supabase. When active:</p>
+              <ul>
+                <li>The app creates an <strong>anonymous session</strong> on first launch — no email, name, or login required. Your identity is a randomly-generated UUID stored on-device.</li>
+                <li>Data is uploaded to a private row keyed to that UUID, protected by Row Level Security.</li>
+                <li>We never see any identifier that could link the row to you as a person.</li>
+                <li>You can disable cloud sync at any time from Settings.</li>
+                <li>Supabase privacy: <a href="https://supabase.com/privacy">supabase.com/privacy</a></li>
+              </ul>
+              <h2>3. Location</h2>
+              <p>If you grant location permission, the app uses your coordinates only to calculate prayer times and to point the Qibla compass. Coordinates are sent to AlAdhan (api.aladhan.com) and never stored beyond the local cache. You can revoke location access at any time from system settings.</p>
+              <h2>4. Notifications</h2>
+              <p>Daily reminders and prayer-time alerts are scheduled locally on your device. We do not transmit a per-user notification payload and cannot see whether or when a notification fires.</p>
+              <h2>5. Third-party services</h2>
+              <ul>
+                <li><strong>AlAdhan</strong> — prayer times and Hijri dates. <a href="https://aladhan.com/privacy-policy">aladhan.com/privacy-policy</a></li>
+                <li><strong>Quran.com Foundation</strong> — verse text and tafsir. <a href="https://quran.foundation/privacy">quran.foundation/privacy</a></li>
+                <li><strong>Alquran.cloud</strong> — audio recitation. <a href="https://alquran.cloud/privacy-policy">alquran.cloud/privacy-policy</a></li>
+                <li><strong>Supabase</strong> (cloud sync only) — anonymous UUID and state document. <a href="https://supabase.com/privacy">supabase.com/privacy</a></li>
+                <li><strong>Sentry</strong> (crashes only) — anonymised stack trace, app version, device model. <a href="https://sentry.io/privacy/">sentry.io/privacy</a></li>
+              </ul>
+              <h2>6. Crash reporting</h2>
+              <p>If the app crashes, anonymized diagnostic information (error message, stack trace, OS and app version, device model) may be sent to Sentry. No bookmarks, location, cached text, UUIDs, or personal data are included. You can disable crash reporting from Settings → Privacy → Crash reports.</p>
+              <h2>7. Children's privacy</h2>
+              <p>Daily Imaan is suitable for all ages and does not knowingly collect information from children. There is no chat, no user-generated content, no advertising, and no in-app purchases.</p>
+              <h2>8. Your rights</h2>
+              <ul>
+                <li><strong>Erase all local data:</strong> uninstall the app, or clear app data from system settings.</li>
+                <li><strong>Erase your cloud-synced row:</strong> email us with the date of uninstall and we will purge the matching row.</li>
+                <li><strong>Export your data:</strong> email us and we will send the contents of your row.</li>
+                <li><strong>Disable cloud sync:</strong> Settings → Privacy → Cloud sync → off.</li>
+              </ul>
+              <p>You may exercise rights under the GDPR (EU/UK), CCPA (California), Australian Privacy Principles, and any other applicable law.</p>
+              <h2>9. Changes to this policy</h2>
+              <p>If we change this policy we will update the "Effective" date at the top and, where the change is material, surface a notice in the app on next launch.</p>
+              <h2>10. Contact</h2>
+              <p>Questions or deletion requests: <a href="mailto:support@dailyimaan.com">support@dailyimaan.com</a></p>
+              <p>We are based in Australia. The current operator of Daily Imaan is the developer named in the App Store listing.</p>
+              <footer>&copy; 2026 Daily Imaan &nbsp;·&nbsp; <a href="mailto:support@dailyimaan.com">support@dailyimaan.com</a></footer>
+            </div>
+          </body>
+          </html>
+          HTMLEOF
+
+          cat > _site/index.html << 'HTMLEOF'
+          <!DOCTYPE html>
+          <html><head><meta http-equiv="refresh" content="0;url=privacy.html"></head>
+          <body><a href="privacy.html">Privacy Policy</a></body></html>
+          HTMLEOF
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - uses: actions/deploy-pages@v4
+        id: deployment
