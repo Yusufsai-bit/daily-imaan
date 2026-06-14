@@ -3,6 +3,9 @@
     "name": "Daily Imaan",
     "slug": "daily-imaan",
     "version": "1.0.0",
+    "privacyPolicy": "https://dailyimaan.com/privacy",
+    "marketingUrl": "https://dailyimaan.com",
+    "supportUrl": "mailto:support@dailyimaan.com",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "daily-imaan",
@@ -16,7 +19,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.dailyimaan.app",
-      "buildNumber": "11",
+      "buildNumber": "12",
       "entitlements": {
         "com.apple.security.application-groups": [
           "group.com.dailyimaan.app"
@@ -33,7 +36,7 @@
     },
     "android": {
       "package": "com.dailyimaan.app",
-      "versionCode": 1,
+      "versionCode": 12,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
