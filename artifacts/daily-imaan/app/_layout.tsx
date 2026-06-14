@@ -38,6 +38,7 @@ import {
   setCrashReportsEnabled,
   wrapRoot,
 } from "@/lib/sentry";
+import * as StoreReview from "expo-store-review";
 
 initSentry();
 
@@ -176,6 +177,24 @@ function AppEffects() {
   useEffect(() => {
     setCrashReportsEnabled(state.settings.crashReportsEnabled);
   }, [state.settings.crashReportsEnabled]);
+
+  // Ask for an App Store review after 3+ sessions. iOS rate-limits the prompt
+  // natively (max 3 times per year) so calling it every session after threshold
+  // is safe. The 3-second delay lets the user see content before the dialog.
+  useEffect(() => {
+    if (!loaded || Platform.OS === "web") return;
+    import("@react-native-async-storage/async-storage").then(({ default: AS }) => {
+      AS.getItem("@daily_imaan_session_count").then((raw) => {
+        const count = parseInt(raw ?? "0", 10) + 1;
+        AS.setItem("@daily_imaan_session_count", String(count));
+        if (count >= 3) {
+          StoreReview.isAvailableAsync().then((available) => {
+            if (available) setTimeout(() => StoreReview.requestReview(), 3000);
+          });
+        }
+      });
+    });
+  }, [loaded]);
 
   return null;
 }
