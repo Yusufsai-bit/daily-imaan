@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { AppState as RNAppState } from "react-native";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import { DEFAULT_RECITER_ID } from "@/constants/reciters";
 import { syncRemoteState, hydrateRemoteState } from "@/lib/remoteState";
@@ -617,12 +618,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
-  const save = useCallback(async (newState: AppState) => {
+  // Debounced local persistence. JSON.stringify of the FULL state (bookmarks,
+  // notes, readAyatIds, a year of goodDeeds) on every single tap was the
+  // biggest per-interaction JS-thread cost in the app — a burst of bookmark
+  // toggles or offset +/- taps serialized the whole state once per tap.
+  // Coalescing to one write per 250ms burst keeps interactions smooth; the
+  // AppState listener below flushes on background so a swipe-kill can't lose
+  // the tail write. React state remains the source of truth in-session.
+  const SAVE_DEBOUNCE_MS = 250;
+  const pendingSaveRef = useRef<AppState | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushSave = useCallback(async () => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    const snapshot = pendingSaveRef.current;
+    pendingSaveRef.current = null;
+    if (!snapshot) return;
     try {
       // Cap unbounded growth: prune goodDeeds to retention window before persist.
       const persisted: AppState = {
-        ...newState,
-        goodDeeds: pruneGoodDeeds(newState.goodDeeds),
+        ...snapshot,
+        goodDeeds: pruneGoodDeeds(snapshot.goodDeeds),
       };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
       // Fire-and-forget remote sync. No-op when Supabase env vars are unset
@@ -636,6 +655,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // ignore
     }
   }, []);
+
+  const save = useCallback(
+    (newState: AppState) => {
+      pendingSaveRef.current = newState;
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        void flushSave();
+      }, SAVE_DEBOUNCE_MS);
+    },
+    [flushSave],
+  );
+
+  // Flush the pending write the moment the app leaves the foreground —
+  // "inactive" fires on iOS before a swipe-kill, "background" on both
+  // platforms. Also flush on provider unmount (dev reloads).
+  useEffect(() => {
+    const sub = RNAppState.addEventListener("change", (next) => {
+      if (next === "background" || next === "inactive") {
+        void flushSave();
+      }
+    });
+    return () => {
+      sub.remove();
+      void flushSave();
+    };
+  }, [flushSave]);
 
   const updateState = useCallback(
     (updater: (prev: AppState) => AppState) => {

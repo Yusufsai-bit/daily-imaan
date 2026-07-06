@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -14,31 +14,26 @@ import {
 
 import colors from "@/constants/colors";
 import { SURAHS, Surah } from "@/data/surahsData";
+import { preloadQuranData } from "@/data/quranFull";
 import { ARABIC_FONT_REGULAR } from "@/constants/fonts";
 import { a11yLink } from "@/components/a11y";
 
-export default function QuranScreen() {
-  const scheme = useColorScheme();
-  const isDark = scheme === "dark";
-  const C = isDark ? colors.dark : colors.light;
-  const insets = useSafeAreaInsets();
-
-  const [query, setQuery] = useState("");
-
-  const filtered = useMemo(() => {
-    if (!query.trim()) return SURAHS;
-    const q = query.toLowerCase();
-    return SURAHS.filter(
-      (s) =>
-        s.nameEnglish.toLowerCase().includes(q) ||
-        s.nameTranslation.toLowerCase().includes(q) ||
-        String(s.id).includes(q)
-    );
-  }, [query]);
-
-  const renderItem = ({ item }: { item: Surah }) => (
+// Memoized so search keystrokes don't re-render every visible row —
+// only rows whose props actually changed (none, while typing) re-run.
+const SurahRow = React.memo(function SurahRow({
+  item,
+  C,
+  isDark,
+  onPress,
+}: {
+  item: Surah;
+  C: (typeof colors)["light"];
+  isDark: boolean;
+  onPress: (id: number) => void;
+}) {
+  return (
     <Pressable
-      onPress={() => router.push(`/surah/${item.id}` as never)}
+      onPress={() => onPress(item.id)}
       {...a11yLink(
         `Surah ${item.id}, ${item.nameEnglish}, ${item.nameTranslation}`,
         `${item.ayahCount} ayat, ${item.revelationType}`,
@@ -89,6 +84,44 @@ export default function QuranScreen() {
       <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} />
     </Pressable>
   );
+});
+
+export default function QuranScreen() {
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
+  const C = isDark ? colors.dark : colors.light;
+  const insets = useSafeAreaInsets();
+
+  const [query, setQuery] = useState("");
+
+  // Warm the lazy ~2.3 MB Quran module the moment the user lands on this
+  // tab, so the first surah tap opens instantly instead of paying the JSON
+  // parse mid-navigation (a visible hitch during the push animation).
+  useEffect(() => {
+    preloadQuranData();
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (!query.trim()) return SURAHS;
+    const q = query.toLowerCase();
+    return SURAHS.filter(
+      (s) =>
+        s.nameEnglish.toLowerCase().includes(q) ||
+        s.nameTranslation.toLowerCase().includes(q) ||
+        String(s.id).includes(q)
+    );
+  }, [query]);
+
+  const handleOpenSurah = useCallback((id: number) => {
+    router.push(`/surah/${id}` as never);
+  }, []);
+
+  const renderItem = useCallback(
+    ({ item }: { item: Surah }) => (
+      <SurahRow item={item} C={C} isDark={isDark} onPress={handleOpenSurah} />
+    ),
+    [C, isDark, handleOpenSurah],
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: C.background }]}>
@@ -127,6 +160,9 @@ export default function QuranScreen() {
         renderItem={renderItem}
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={14}
+        windowSize={9}
+        keyboardShouldPersistTaps="handled"
         ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: C.border }]} />}
         ListEmptyComponent={() => (
           <View style={styles.empty}>
