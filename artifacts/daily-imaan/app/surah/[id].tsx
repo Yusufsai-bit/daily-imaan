@@ -4,12 +4,13 @@ import * as Linking from "expo-linking";
 import * as Sharing from "expo-sharing";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { captureRef } from "react-native-view-shot";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -108,6 +109,261 @@ function AyahTafsir({
   );
 }
 
+interface AyahRowProps {
+  item: ParsedAyah;
+  surahId: number;
+  C: (typeof colors)["light"];
+  isDark: boolean;
+  arabicSize: number;
+  arabicLine: number;
+  mushafMode: boolean;
+  bookmarked: boolean;
+  hasNote: boolean;
+  isActive: boolean;
+  isPlaying: boolean;
+  copied: boolean;
+  tafsirOpen: boolean;
+  isSajdah: boolean;
+  onListen: (item: ParsedAyah) => void;
+  onCopy: (item: ParsedAyah) => void;
+  onShareAsImage: (item: ParsedAyah) => void;
+  onToggleTafsir: (numberInSurah: number) => void;
+  onOpenNote: (item: ParsedAyah) => void;
+  onToggleBookmark: (globalId: number) => void;
+}
+
+/**
+ * One ayah row, extracted and memoized. Al-Baqarah renders 286 of these with
+ * expensive Arabic text shaping — before this, any AppContext write (a
+ * bookmark toggle, a deed check, audio state) re-rendered every visible row
+ * because the row markup lived in an inline closure. With React.memo and
+ * stable callbacks (see the `latest` ref in the screen), only rows whose
+ * OWN flags changed (bookmarked / playing / copied / tafsir open) re-render.
+ */
+const AyahRow = React.memo(function AyahRow({
+  item,
+  surahId,
+  C,
+  isDark,
+  arabicSize,
+  arabicLine,
+  mushafMode,
+  bookmarked,
+  hasNote,
+  isActive,
+  isPlaying,
+  copied,
+  tafsirOpen,
+  isSajdah,
+  onListen,
+  onCopy,
+  onShareAsImage,
+  onToggleTafsir,
+  onOpenNote,
+  onToggleBookmark,
+}: AyahRowProps) {
+  return (
+    <View
+      style={[
+        styles.ayahRow,
+        { borderBottomColor: C.border },
+        bookmarked && { backgroundColor: isDark ? "rgba(45,191,127,0.06)" : "rgba(26,107,74,0.04)" },
+        isActive && !isPlaying && { backgroundColor: isDark ? "rgba(45,191,127,0.04)" : "rgba(26,107,74,0.02)" },
+      ]}
+    >
+      <View style={[styles.ayahBadge, { backgroundColor: bookmarked ? C.primary : isActive ? C.primary : C.secondary }]}>
+        <Text
+          style={[
+            styles.ayahNumber,
+            { color: bookmarked || isActive ? "#fff" : C.primary, fontFamily: "Inter_600SemiBold" },
+          ]}
+        >
+          {item.numberInSurah}
+        </Text>
+      </View>
+
+      <View style={styles.ayahContent}>
+        {isSajdah && (
+          <View
+            style={[
+              styles.sajdahBadge,
+              {
+                backgroundColor: isDark ? "rgba(200,147,60,0.18)" : "rgba(200,147,60,0.14)",
+                borderColor: C.accent,
+              },
+            ]}
+            accessible
+            accessibilityLabel="Sajdah verse — prostration is performed when this verse is recited"
+          >
+            <Ionicons name="star" size={12} color={C.accent} />
+            <Text style={[styles.sajdahBadgeText, { color: C.accent, fontFamily: "Inter_600SemiBold" }]}>
+              Sajdah · prostration verse
+            </Text>
+          </View>
+        )}
+
+        <Text
+          style={[
+            styles.arabicAyah,
+            {
+              color: C.foreground,
+              fontFamily: ARABIC_FONT_REGULAR,
+              fontSize: arabicSize,
+              lineHeight: arabicLine,
+            },
+          ]}
+        >
+          {item.arabic}
+        </Text>
+
+        {!mushafMode && (
+          <Text style={[styles.englishAyah, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            {item.english}
+          </Text>
+        )}
+
+        <View style={styles.ayahActions}>
+          {/* Listen — always visible, works in mushaf mode too */}
+          {Platform.OS !== "web" && (
+            <Pressable
+              onPress={() => onListen(item)}
+              accessibilityLabel={isPlaying ? "Pause recitation" : "Play recitation"}
+              style={({ pressed }) => [
+                styles.iconBtn,
+                { backgroundColor: isPlaying ? C.primary : C.muted, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Ionicons
+                name={isPlaying ? "pause" : "play"}
+                size={12}
+                color={isPlaying ? "#fff" : C.mutedForeground}
+              />
+              <Text
+                style={[
+                  styles.iconBtnText,
+                  { color: isPlaying ? "#fff" : C.mutedForeground, fontFamily: "Inter_500Medium" },
+                ]}
+              >
+                {isPlaying ? "Pause" : "Listen"}
+              </Text>
+            </Pressable>
+          )}
+
+          {/* Copy — always visible */}
+          <Pressable
+            onPress={() => onCopy(item)}
+            accessibilityLabel="Copy ayah text"
+            style={({ pressed }) => [
+              styles.iconBtn,
+              {
+                backgroundColor: copied ? C.secondary : C.muted,
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
+          >
+            <Ionicons
+              name={copied ? "checkmark" : "copy-outline"}
+              size={12}
+              color={copied ? C.primary : C.mutedForeground}
+            />
+            <Text
+              style={[
+                styles.iconBtnText,
+                {
+                  color: copied ? C.primary : C.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
+              {copied ? "Copied" : "Copy"}
+            </Text>
+          </Pressable>
+
+          {/* Share as image */}
+          {Platform.OS !== "web" && (
+            <Pressable
+              onPress={() => onShareAsImage(item)}
+              accessibilityLabel="Share ayah as image"
+              style={({ pressed }) => [
+                styles.iconBtn,
+                { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Ionicons name="image-outline" size={12} color={C.mutedForeground} />
+              <Text style={[styles.iconBtnText, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Share
+              </Text>
+            </Pressable>
+          )}
+
+          {/* Tafsir — hidden in mushaf mode */}
+          {!mushafMode && (
+            <Pressable
+              onPress={() => onToggleTafsir(item.numberInSurah)}
+              accessibilityLabel={tafsirOpen ? "Hide tafsir" : "Show tafsir"}
+              style={({ pressed }) => [
+                styles.iconBtn,
+                { backgroundColor: tafsirOpen ? C.secondary : C.muted, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Ionicons
+                name={tafsirOpen ? "chevron-up" : "book-outline"}
+                size={12}
+                color={tafsirOpen ? C.primary : C.mutedForeground}
+              />
+              <Text
+                style={[
+                  styles.iconBtnText,
+                  { color: tafsirOpen ? C.primary : C.mutedForeground, fontFamily: "Inter_500Medium" },
+                ]}
+              >
+                Tafsir
+              </Text>
+            </Pressable>
+          )}
+
+          {/* Note */}
+          <Pressable
+            onPress={() => onOpenNote(item)}
+            accessibilityLabel={hasNote ? "Edit note" : "Add note"}
+            style={({ pressed }) => [
+              styles.bookmarkBtn,
+              { backgroundColor: hasNote ? "rgba(45,191,127,0.18)" : C.muted, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Ionicons name={hasNote ? "document-text" : "document-text-outline"} size={14} color={hasNote ? C.primary : C.mutedForeground} />
+          </Pressable>
+
+          {/* Bookmark */}
+          <Pressable
+            onPress={() => onToggleBookmark(item.number)}
+            accessibilityLabel={bookmarked ? "Remove bookmark" : "Bookmark this ayah"}
+            style={({ pressed }) => [
+              styles.bookmarkBtn,
+              { backgroundColor: bookmarked ? "#C8933C20" : C.muted, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Ionicons
+              name={bookmarked ? "bookmark" : "bookmark-outline"}
+              size={14}
+              color={bookmarked ? "#C8933C" : C.mutedForeground}
+            />
+          </Pressable>
+        </View>
+
+        {!mushafMode && tafsirOpen && (
+          <AyahTafsir
+            surahId={surahId}
+            ayahNumber={item.numberInSurah}
+            C={C}
+            isDark={isDark}
+          />
+        )}
+      </View>
+    </View>
+  );
+});
+
 export default function SurahDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const surahId = parseInt(id ?? "1");
@@ -155,6 +411,27 @@ export default function SurahDetailScreen() {
   const activeParsed = parseTrackId(activeTrack?.id);
   const activeAyahOnThisSurah =
     activeParsed?.surahId === surahId ? activeParsed.ayahN : null;
+
+  // Volatile values read by the row callbacks. Routing them through a ref
+  // keeps every callback passed to the memoized AyahRow referentially
+  // stable — otherwise each playback tick or settings change would mint new
+  // handlers and force all 286 rows of Al-Baqarah to re-render.
+  const latest = useRef({
+    activeAyahOnThisSurah,
+    isRNTPPlaying,
+    continuousPlay,
+    reciter,
+    repeatCount,
+    ayahNotes: state.ayahNotes,
+  });
+  latest.current = {
+    activeAyahOnThisSurah,
+    isRNTPPlaying,
+    continuousPlay,
+    reciter,
+    repeatCount,
+    ayahNotes: state.ayahNotes,
+  };
 
   const cycleFontSize = useCallback(() => {
     Haptics.selectionAsync();
@@ -209,7 +486,8 @@ export default function SurahDetailScreen() {
     [],
   );
 
-  // Tap "Listen" on an individual ayah
+  // Tap "Listen" on an individual ayah. Volatile inputs come from the
+  // `latest` ref so this callback stays referentially stable for AyahRow.
   const handleAyahListen = useCallback(
     async (ayah: ParsedAyah) => {
       if (Platform.OS === "web") {
@@ -217,10 +495,11 @@ export default function SurahDetailScreen() {
         return;
       }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const { activeAyahOnThisSurah: activeN, isRNTPPlaying: playing, continuousPlay: auto, reciter: qari, repeatCount: repeats } = latest.current;
       try {
         // If this ayah is already playing, toggle pause/play
-        if (activeAyahOnThisSurah === ayah.numberInSurah) {
-          if (isRNTPPlaying) {
+        if (activeN === ayah.numberInSurah) {
+          if (playing) {
             await TrackPlayer.pause();
           } else {
             await TrackPlayer.play();
@@ -228,10 +507,10 @@ export default function SurahDetailScreen() {
           return;
         }
         // If continuousPlay is on, load the surah from this ayah and run through
-        if (continuousPlay) {
-          await playSurah(surahId, reciter, ayah.numberInSurah);
+        if (auto) {
+          await playSurah(surahId, qari, ayah.numberInSurah);
         } else {
-          await playSingleAyah(surahId, ayah.numberInSurah, reciter, repeatCount);
+          await playSingleAyah(surahId, ayah.numberInSurah, qari, repeats);
         }
         markAyahRead(ayah.number);
         markDeedDone("quran");
@@ -239,7 +518,30 @@ export default function SurahDetailScreen() {
         Alert.alert("Audio Error", "Could not load audio. Check your connection.");
       }
     },
-    [activeAyahOnThisSurah, isRNTPPlaying, continuousPlay, surahId, reciter, repeatCount, markAyahRead, markDeedDone],
+    [surahId, markAyahRead, markDeedDone],
+  );
+
+  // Stable per-row handlers for the memoized AyahRow.
+  const handleToggleTafsir = useCallback((numberInSurah: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setOpenTafsir((prev) => (prev === numberInSurah ? null : numberInSurah));
+  }, []);
+
+  const handleOpenNote = useCallback((item: ParsedAyah) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setNoteModal({
+      ayahId: item.numberInSurah,
+      globalId: item.number,
+      draft: latest.current.ayahNotes[item.number] ?? "",
+    });
+  }, []);
+
+  const handleToggleBookmark = useCallback(
+    (globalId: number) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      toggleBookmark(globalId);
+    },
+    [toggleBookmark],
   );
 
   // "Play Surah" — loads all ayahs from the beginning
@@ -295,224 +597,78 @@ export default function SurahDetailScreen() {
     };
   }, [surahId, surah, setLastReadPosition, markDeedDone]);
 
-  const renderAyah = ({ item }: { item: ParsedAyah }) => {
-    const isPlaying = activeAyahOnThisSurah === item.numberInSurah && isRNTPPlaying;
-    const isActive = activeAyahOnThisSurah === item.numberInSurah;
-    const bookmarked = isBookmarked(item.number);
-    const tafsirOpen = openTafsir === item.numberInSurah;
-    const isSajdah = isSajdahVerse(surahId, item.numberInSurah);
-    const hasNote = !!state.ayahNotes[item.number];
+  const renderAyah = useCallback(
+    ({ item }: { item: ParsedAyah }) => (
+      <AyahRow
+        item={item}
+        surahId={surahId}
+        C={C}
+        isDark={isDark}
+        arabicSize={arabicSize}
+        arabicLine={arabicLine}
+        mushafMode={mushafMode}
+        bookmarked={isBookmarked(item.number)}
+        hasNote={!!state.ayahNotes[item.number]}
+        isActive={activeAyahOnThisSurah === item.numberInSurah}
+        isPlaying={activeAyahOnThisSurah === item.numberInSurah && isRNTPPlaying}
+        copied={copiedFor === item.numberInSurah}
+        tafsirOpen={openTafsir === item.numberInSurah}
+        isSajdah={isSajdahVerse(surahId, item.numberInSurah)}
+        onListen={handleAyahListen}
+        onCopy={handleCopy}
+        onShareAsImage={handleShareAsImage}
+        onToggleTafsir={handleToggleTafsir}
+        onOpenNote={handleOpenNote}
+        onToggleBookmark={handleToggleBookmark}
+      />
+    ),
+    [
+      surahId,
+      C,
+      isDark,
+      arabicSize,
+      arabicLine,
+      mushafMode,
+      isBookmarked,
+      state.ayahNotes,
+      activeAyahOnThisSurah,
+      isRNTPPlaying,
+      copiedFor,
+      openTafsir,
+      handleAyahListen,
+      handleCopy,
+      handleShareAsImage,
+      handleToggleTafsir,
+      handleOpenNote,
+      handleToggleBookmark,
+    ],
+  );
 
-    return (
-      <View
-        style={[
-          styles.ayahRow,
-          { borderBottomColor: C.border },
-          bookmarked && { backgroundColor: isDark ? "rgba(45,191,127,0.06)" : "rgba(26,107,74,0.04)" },
-          isActive && !isPlaying && { backgroundColor: isDark ? "rgba(45,191,127,0.04)" : "rgba(26,107,74,0.02)" },
-        ]}
-      >
-        <View style={[styles.ayahBadge, { backgroundColor: bookmarked ? C.primary : isActive ? C.primary : C.secondary }]}>
-          <Text
-            style={[
-              styles.ayahNumber,
-              { color: bookmarked || isActive ? "#fff" : C.primary, fontFamily: "Inter_600SemiBold" },
-            ]}
-          >
-            {item.numberInSurah}
-          </Text>
-        </View>
-
-        <View style={styles.ayahContent}>
-          {isSajdah && (
-            <View
-              style={[
-                styles.sajdahBadge,
-                {
-                  backgroundColor: isDark ? "rgba(200,147,60,0.18)" : "rgba(200,147,60,0.14)",
-                  borderColor: C.accent,
-                },
-              ]}
-              accessible
-              accessibilityLabel="Sajdah verse — prostration is performed when this verse is recited"
-            >
-              <Ionicons name="star" size={12} color={C.accent} />
-              <Text style={[styles.sajdahBadgeText, { color: C.accent, fontFamily: "Inter_600SemiBold" }]}>
-                Sajdah · prostration verse
-              </Text>
-            </View>
-          )}
-
-          <Text
-            style={[
-              styles.arabicAyah,
-              {
-                color: C.foreground,
-                fontFamily: ARABIC_FONT_REGULAR,
-                fontSize: arabicSize,
-                lineHeight: arabicLine,
-              },
-            ]}
-          >
-            {item.arabic}
-          </Text>
-
-          {!mushafMode && (
-            <Text style={[styles.englishAyah, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              {item.english}
+  // Memoized element (not an inline component) so the header doesn't
+  // unmount/remount on every list re-render.
+  const listHeader = useMemo(
+    () => (
+      <View style={styles.listHeader}>
+        {/* No bismillah header for At-Tawbah (9, revealed without it)
+            or Al-Fatihah (1, where the bismillah IS verse 1 — showing
+            the header too would display it twice). */}
+        {surahId !== 9 && surahId !== 1 && (
+          <View style={[styles.bismillah, { backgroundColor: C.card }]}>
+            <Text style={[styles.bismillahText, { color: C.primary, fontFamily: ARABIC_FONT_REGULAR }]}>
+              بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
             </Text>
-          )}
-
-          <View style={styles.ayahActions}>
-            {/* Listen — always visible, works in mushaf mode too */}
-            {Platform.OS !== "web" && (
-              <Pressable
-                onPress={() => handleAyahListen(item)}
-                accessibilityLabel={isPlaying ? "Pause recitation" : "Play recitation"}
-                style={({ pressed }) => [
-                  styles.iconBtn,
-                  { backgroundColor: isPlaying ? C.primary : C.muted, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Ionicons
-                  name={isPlaying ? "pause" : isActive && !isRNTPPlaying ? "play" : "play"}
-                  size={12}
-                  color={isPlaying ? "#fff" : C.mutedForeground}
-                />
-                <Text
-                  style={[
-                    styles.iconBtnText,
-                    { color: isPlaying ? "#fff" : C.mutedForeground, fontFamily: "Inter_500Medium" },
-                  ]}
-                >
-                  {isPlaying ? "Pause" : "Listen"}
-                </Text>
-              </Pressable>
-            )}
-
-            {/* Copy — always visible */}
-            <Pressable
-              onPress={() => handleCopy(item)}
-              accessibilityLabel="Copy ayah text"
-              style={({ pressed }) => [
-                styles.iconBtn,
-                {
-                  backgroundColor: copiedFor === item.numberInSurah ? C.secondary : C.muted,
-                  opacity: pressed ? 0.7 : 1,
-                },
-              ]}
-            >
-              <Ionicons
-                name={copiedFor === item.numberInSurah ? "checkmark" : "copy-outline"}
-                size={12}
-                color={copiedFor === item.numberInSurah ? C.primary : C.mutedForeground}
-              />
-              <Text
-                style={[
-                  styles.iconBtnText,
-                  {
-                    color: copiedFor === item.numberInSurah ? C.primary : C.mutedForeground,
-                    fontFamily: "Inter_500Medium",
-                  },
-                ]}
-              >
-                {copiedFor === item.numberInSurah ? "Copied" : "Copy"}
-              </Text>
-            </Pressable>
-
-            {/* Share as image */}
-            {Platform.OS !== "web" && (
-              <Pressable
-                onPress={() => handleShareAsImage(item)}
-                accessibilityLabel="Share ayah as image"
-                style={({ pressed }) => [
-                  styles.iconBtn,
-                  { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Ionicons name="image-outline" size={12} color={C.mutedForeground} />
-                <Text style={[styles.iconBtnText, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Share
-                </Text>
-              </Pressable>
-            )}
-
-            {/* Tafsir — hidden in mushaf mode */}
-            {!mushafMode && (
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setOpenTafsir(tafsirOpen ? null : item.numberInSurah);
-                }}
-                accessibilityLabel={tafsirOpen ? "Hide tafsir" : "Show tafsir"}
-                style={({ pressed }) => [
-                  styles.iconBtn,
-                  { backgroundColor: tafsirOpen ? C.secondary : C.muted, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Ionicons
-                  name={tafsirOpen ? "chevron-up" : "book-outline"}
-                  size={12}
-                  color={tafsirOpen ? C.primary : C.mutedForeground}
-                />
-                <Text
-                  style={[
-                    styles.iconBtnText,
-                    { color: tafsirOpen ? C.primary : C.mutedForeground, fontFamily: "Inter_500Medium" },
-                  ]}
-                >
-                  Tafsir
-                </Text>
-              </Pressable>
-            )}
-
-            {/* Note */}
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setNoteModal({ ayahId: item.numberInSurah, globalId: item.number, draft: state.ayahNotes[item.number] ?? "" });
-              }}
-              accessibilityLabel={hasNote ? "Edit note" : "Add note"}
-              style={({ pressed }) => [
-                styles.bookmarkBtn,
-                { backgroundColor: hasNote ? "rgba(45,191,127,0.18)" : C.muted, opacity: pressed ? 0.7 : 1 },
-              ]}
-            >
-              <Ionicons name={hasNote ? "document-text" : "document-text-outline"} size={14} color={hasNote ? C.primary : C.mutedForeground} />
-            </Pressable>
-
-            {/* Bookmark */}
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                toggleBookmark(item.number);
-              }}
-              accessibilityLabel={bookmarked ? "Remove bookmark" : "Bookmark this ayah"}
-              style={({ pressed }) => [
-                styles.bookmarkBtn,
-                { backgroundColor: bookmarked ? "#C8933C20" : C.muted, opacity: pressed ? 0.7 : 1 },
-              ]}
-            >
-              <Ionicons
-                name={bookmarked ? "bookmark" : "bookmark-outline"}
-                size={14}
-                color={bookmarked ? "#C8933C" : C.mutedForeground}
-              />
-            </Pressable>
           </View>
-
-          {!mushafMode && tafsirOpen && (
-            <AyahTafsir
-              surahId={surahId}
-              ayahNumber={item.numberInSurah}
-              C={C}
-              isDark={isDark}
-            />
-          )}
+        )}
+        <View style={[styles.translatorBadge, { backgroundColor: C.muted }]}>
+          <Ionicons name="language-outline" size={12} color={C.mutedForeground} />
+          <Text style={[styles.translatorText, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            Translation: {QURAN_TRANSLATION_LABEL}
+          </Text>
         </View>
       </View>
-    );
-  };
+    ),
+    [surahId, C],
+  );
 
   if (!surah) {
     return (
@@ -681,68 +837,66 @@ export default function SurahDetailScreen() {
           renderItem={renderAyah}
           contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={() => (
-            <View style={styles.listHeader}>
-              {/* No bismillah header for At-Tawbah (9, revealed without it)
-                  or Al-Fatihah (1, where the bismillah IS verse 1 — showing
-                  the header too would display it twice). */}
-              {surahId !== 9 && surahId !== 1 && (
-                <View style={[styles.bismillah, { backgroundColor: C.card }]}>
-                  <Text style={[styles.bismillahText, { color: C.primary, fontFamily: ARABIC_FONT_REGULAR }]}>
-                    بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-                  </Text>
-                </View>
-              )}
-              <View style={[styles.translatorBadge, { backgroundColor: C.muted }]}>
-                <Ionicons name="language-outline" size={12} color={C.mutedForeground} />
-                <Text style={[styles.translatorText, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Translation: {QURAN_TRANSLATION_LABEL}
-                </Text>
-              </View>
-            </View>
-          )}
+          ListHeaderComponent={listHeader}
+          // Virtualization tuning for long surahs (Al-Baqarah = 286 rows of
+          // shaped Arabic text). Same treatment the Bookmarks list already
+          // has. No getItemLayout — row heights vary with font size,
+          // translation visibility, notes, and tafsir expansion.
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={9}
+          updateCellsBatchingPeriod={50}
+          removeClippedSubviews={Platform.OS !== "web"}
         />
       )}
 
-      {/* Verse note modal */}
+      {/* Verse note modal. RN Modals render in their own native window,
+          OUTSIDE the app's KeyboardProvider hierarchy — so keyboard
+          avoidance must be handled here explicitly or the auto-focused
+          input sits behind the keyboard on smaller iPhones. */}
       <Modal
         visible={noteModal !== null}
         transparent
         animationType="slide"
         onRequestClose={() => setNoteModal(null)}
       >
-        <Pressable style={styles.modalBackdrop} onPress={() => setNoteModal(null)}>
-          <Pressable style={[styles.modalSheet, { backgroundColor: C.card, borderColor: C.border }]} onPress={() => {}}>
-            <Text style={[styles.modalTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
-              {surah?.nameEnglish} {noteModal?.ayahId ? `· Ayah ${noteModal.ayahId}` : ""}
-            </Text>
-            <TextInput
-              value={noteModal?.draft ?? ""}
-              onChangeText={(t) => setNoteModal((m) => m ? { ...m, draft: t } : m)}
-              placeholder="Write your reflection…"
-              placeholderTextColor={C.mutedForeground}
-              multiline
-              autoFocus
-              style={[styles.noteInput, { color: C.foreground, borderColor: C.border, fontFamily: "Inter_400Regular" }]}
-            />
-            <View style={styles.modalBtns}>
-              {noteModal && state.ayahNotes[noteModal.globalId] && (
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <Pressable style={styles.modalBackdrop} onPress={() => setNoteModal(null)}>
+            <Pressable style={[styles.modalSheet, { backgroundColor: C.card, borderColor: C.border }]} onPress={() => {}}>
+              <Text style={[styles.modalTitle, { color: C.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                {surah?.nameEnglish} {noteModal?.ayahId ? `· Ayah ${noteModal.ayahId}` : ""}
+              </Text>
+              <TextInput
+                value={noteModal?.draft ?? ""}
+                onChangeText={(t) => setNoteModal((m) => m ? { ...m, draft: t } : m)}
+                placeholder="Write your reflection…"
+                placeholderTextColor={C.mutedForeground}
+                multiline
+                autoFocus
+                style={[styles.noteInput, { color: C.foreground, borderColor: C.border, fontFamily: "Inter_400Regular" }]}
+              />
+              <View style={styles.modalBtns}>
+                {noteModal && state.ayahNotes[noteModal.globalId] && (
+                  <Pressable
+                    onPress={() => { setAyahNote(noteModal.globalId, ""); setNoteModal(null); }}
+                    style={[styles.modalBtn, { backgroundColor: C.muted }]}
+                  >
+                    <Text style={[styles.modalBtnText, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}>Delete</Text>
+                  </Pressable>
+                )}
                 <Pressable
-                  onPress={() => { setAyahNote(noteModal.globalId, ""); setNoteModal(null); }}
-                  style={[styles.modalBtn, { backgroundColor: C.muted }]}
+                  onPress={() => { if (noteModal) { setAyahNote(noteModal.globalId, noteModal.draft); } setNoteModal(null); }}
+                  style={[styles.modalBtn, { backgroundColor: C.primary, flex: 1 }]}
                 >
-                  <Text style={[styles.modalBtnText, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}>Delete</Text>
+                  <Text style={[styles.modalBtnText, { color: "#fff", fontFamily: "Inter_600SemiBold" }]}>Save</Text>
                 </Pressable>
-              )}
-              <Pressable
-                onPress={() => { if (noteModal) { setAyahNote(noteModal.globalId, noteModal.draft); } setNoteModal(null); }}
-                style={[styles.modalBtn, { backgroundColor: C.primary, flex: 1 }]}
-              >
-                <Text style={[styles.modalBtnText, { color: "#fff", fontFamily: "Inter_600SemiBold" }]}>Save</Text>
-              </Pressable>
-            </View>
+              </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

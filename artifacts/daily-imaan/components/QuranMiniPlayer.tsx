@@ -15,6 +15,7 @@ import {
   State,
   useActiveTrack,
   usePlaybackState,
+  useProgress,
 } from "react-native-track-player";
 import TrackPlayer from "react-native-track-player";
 import { Ionicons } from "@expo/vector-icons";
@@ -34,6 +35,11 @@ export function QuranMiniPlayer() {
 
   const track = useActiveTrack();
   const { state } = usePlaybackState();
+  // Real playback progress for the thin bar at the top of the player —
+  // previously a hardcoded 30% decoration. 1s update interval is RNTP's
+  // default and cheap enough for a 2px bar.
+  const { position, duration } = useProgress(1000);
+  const progressPct = duration > 0 ? Math.min(100, (position / duration) * 100) : 0;
   const slideAnim = useRef(new Animated.Value(100)).current;
 
   // Sleep timer — auto-pauses after the chosen number of minutes.
@@ -130,11 +136,11 @@ export function QuranMiniPlayer() {
         },
       ]}
     >
-      {/* Progress bar — thin line at top of player */}
+      {/* Progress bar — thin line at top of player, driven by real playback position */}
       <View style={[styles.progressTrack, { backgroundColor: C.border }]}>
-        {isPlaying && (
-          <Animated.View
-            style={[styles.progressFill, { backgroundColor: C.primary }]}
+        {progressPct > 0 && (
+          <View
+            style={[styles.progressFill, { backgroundColor: C.primary, width: `${progressPct}%` }]}
           />
         )}
       </View>
@@ -243,7 +249,6 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: "100%",
-    width: "30%",
   },
   row: {
     flexDirection: "row",

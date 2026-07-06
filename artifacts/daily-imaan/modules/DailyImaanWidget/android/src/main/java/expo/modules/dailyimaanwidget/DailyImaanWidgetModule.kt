@@ -13,15 +13,21 @@ class DailyImaanWidgetModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("DailyImaanWidget")
 
-    AsyncFunction("setWidgetData") { arabic: String, english: String, surahRef: String, nextPrayer: String ->
+    // prayerTimesJson: {"date":"YYYY-MM-DD","times":{"Fajr":"HH:mm",...}} —
+    // stored for parity with iOS; the Android widget doesn't render a
+    // prayer line yet but the data is there when it does.
+    AsyncFunction("setWidgetData") { arabic: String, english: String, surahRef: String, nextPrayer: String, prayerTimesJson: String ->
       val context: Context = appContext.reactContext ?: return@AsyncFunction
       val prefs = context.getSharedPreferences("daily_imaan_widget", Context.MODE_PRIVATE)
-      prefs.edit()
+      val edit = prefs.edit()
         .putString("widget_arabic", arabic)
         .putString("widget_english", english)
         .putString("widget_surah_ref", surahRef)
         .putString("widget_next_prayer", nextPrayer)
-        .apply()
+      if (prayerTimesJson.isNotEmpty()) {
+        edit.putString("widget_prayer_times", prayerTimesJson)
+      }
+      edit.apply()
 
       val mgr = AppWidgetManager.getInstance(context)
       val ids = mgr.getAppWidgetIds(

@@ -216,7 +216,12 @@ export default function HomeScreen() {
     return () => sub.remove();
   }, [state.settings.ayatOrder]);
 
-  // Sync ayah data to the native widget bridge whenever the ayah or next prayer changes.
+  // Sync ayah data to the native widget bridge whenever the ayah or prayer
+  // times change. Alongside the legacy pre-formatted next-prayer string we
+  // now pass the FULL day's schedule as JSON — the iOS widget builds a
+  // multi-entry timeline from it so its "next prayer" line advances through
+  // the day even when the app never opens (the old single string went stale
+  // the moment the prayer passed).
   useEffect(() => {
     if (Platform.OS === "web") return;
     const surahRef = `${ayah.surahNameEnglish} ${ayah.surahId}:${ayah.ayahNumber}`;
@@ -224,10 +229,29 @@ export default function HomeScreen() {
       ? ayah.englishText.slice(0, 137) + "…"
       : ayah.englishText;
     const nextPrayerStr = nextPrayer ? `${nextPrayer.name} at ${nextPrayer.time}` : "";
+
+    // Normalize each time to plain "HH:mm" — API strings occasionally carry
+    // suffixes like " (AEST)" that the widget's parser shouldn't see.
+    let prayerTimesJson = "";
+    if (prayerTimes) {
+      const clean = (t: string) => t.match(/(\d{1,2}):(\d{2})/)?.[0] ?? "";
+      const times: Record<string, string> = {};
+      for (const name of ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"] as const) {
+        const hhmm = clean(prayerTimes[name]);
+        if (hhmm) times[name] = hhmm;
+      }
+      if (Object.keys(times).length === 5) {
+        const d = new Date();
+        const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        prayerTimesJson = JSON.stringify({ date: dateKey, times });
+      }
+    }
+
     import("@/modules/DailyImaanWidget").then(({ setWidgetData }) => {
-      setWidgetData(ayah.arabicText, englishShort, surahRef, nextPrayerStr).catch(() => undefined);
+      setWidgetData(ayah.arabicText, englishShort, surahRef, nextPrayerStr, prayerTimesJson).catch(() => undefined);
     });
-  }, [ayah, nextPrayer]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- prayerTimesKey stands in for the unstable prayerTimes object
+  }, [ayah, nextPrayer, prayerTimesKey]);
 
   // Keep the ref in sync with the state — used by unmount cleanup.
   useEffect(() => {
@@ -417,8 +441,14 @@ export default function HomeScreen() {
     state.streak.savedByFreezeOn === todayKeyStr &&
     state.streak.freezeCelebrationAcknowledgedOn !== todayKeyStr;
 
-  // Hadith credit — strip the Arabic half of bookTitle for a clean English line.
-  const hadithBookTitleEn = hadith.bookTitle.split("كتاب")[0]?.trim() ?? "";
+  // Hadith credit — bookTitle mixes English + Arabic ("The Book of X كتاب ...").
+  // Strip everything from the first Arabic-script character onward instead of
+  // splitting on the literal word "كتاب": entries whose Arabic half doesn't
+  // start with that exact word used to render the raw mixed string.
+  const arabicStart = hadith.bookTitle.search(/[؀-ۿ]/);
+  const hadithBookTitleEn =
+    (arabicStart >= 0 ? hadith.bookTitle.slice(0, arabicStart) : hadith.bookTitle).trim() ||
+    hadith.bookTitle.trim();
 
   const fs = state.settings.arabicFontSize;
   const arabicSize = fs === "small" ? 20 : fs === "large" ? 30 : 24;
