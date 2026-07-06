@@ -50,12 +50,15 @@ export interface AppSettings {
    * Which audio file plays when a prayer-time reminder fires with sound on.
    *  - "default":  device's default notification sound (always available).
    *  - "madinah":  bundled adhan_madinah.mp3 (CC0 public domain).
-   *  - "makkah":   bundled adhan_makkah.mp3 (CC BY-SA 4.0, Aaqib Azeez via Wikimedia Commons).
+   * The former "makkah" option was removed pre-launch: the shipped file was
+   * a truncated stub and its in-app attribution named the wrong reciter
+   * under the wrong license (see assets/sounds/README.md). Persisted
+   * "makkah" selections migrate to "madinah" in migrateState (v5).
    * Falls back to "default" if the chosen audio file is missing at runtime
    * (expo-notifications silently uses the system sound when a referenced
    * filename isn't found in the bundle).
    */
-  adhanSound: "default" | "madinah" | "makkah";
+  adhanSound: "default" | "madinah";
   /**
    * Audio reciter for ayah playback. Stored as the alquran.cloud edition
    * code (e.g. "ar.alafasy"). See constants/reciters.ts for the catalogue.
@@ -125,6 +128,15 @@ export interface AppSettings {
   wuduReminderEnabled: boolean;
   /** Minutes before each prayer to send the wudu reminder. */
   wuduReminderMinutes: 5 | 10 | 15 | 20;
+  /**
+   * Cloud backup (anonymous Supabase mirror) opt-out. When false, no state
+   * is pushed to or pulled from the backend — the app is local-only. The
+   * Settings toggle that flips this OFF also deletes the server-side row
+   * (see deleteRemoteState), matching the in-app privacy policy's promise.
+   * Defaults to ON so streak recovery works out of the box; it's a no-op
+   * anyway on builds without Supabase env vars.
+   */
+  cloudSyncEnabled: boolean;
 }
 
 export interface QadaFast {
@@ -263,7 +275,9 @@ interface AppContextType {
 // v3 schema: shifts default daily ayah notification time from 07:00 to 08:30
 // to prevent it clashing with the morning adhkar reminder (07:15).
 // v4 schema: adds ayahNotes, fasting state, wudu reminder settings.
-const CURRENT_STATE_VERSION = 4;
+// v5 schema: adds settings.cloudSyncEnabled (default true) and retires the
+// "makkah" adhan option — persisted "makkah" selections become "madinah".
+const CURRENT_STATE_VERSION = 5;
 
 const DEFAULT_STATE: AppState = {
   version: CURRENT_STATE_VERSION,
@@ -306,6 +320,7 @@ const DEFAULT_STATE: AppState = {
     prayerOffsets: { Fajr: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0 },
     wuduReminderEnabled: false,
     wuduReminderMinutes: 10,
+    cloudSyncEnabled: true,
   },
   readAyatIds: [],
   lastReadPosition: null,
@@ -386,6 +401,13 @@ function migrateState(saved: Partial<AppState>): AppState {
         : { days: {}, qada: [] },
     version: CURRENT_STATE_VERSION,
   };
+
+  // v4 → v5: the "makkah" adhan option was removed (truncated file + wrong
+  // attribution). Anyone who had it selected keeps a bundled adhan rather
+  // than silently dropping to the system beep.
+  if ((merged.settings.adhanSound as string) === "makkah") {
+    merged.settings = { ...merged.settings, adhanSound: "madinah" };
+  }
 
   // v2 → v3: shift default ayah time from 07:00 to 08:30 so it no longer
   // clashes with the morning adhkar notification (now hardcoded at 07:15).
@@ -558,6 +580,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // network fails, this no-ops gracefully — local state remains canonical.
       // If a newer remote state exists, we adopt it (last-write-wins by
       // updatedAt). The remote layer is opt-in: see lib/remoteState.ts.
+      // Respect the user's Cloud backup opt-out: if they turned it off, we
+      // neither pull nor (via save() below) push. A fresh install has no
+      // local state, so `initial` is null and hydration proceeds — that's
+      // exactly the reinstall-recovery path.
+      if (initial && initial.settings.cloudSyncEnabled === false) return;
       try {
         const remote = await hydrateRemoteState();
         if (remote) {
@@ -598,10 +625,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         goodDeeds: pruneGoodDeeds(newState.goodDeeds),
       };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
-      // Fire-and-forget remote sync. No-op when Supabase env vars are unset.
-      // Errors are swallowed inside syncRemoteState so a failed write never
-      // breaks the local-write path the user can see.
-      void syncRemoteState(persisted);
+      // Fire-and-forget remote sync. No-op when Supabase env vars are unset
+      // or the user turned Cloud backup off in Settings. Errors are swallowed
+      // inside syncRemoteState so a failed write never breaks the local-write
+      // path the user can see.
+      if (persisted.settings.cloudSyncEnabled !== false) {
+        void syncRemoteState(persisted);
+      }
     } catch {
       // ignore
     }

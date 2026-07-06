@@ -133,13 +133,15 @@ interface CachedPayload {
  * Source: AlAdhan API (api.aladhan.com) — open-source astronomical
  * calculation library that powers most Muslim prayer-time apps.
  * Produces identical results to IslamicFinder when configured with the
- * same calculation method (default ISNA = method 2).
+ * same calculation method.
  *
- * @param method  Calculation method (AlAdhan codes — 2 = ISNA, 1 = MWL, 3 = Egyptian, 4 = Umm al-Qura, 5 = Karachi).
+ * @param method  Calculation method (AlAdhan codes — 1 = MWL, 2 = ISNA, 3 = Egyptian, 4 = Umm al-Qura, 5 = Karachi).
+ *                Default matches AppContext's DEFAULT_STATE (1 = MWL) so a
+ *                caller that forgets to pass it agrees with the app default.
  * @param school  Asr juristic school. 0 = Standard (Shafi'i/Maliki/Hanbali), 1 = Hanafi.
  */
 export function usePrayerTimes(
-  method: number = 2,
+  method: number = 1,
   school: number = 0,
   offsets: PrayerOffsets = ZERO_OFFSETS,
 ): UsePrayerTimesResult {

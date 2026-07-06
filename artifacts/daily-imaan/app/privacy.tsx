@@ -14,7 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import colors from "@/constants/colors";
 import { a11yButton, a11yDecorative } from "@/components/a11y";
 
-const EFFECTIVE_DATE = "May 2, 2026";
+const EFFECTIVE_DATE = "July 7, 2026";
 
 export default function PrivacyPolicyScreen() {
   const scheme = useColorScheme();
@@ -94,10 +94,12 @@ export default function PrivacyPolicyScreen() {
         service (Supabase). When active, the app silently creates an
         anonymous session on first launch — no email, name, or login is
         ever requested. Your identity is a randomly-generated UUID stored
-        on your device. The mirrored row is protected by row-level
-        security so only your anonymous session can read or write it.
-        Disable from Settings any time. If this build was not configured
-        with cloud-sync credentials, no data is uploaded.
+        securely on your device. The mirrored row is protected by
+        row-level security so only your anonymous session can read or
+        write it. You can turn this off any time in Settings → Privacy
+        &amp; Legal → Cloud backup — turning it off also deletes the
+        server copy. If this build was not configured with cloud-sync
+        credentials, no data is ever uploaded.
       </P>
       <P C={C}>
         For the full text of this policy, including your rights and how
@@ -119,7 +121,7 @@ export default function PrivacyPolicyScreen() {
         re-enable permission.
       </P>
 
-      <H C={C}>3. Notifications</H>
+      <H C={C}>4. Notifications</H>
       <P C={C}>
         Daily reminders and prayer-time alerts are scheduled locally on your
         device using Expo Notifications. The text of each reminder (the ayah
@@ -127,7 +129,7 @@ export default function PrivacyPolicyScreen() {
         the app. We cannot see whether or when a notification fires.
       </P>
 
-      <H C={C}>4. Third-party services</H>
+      <H C={C}>5. Third-party services</H>
       <P C={C}>
         The app makes outbound network requests to the following services to
         deliver Quranic content. We do not control these third parties; please
@@ -152,7 +154,7 @@ export default function PrivacyPolicyScreen() {
         for the request itself.
       </P>
 
-      <H C={C}>5. Crash reporting</H>
+      <H C={C}>6. Crash reporting</H>
       <P C={C}>
         If the app crashes, anonymized diagnostic information (the error
         message, stack trace, and approximate app version) may be sent to our
@@ -162,28 +164,32 @@ export default function PrivacyPolicyScreen() {
         a given build, no reports are sent.
       </P>
 
-      <H C={C}>6. Children's privacy</H>
+      <H C={C}>7. Children's privacy</H>
       <P C={C}>
         Daily Imaan is suitable for all ages and does not knowingly collect
         information from children. There is no chat, no user-generated
         content, and no advertising.
       </P>
 
-      <H C={C}>7. Your rights</H>
+      <H C={C}>8. Your rights</H>
       <P C={C}>
-        Because the canonical copy of your data lives on your device, you can erase
-        everything by uninstalling the app or by clearing the app's data from
-        your system settings. We do not retain any copy.
+        The canonical copy of your data lives on your device — uninstalling
+        the app or clearing its data from system settings erases it. If
+        cloud backup (section 2) is on, an anonymous mirror also exists on
+        the server; to delete it, turn off Cloud backup in Settings →
+        Privacy &amp; Legal before uninstalling. Uninstalling alone does
+        not delete a previously synced copy — that copy is what lets your
+        streak survive a reinstall.
       </P>
 
-      <H C={C}>8. Changes to this policy</H>
+      <H C={C}>9. Changes to this policy</H>
       <P C={C}>
         If we change this policy, we will update the "Effective" date at the
         top and, where the change is material, surface a notice in the app on
         next launch.
       </P>
 
-      <H C={C}>9. Contact</H>
+      <H C={C}>10. Contact</H>
       <P C={C}>
         Questions or concerns: please reach out to the support email listed on
         our App Store / Play Store listing.

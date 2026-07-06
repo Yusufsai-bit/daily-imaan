@@ -1,12 +1,21 @@
 # `assets/sounds/` — Adhan audio
 
-The in-app **Adhan Sound** picker (Settings → ADHAN SOUND) offers three options:
+The in-app **Adhan Sound** picker (Settings → ADHAN SOUND) offers two options:
 
 | Option           | Status     | Required file                |
 | ---------------- | ---------- | ---------------------------- |
 | Device default   | Always works | (none — uses system sound) |
-| Adhan — Makkah   | ✅ Bundled | `assets/sounds/adhan-makkah.mp3` |
-| Adhan — Madinah  | ✅ Bundled | `assets/sounds/adhan-madinah.mp3` |
+| Adhan (Madinah)  | ✅ Bundled | `assets/sounds/adhan_madinah.mp3` |
+
+> The former **Makkah** option was removed before App Store submission
+> (v1.0.0 build 13): the file in the repo was a ~2.5-second truncated stub
+> (30 KB — the documented 30 s @ 96 kbps encode should be ~360 KB), and the
+> Settings label credited the wrong reciter under the wrong license.
+> Persisted `adhanSound: "makkah"` selections migrate to `"madinah"`
+> (AppContext migrateState, v5). To reinstate it, source a correct file per
+> the sourcing guide below, restore the app.json `sounds[]` entry, the
+> Settings option, and the notification channel — and get the attribution
+> right this time.
 
 Both files are registered in the `expo-notifications` plugin's `sounds[]`
 array in `artifacts/daily-imaan/app.json` and ship in the native build.
@@ -117,7 +126,13 @@ you'll have everything you need to respond in under five minutes.
 
 ## Bundled audio license
 
-### adhan-makkah.mp3
+### adhan-makkah.mp3 — REMOVED (07 Jul 2026, pre-submission)
+
+Removed from the bundle and the Settings picker: the committed file was a
+truncated ~2.5 s stub, and the in-app attribution named Aaqib Azeez
+(CC BY-SA 4.0) — the recording this slot had *before* the swap documented
+below — which would have been a license violation for the actually-shipped
+CC BY 3.0 file. Original paper trail kept below for the record.
 - **Source URL**: https://commons.wikimedia.org/wiki/File:Adhan,_Great_Mosque_of_Mecca_-_Jan_21,_2013.webm
 - **Original file**: https://upload.wikimedia.org/wikipedia/commons/a/a7/Adhan%2C_Great_Mosque_of_Mecca_-_Jan_21%2C_2013.webm
 - **Uploader**: Seyfula Islam (originally posted to YouTube, mirrored to Wikimedia Commons)

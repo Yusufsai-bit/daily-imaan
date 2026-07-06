@@ -1,6 +1,6 @@
 # Daily Imaan — Privacy Policy
 
-**Effective: May 2, 2026**
+**Effective: July 7, 2026**
 
 Daily Imaan is built to respect your privacy. The app uses no advertising, no third-party analytics, and no behavioural tracking. We do not ask you to create an account, share an email, or sign in. This page describes exactly what data the app touches and where it goes.
 
@@ -23,7 +23,7 @@ To prevent the loss of your streak and bookmarks if you reinstall the app or cha
 - The app silently creates an **anonymous session** on first launch — no email, name, or login is requested or required. Your identity is a randomly-generated UUID stored on the device.
 - The same data described in Section 1 is uploaded to a private row keyed to that UUID. The row is protected by Row Level Security so only your anonymous session can read or write it.
 - We never see, request, or display any identifier that could link the row to you as a person. We do not have your name, email, phone number, IP address (beyond the inherent transport-level handling by our hosting provider), or device identifier.
-- You can disable cloud sync at any time from Settings, in which case the app reverts to local-only and previously-uploaded data is no longer accessed.
+- You can turn cloud backup off at any time from Settings → Privacy & Legal → Cloud backup. Turning it off **deletes the server-side row** and the app reverts to local-only storage.
 - The backend is hosted by Supabase, Inc. Its security and privacy practices are described at <https://supabase.com/privacy>.
 
 If cloud sync is not configured for a given build (which happens when the app is built without Supabase credentials), the app falls back silently to local-only storage and no data is uploaded.
@@ -45,7 +45,7 @@ The app makes outbound network requests to the following services to deliver Qur
 - **AlAdhan** (api.aladhan.com) — receives your coordinates and chosen calculation method to return prayer times and Hijri dates. <https://aladhan.com/privacy-policy>
 - **Quran.com Foundation** (api.qurancdn.com) — receives a verse reference to return the Saheeh International translation, the Uthmani Arabic text, and the Ibn Kathir tafsir. <https://quran.foundation/privacy>
 - **Alquran.cloud** (cdn.alquran.cloud) — receives a surah/ayah/reciter reference to return the audio recitation MP3. <https://alquran.cloud/privacy-policy>
-- **Supabase** (only when cloud sync is enabled) — receives the anonymous UUID and your encrypted state document. <https://supabase.com/privacy>
+- **Supabase** (only when cloud backup is enabled) — receives the anonymous UUID and your state document (bookmarks, streak, settings), over HTTPS and encrypted at rest. <https://supabase.com/privacy>
 - **Sentry** (only when crash reporting is enabled and the app crashes) — receives an anonymised stack trace, the app version, and the device model. <https://sentry.io/privacy/>
 
 None of these services receive an account identifier or personal information from us beyond what is required for the request itself.
@@ -61,9 +61,8 @@ Daily Imaan is suitable for all ages and does not knowingly collect information 
 ## 8. Your rights and how to exercise them
 
 - **Erase all local data:** uninstall the app, or clear the app's data from your device's system settings.
-- **Erase your cloud-synced row:** uninstall the app, then email us with the date and approximate time of uninstall and we will purge the matching anonymous row. Because the only identifier we hold is a UUID stored on the device you've now uninstalled, the most reliable way to confirm the deletion is the timestamp.
+- **Erase your cloud-synced row:** turn off Settings → Privacy & Legal → Cloud backup — this deletes the server row immediately, from inside the app. (If you have already uninstalled, email us with the date and approximate time of uninstall and we will purge the matching anonymous row.) Note that uninstalling alone does not delete a previously synced copy — that copy is what lets your streak survive a reinstall.
 - **Export your data:** local data is human-readable JSON in your device's app sandbox. Cloud data is a single row in our `user_state` table; we will email you the contents on request.
-- **Disable cloud sync going forward:** Settings → Privacy → Cloud sync → off.
 
 You may also exercise the rights described under the GDPR (EU/UK), the CCPA (California), the Australian Privacy Principles, and any other privacy law applicable to you.
 

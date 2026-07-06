@@ -53,7 +53,7 @@ WHAT'S INSIDE
 
 • A verse a day from the Qur'an in clear English (Saheeh International) and the true Uthmani Arabic.
 • Verbatim tafsir from Ibn Kathir (Abridged), fetched on demand from Quran.com and cached for offline reading. Zero AI-generated commentary on the Qur'an or hadith.
-• Accurate prayer times with 19 calculation methods, Hanafi/Standard Asr toggle, and per-prayer manual offset (±15 min) so you can match your local mosque exactly.
+• Accurate prayer times with 18 calculation methods, Hanafi/Standard Asr toggle, and per-prayer manual offset (±15 min) so you can match your local mosque exactly.
 • A real adhan call (CC0, Madinah) included free — not a beep.
 • Qibla compass with proper magnetic-declination correction (most apps get this wrong).
 • Daily Hadith from Riyāḍ aṣ-Ṣāliḥīn — Imam an-Nawawī's classical curated collection, every entry sourced.
@@ -145,9 +145,9 @@ First release. No ads, no accounts, no tracking — ever. A verse a day, accurat
 >
 > Quranic content is verbatim Saheeh International (English) and Uthmani (Arabic), sourced from the Quran.com Foundation API. Tafsir is Tafsīr Ibn Kathīr (Abridged), fetched on demand from Quran.com. Hadith is Riyāḍ aṣ-Ṣāliḥīn by Imam an-Nawawī. No AI-generated commentary anywhere.
 >
-> Location permission is used only to calculate prayer times and Qibla direction; coordinates never leave the device's local cache.
+> Location permission is used only to calculate prayer times and Qibla direction. Coordinates are sent solely to the AlAdhan prayer-times API (api.aladhan.com) to compute the times; they are never stored server-side, never linked to any identity, and never shared with advertisers or data brokers. The Qibla bearing is computed entirely on-device.
 >
-> Optional cloud sync (anonymous — no login, no email) preserves the user's streak across reinstalls. Disabled by default until the user has anonymous-auth env vars configured.
+> Optional cloud backup (anonymous — no login, no email) preserves the user's streak and bookmarks across reinstalls via an anonymous session. It can be turned off in Settings → Privacy & Legal → Cloud backup, which also deletes the server-side copy.
 >
 > No demo account is needed — the app is fully usable without signing in.
 

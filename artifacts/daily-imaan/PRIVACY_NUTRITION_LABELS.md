@@ -27,8 +27,10 @@ Use this reference when filling out **App Store Connect → App Privacy** and **
 | Data Type | Category | Purpose | Why |
 | --- | --- | --- | --- |
 | **Coarse / Precise Location** | Location | App Functionality | Sent to AlAdhan API to calculate prayer times. |
-| **Crash Data** | Diagnostics | App Functionality, Analytics | Sentry crash reports (if a DSN is configured for the build). |
-| **Performance Data** | Diagnostics | App Functionality, Analytics | Sentry performance traces (if DSN is configured). |
+| **User ID** | Identifiers | App Functionality | Anonymous random UUID for the optional cloud backup (Supabase anonymous session). Not linked to any real identity — we hold no name/email to link it to. Omit this row if you ship without Supabase env vars. |
+| **Other User Content** | User Content | App Functionality | Bookmarks, verse notes, streak and settings mirrored to the optional anonymous cloud backup. Omit if shipping without Supabase. |
+| **Crash Data** | Diagnostics | App Functionality | Sentry crash reports (if a DSN is configured for the build). |
+| **Performance Data** | Diagnostics | App Functionality | Sentry performance traces (if DSN is configured). |
 
 For each entry above, when prompted "Is the data linked to the user's identity?", answer **NO**. When prompted "Is the data used to track the user?", answer **NO**.
 
@@ -49,7 +51,7 @@ For each entry above, when prompted "Is the data linked to the user's identity?"
 | --- | --- |
 | Is your app collecting or sharing any of the required user data types? | **Yes** (see table below). |
 | Is all of the user data collected by your app encrypted in transit? | **Yes** — all API calls are over HTTPS. |
-| Do you provide a way for users to request that their data be deleted? | **Yes** — uninstalling the app removes everything (no server-side copy). State this in your data safety description. |
+| Do you provide a way for users to request that their data be deleted? | **Yes** — uninstalling removes all local data, and turning off Settings → Privacy & Legal → Cloud backup deletes the server-side copy from inside the app. State both in your data safety description. |
 
 ### Data types — declare these
 
@@ -57,8 +59,10 @@ For each entry above, when prompted "Is the data linked to the user's identity?"
 | --- | --- | --- | --- | --- |
 | **Approximate location** | Yes | Yes (with AlAdhan) | Optional | App functionality |
 | **Precise location** | Yes (if granted) | Yes (with AlAdhan) | Optional | App functionality |
-| **Crash logs** | Yes (if Sentry DSN set) | Yes (with Sentry) | Required | App functionality, Analytics |
-| **Diagnostics** | Yes (if Sentry DSN set) | Yes (with Sentry) | Required | App functionality, Analytics |
+| **User IDs** | Yes (if Supabase configured) | No | Optional (Cloud backup toggle) | App functionality — anonymous UUID for cloud backup |
+| **Other app activity / user content** | Yes (if Supabase configured) | No | Optional (Cloud backup toggle) | App functionality — bookmarks, notes, streak mirrored to cloud backup |
+| **Crash logs** | Yes (if Sentry DSN set) | Yes (with Sentry) | Optional (Settings toggle) | App functionality |
+| **Diagnostics** | Yes (if Sentry DSN set) | Yes (with Sentry) | Optional (Settings toggle) | App functionality |
 
 ### Do NOT declare these (the app does not collect them)
 
@@ -67,15 +71,14 @@ For each entry above, when prompted "Is the data linked to the user's identity?"
 - Health & fitness
 - Messages, photos, audio, files
 - Calendar, contacts
-- App activity (we do not log in-app interactions to a server)
 - Web browsing
 - App info & performance other than crash logs / diagnostics
-- Device or other IDs
+- Device IDs (the cloud-backup UUID is an app-generated account ID, declared above — not a device/advertising ID)
 
 ### Security practices to declare
 
 - ✅ Data is encrypted in transit (HTTPS to all third parties).
-- ✅ You provide a mechanism for data deletion (uninstall = full erasure).
+- ✅ You provide a mechanism for data deletion (uninstall erases local data; the in-app Cloud backup toggle deletes the server copy).
 - ❌ The app is NOT participating in Google Play Families.
 
 ---

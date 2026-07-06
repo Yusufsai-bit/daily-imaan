@@ -17,10 +17,13 @@ Work through them top to bottom.
 - [x] Privacy Policy: in-app screen at `/privacy`, linked from Settings → Privacy & Legal, plus a hostable `PRIVACY_POLICY.md` at the project root.
 - [x] Store listing copy ready in `STORE_LISTING.md`.
 - [x] Privacy nutrition labels (Apple) + Data safety form (Google) reference in `PRIVACY_NUTRITION_LABELS.md`.
-- [x] Bundled adhan audio: `adhan-makkah.mp3` and `adhan-madinah.mp3` registered in `app.json`'s `expo-notifications` plugin, wired into AppContext (`adhanSound` setting), iOS sound field, and Android per-channel routing in `useNotifications.ts`. Attribution in `assets/sounds/README.md` and the in-app About content card.
+- [x] Bundled adhan audio: `adhan_madinah.mp3` (CC0) registered in `app.json`'s `expo-notifications` plugin, wired into AppContext (`adhanSound` setting), iOS sound field, and Android per-channel routing in `useNotifications.ts`. Attribution in `assets/sounds/README.md` and the in-app About content card. (The Makkah option was removed pre-submission — truncated file + wrong attribution; see the sounds README.)
 - [x] Real consecutive-day streak with weekly freeze grace days (2 freezes per week, refilled each Sunday). Auto-applies to bridge missed days; surfaces a one-time celebratory banner on the home screen when a freeze rescues a streak.
 - [x] DST-safe daily ayah picker (uses calendar-day arithmetic, not millisecond-difference).
 - [x] Supabase remote-state mirror (anonymous-auth backed) wired into AppContext. **No-op when env vars are unset** — the app works offline-only out of the box. See `lib/supabase.ts` for the 5-minute setup if you want streaks to survive reinstalls.
+- [x] Anonymous session stored in the iOS Keychain / Android Keystore (chunked, via `expo-secure-store`) so it survives uninstall→reinstall — this is what makes "streak survives reinstalls" literally true. Sessions written by builds ≤12 into AsyncStorage migrate automatically on first read.
+- [x] Cloud backup toggle in Settings → Privacy & Legal. Turning it off deletes the server-side row (matches the privacy policy's promise).
+- [x] Asr juristic school picker (Standard / Hanafi) in Settings — exposes the `prayerSchool` state + AlAdhan `school` param that were already wired.
 - [x] AbortController + 10s timeout on every outbound `fetch()` (tafsir, prayer-times, prewarm).
 - [x] Audio cleanup race fixed (ref-based unmount cleanup).
 - [x] React Compiler beta DISABLED for v1 stability. Re-enable in v1.1 after the boring path ships.
@@ -182,7 +185,7 @@ For both stores, fill in everything from `STORE_LISTING.md` and `PRIVACY_NUTRITI
 
 These are intentional and not bugs, but you may want to call them out in your release notes:
 
-- **iOS widget:** not yet shipped. The Android widget is.
+- **iOS widget:** shipped (`targets/DailyImaanWidget` via `@bacons/apple-targets`), alongside the Android widget. Known v1 limitation: the timeline refreshes only at midnight, so the "next prayer" line can go stale until the app is opened — device-test before relying on it.
 - **App icon:** uses the same `icon.png` for the main icon, the adaptive icon foreground, and the splash. Replacing with purpose-built artwork (1024×1024 main, padded foreground for Android adaptive, separate splash logo) will make the install experience feel more polished.
 - **Local-first by default:** the app works offline without any backend. Streak / bookmarks survive reinstalls **only when** Supabase env vars are configured (see S3).
 
@@ -190,7 +193,7 @@ These are intentional and not bugs, but you may want to call them out in your re
 
 These are choices, not bugs — flagged here so a future reviewer or task does not accidentally "fix" them.
 
-- **Daily ayat are drawn from a curated rotation (~75 vetted verses), not from the full 6,236-ayah dataset.** This is intentional: a "gentle, no guilt" daily app should not surface, say, a verse about hellfire on a hard day. The full Qur'an dataset is bundled offline and used by the Surah / Bookmarks screens; daily delivery uses the curated list. The store description ("drawn from a curated rotation of the Qur'an") reflects this honestly. Consider expanding to 200–300 in v1.1.
+- **Daily ayat are drawn from a curated rotation (100 vetted verses), not from the full 6,236-ayah dataset.** This is intentional: a "gentle, no guilt" daily app should not surface, say, a verse about hellfire on a hard day. The full Qur'an dataset is bundled offline and used by the Surah / Bookmarks screens; daily delivery uses the curated list. The store description ("drawn from a curated rotation of the Qur'an") reflects this honestly. Consider expanding to 200–300 in v1.1.
 - **Tafsir / context is fetched verbatim on demand from Quran.com (Ibn Kathir, Abridged), not bundled.** ZERO AI-generated commentary on Islamic content. First load per ayah requires a network round-trip; subsequent reads are served from an LRU AsyncStorage cache.
 - **Notifications use a generic body, not the verse text.** Embedding the verse in the body would go stale across days because a DAILY trigger fires the same payload forever. Today's verse is computed fresh when the user opens the app from the notification. Body copy now rotates daily across a small pool to avoid feeling robotic.
 - **"Mark as Read" notification action is dismiss-only** (does not foreground the app); tapping the body itself opens the app to read the verse.

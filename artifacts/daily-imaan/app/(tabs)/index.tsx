@@ -370,10 +370,13 @@ export default function HomeScreen() {
   const hadithBookmarked = isHadithBookmarked(hadith.id);
 
   // Resume Qur'an tile values — first-run shows "Start the Qur'an".
+  // Only the surah is tracked (setLastReadPosition always records ayah 1),
+  // so the subtitle deliberately omits an ayah number — showing ":1" would
+  // imply verse-level precision the feature doesn't have.
   const hasLastRead = !!state.lastReadPosition;
   const resumeTitle = hasLastRead ? "Resume Qur'an" : "Start the Qur'an";
   const resumeSubtitle = hasLastRead
-    ? `${state.lastReadPosition!.surahName} ${state.lastReadPosition!.surahId}:${state.lastReadPosition!.ayahNumber}`
+    ? `Surah ${state.lastReadPosition!.surahName}`
     : "Begin with Al-Fatiha";
   const resumeRoute = hasLastRead
     ? `/surah/${state.lastReadPosition!.surahId}`

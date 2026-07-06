@@ -77,11 +77,10 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           Please reload the app to continue.
         </Text>
 
-        {/* TEMP: surface the actual error message in production so beta
-            testers can report what's actually broken. Remove this block
-            once the Dua-card crash is diagnosed (search "TEMP:" to find
-            it). The dev-only modal below remains for full stack traces. */}
-        {error?.message ? (
+        {/* Dev-only: surface the actual error message inline. In production
+            users get the friendly copy above and crashes flow to Sentry
+            (when enabled) — raw error internals are never shown to users. */}
+        {__DEV__ && error?.message ? (
           <Text
             selectable
             style={[

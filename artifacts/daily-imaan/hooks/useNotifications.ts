@@ -256,8 +256,8 @@ const ADHKAR_EVENING_POOL = [
  * return here MUST match the basename + extension as registered in app.json
  * exactly — any mismatch silently falls back to the system sound.
  *
- * IMPORTANT: any filename returned here (e.g. `adhan-makkah.mp3`,
- * `adhan_madinah.mp3`) must also appear, byte-identical, in the
+ * IMPORTANT: any filename returned here (e.g. `adhan_madinah.mp3`) must
+ * also appear, byte-identical, in the
  * `expo-notifications` plugin's `sounds[]` array in `artifacts/daily-imaan/app.json`
  * AND as a real file under `assets/sounds/`. The plugin only bundles assets
  * it finds in that array at prebuild time — anything missing or mistyped
@@ -269,11 +269,10 @@ const ADHKAR_EVENING_POOL = [
  */
 function resolveAdhanSound(
   enabled: boolean,
-  adhanSound: "default" | "madinah" | "makkah"
+  adhanSound: "default" | "madinah"
 ): boolean | string {
   if (!enabled) return false;
   if (adhanSound === "madinah") return "adhan_madinah.mp3";
-  if (adhanSound === "makkah") return "adhan_makkah.mp3";
   return true; // device default
 }
 
@@ -302,11 +301,6 @@ async function setupAndroidPrayerChannels(): Promise<void> {
     importance: Notifications.AndroidImportance.HIGH,
     sound: "adhan_madinah.mp3",
   });
-  await Notifications.setNotificationChannelAsync("prayer-makkah", {
-    name: "Prayer reminders — Adhan (Makkah)",
-    importance: Notifications.AndroidImportance.HIGH,
-    sound: "adhan_makkah.mp3",
-  });
   await Notifications.setNotificationChannelAsync("prayer-silent", {
     name: "Prayer reminders (silent)",
     importance: Notifications.AndroidImportance.DEFAULT,
@@ -316,18 +310,17 @@ async function setupAndroidPrayerChannels(): Promise<void> {
 
 function androidChannelFor(
   enabled: boolean,
-  adhanSound: "default" | "madinah" | "makkah"
+  adhanSound: "default" | "madinah"
 ): string {
   if (!enabled) return "prayer-silent";
   if (adhanSound === "madinah") return "prayer-madinah";
-  if (adhanSound === "makkah") return "prayer-makkah";
   return "prayer-default";
 }
 
 export async function schedulePrayerNotifications(
   prayerTimes: PrayerTimes,
   prayerSoundEnabled: PrayerSoundSettings = DEFAULT_PRAYER_SOUND_ENABLED,
-  adhanSound: "default" | "madinah" | "makkah" = "default"
+  adhanSound: "default" | "madinah" = "default"
 ): Promise<void> {
   if (Platform.OS === "web") return;
   // Serialize concurrent callers — without this, a `prayerTimes` refresh that
@@ -343,7 +336,7 @@ export async function schedulePrayerNotifications(
       ]);
 
       // Android 8+ binds sound to the channel, not the notification — set up
-      // one channel per adhan choice (default / makkah / madinah / silent) so
+      // one channel per adhan choice (default / madinah / silent) so
       // switching sounds in Settings just routes to a different channel rather
       // than trying to mutate channel sound (which Android forbids).
       await setupAndroidPrayerChannels();

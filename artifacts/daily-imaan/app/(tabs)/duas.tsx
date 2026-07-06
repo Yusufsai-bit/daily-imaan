@@ -40,9 +40,8 @@ const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 /**
  * Per-card fallback. Keeps a single broken Dua entry from taking the whole
  * tab down. Shown in place of the card so the user can still scroll the
- * rest of the list. The full error surfaces via the inline message in
- * components/ErrorFallback.tsx (TEMP block) while we diagnose the
- * intermittent expand-crash a tester reported in 1.0.0 (4).
+ * rest of the list. The raw error message is dev-only — production users
+ * see the friendly line and the error flows to Sentry when enabled.
  */
 function DuaCardErrorFallback({ error }: { error: Error; resetError: () => void }) {
   return (
@@ -53,9 +52,11 @@ function DuaCardErrorFallback({ error }: { error: Error; resetError: () => void 
       <Text style={{ fontSize: 13, color: "#B91C1C", fontFamily: "Inter_600SemiBold" }}>
         This du'a couldn't be displayed
       </Text>
-      <Text selectable style={{ fontSize: 11, color: "#B91C1C", marginTop: 4, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" }}>
-        {String(error?.message ?? "unknown error")}
-      </Text>
+      {__DEV__ ? (
+        <Text selectable style={{ fontSize: 11, color: "#B91C1C", marginTop: 4, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" }}>
+          {String(error?.message ?? "unknown error")}
+        </Text>
+      ) : null}
     </View>
   );
 }

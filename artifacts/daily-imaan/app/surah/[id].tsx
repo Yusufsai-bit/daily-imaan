@@ -683,7 +683,10 @@ export default function SurahDetailScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={() => (
             <View style={styles.listHeader}>
-              {surahId !== 9 && (
+              {/* No bismillah header for At-Tawbah (9, revealed without it)
+                  or Al-Fatihah (1, where the bismillah IS verse 1 — showing
+                  the header too would display it twice). */}
+              {surahId !== 9 && surahId !== 1 && (
                 <View style={[styles.bismillah, { backgroundColor: C.card }]}>
                   <Text style={[styles.bismillahText, { color: C.primary, fontFamily: ARABIC_FONT_REGULAR }]}>
                     بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ

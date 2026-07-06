@@ -50,11 +50,16 @@ export default function FastingScreen() {
   const [qadaReason, setQadaReason] = useState("");
 
   const handleAddQada = () => {
-    if (!qadaDate.trim()) {
-      Alert.alert("Date required", "Enter the date the fast was missed (e.g. 2024-03-15).");
+    const trimmed = qadaDate.trim();
+    // Validate both shape and calendar validity (rejects 2024-02-31 etc.),
+    // otherwise formatDateKey renders "Invalid Date" in the list forever.
+    const shapeOk = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(trimmed);
+    const parsed = new Date(trimmed + "T00:00:00");
+    if (!shapeOk || Number.isNaN(parsed.getTime())) {
+      Alert.alert("Invalid date", "Enter the date the fast was missed as YYYY-MM-DD (e.g. 2024-03-15).");
       return;
     }
-    addQadaFast({ date: qadaDate.trim(), reason: qadaReason.trim() || "Not specified", madeUp: false });
+    addQadaFast({ date: trimmed, reason: qadaReason.trim() || "Not specified", madeUp: false });
     setAddModal(false);
     setQadaDate("");
     setQadaReason("");

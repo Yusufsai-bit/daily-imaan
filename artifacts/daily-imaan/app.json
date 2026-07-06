@@ -66,8 +66,7 @@
         "expo-notifications",
         {
           "sounds": [
-            "./assets/sounds/adhan_madinah.mp3",
-            "./assets/sounds/adhan_makkah.mp3"
+            "./assets/sounds/adhan_madinah.mp3"
           ]
         }
       ],

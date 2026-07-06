@@ -25,6 +25,7 @@ import type { DimensionValue } from "react-native";
 import colors from "@/constants/colors";
 import { RECITERS } from "@/constants/reciters";
 import { useApp, type PrayerSoundSettings } from "@/context/AppContext";
+import { deleteRemoteState } from "@/lib/remoteState";
 import { requestNotificationPermission, sendTestNotification } from "@/hooks/useNotifications";
 import {
   a11yButton,
@@ -172,6 +173,37 @@ export default function SettingsScreen() {
     (val: boolean) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       updateSettings({ crashReportsEnabled: val });
+    },
+    [updateSettings],
+  );
+
+  // Cloud backup opt-out. Turning it OFF also deletes the server-side copy
+  // — the in-app privacy policy promises exactly that, so the confirm
+  // dialog spells it out (streak/bookmarks stay on this device, but stop
+  // surviving reinstalls). Turning it back ON simply resumes syncing under
+  // a fresh anonymous session on the next state write.
+  const handleCloudSyncToggle = useCallback(
+    (val: boolean) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (val) {
+        updateSettings({ cloudSyncEnabled: true });
+        return;
+      }
+      Alert.alert(
+        "Turn off cloud backup?",
+        "Your streak and bookmarks stay on this phone, but the anonymous backup is deleted from our server — so your progress will no longer survive a reinstall or a new phone.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Turn off & delete",
+            style: "destructive",
+            onPress: () => {
+              updateSettings({ cloudSyncEnabled: false });
+              void deleteRemoteState();
+            },
+          },
+        ],
+      );
     },
     [updateSettings],
   );
@@ -919,6 +951,11 @@ export default function SettingsScreen() {
                 }}
                 trackColor={{ false: C.border, true: C.primary }}
                 thumbColor="#fff"
+                {...a11yToggle(
+                  "Wudu reminder",
+                  settings.wuduReminderEnabled,
+                  "Sends a heads-up before each prayer to make wudu",
+                )}
               />
             }
           />
@@ -988,6 +1025,62 @@ export default function SettingsScreen() {
                 </Text>
               </View>
               {settings.prayerMethod === method.id && (
+                <Ionicons name="checkmark-circle" size={20} color={C.primary} {...a11yDecorative} />
+              )}
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      {/* Asr juristic school — 0 = Standard (Shafi'i/Maliki/Hanbali, shadow
+          = 1× object length), 1 = Hanafi (shadow = 2×, so Asr is later).
+          The `prayerSchool` state field and the AlAdhan `school` param were
+          always wired; this picker is what finally exposes them. */}
+      <View style={[styles.section, { marginTop: -14 }]}>
+        <View style={{ gap: 2, marginBottom: 8 }}>
+          <Text
+            maxFontSizeMultiplier={1.4}
+            style={[styles.sectionLabel, { color: C.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+          >
+            ASR TIME (JURISTIC SCHOOL)
+          </Text>
+        </View>
+        <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+          {([
+            { id: 0, label: "Standard", hint: "Shafi'i, Maliki, Hanbali — earlier Asr" },
+            { id: 1, label: "Hanafi", hint: "Later Asr (shadow twice the object's length)" },
+          ] as const).map((school, i, arr) => (
+            <Pressable
+              key={school.id}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                updateSettings({ prayerSchool: school.id });
+              }}
+              {...a11ySelectable(`${school.label}. ${school.hint}`, settings.prayerSchool === school.id)}
+              style={({ pressed }) => [
+                styles.methodRow,
+                i < arr.length - 1 && {
+                  borderBottomWidth: StyleSheet.hairlineWidth,
+                  borderBottomColor: C.border,
+                },
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text
+                  maxFontSizeMultiplier={1.6}
+                  style={[styles.methodLabel, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+                >
+                  {school.label}
+                </Text>
+                <Text
+                  maxFontSizeMultiplier={1.6}
+                  style={{ color: C.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 12 }}
+                >
+                  {school.hint}
+                </Text>
+              </View>
+              {settings.prayerSchool === school.id && (
                 <Ionicons name="checkmark-circle" size={20} color={C.primary} {...a11yDecorative} />
               )}
             </Pressable>
@@ -1155,14 +1248,13 @@ export default function SettingsScreen() {
             maxFontSizeMultiplier={1.6}
             style={[styles.sectionDesc, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
           >
-            Pick what plays at prayer time when sound is on above. Bundled adhans fall back to the device default if not yet shipped.
+            Pick what plays at prayer time when sound is on above.
           </Text>
         </View>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
           {([
             { id: "default" as const, title: "Device default", subtitle: "System notification sound — always available" },
-            { id: "madinah" as const, title: "Adhan — Madinah", subtitle: "Bundled recitation, Masjid an-Nabawi style" },
-            { id: "makkah" as const, title: "Adhan", subtitle: "Full adhan recitation — Aaqib Azeez (CC BY-SA 4.0)" },
+            { id: "madinah" as const, title: "Adhan", subtitle: "Bundled adhan recitation — plays offline (CC0)" },
           ] as const).map((opt, i, arr) => (
             <Pressable
               key={opt.id}
@@ -1201,7 +1293,7 @@ export default function SettingsScreen() {
           maxFontSizeMultiplier={1.6}
           style={[styles.hint, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
         >
-          Both adhans are bundled with the app and play offline.
+          The adhan is bundled with the app and plays offline. Attribution is listed under About → Sources.
         </Text>
       </View>
 
@@ -1269,6 +1361,32 @@ export default function SettingsScreen() {
           PRIVACY & LEGAL
         </Text>
         <View style={[styles.card, { backgroundColor: C.card, shadowColor: isDark ? "#000" : "#000" }]}>
+          {/* Cloud backup — the anonymous Supabase mirror that lets streaks
+              and bookmarks survive reinstalls. Opt-out; turning it off also
+              deletes the server row (see handleCloudSyncToggle). */}
+          <SettingRow
+            icon="cloud-outline"
+            title="Cloud backup"
+            subtitle={
+              settings.cloudSyncEnabled
+                ? "Anonymous — keeps your streak safe across reinstalls"
+                : "Off — progress lives only on this phone"
+            }
+            C={C}
+            right={
+              <Switch
+                value={settings.cloudSyncEnabled}
+                onValueChange={handleCloudSyncToggle}
+                trackColor={{ false: C.border, true: C.primary }}
+                thumbColor="#fff"
+                {...a11yToggle(
+                  "Cloud backup",
+                  settings.cloudSyncEnabled,
+                  "Anonymous backup of your streak and bookmarks. Turning it off also deletes the server copy",
+                )}
+              />
+            }
+          />
           {/* Anonymized crash reports — opt-out. We never collect personal
               data; only stack traces and anonymized device info to help us
               fix bugs. The toggle takes effect immediately via

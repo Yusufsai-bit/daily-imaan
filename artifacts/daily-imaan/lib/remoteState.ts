@@ -95,6 +95,45 @@ export function syncRemoteState(state: unknown): void {
   }, PUSH_DEBOUNCE_MS);
 }
 
+/**
+ * Cancel any queued (debounced) push without sending it. Called when the
+ * user turns Cloud backup OFF so a pending write can't race the deletion.
+ */
+export function cancelPendingSync(): void {
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = null;
+  pendingPush = null;
+}
+
+/**
+ * Delete the current anonymous user's mirrored row and sign out, dropping
+ * the Keychain session. Called when the user turns Cloud backup OFF in
+ * Settings — the in-app privacy policy promises that disabling backup also
+ * removes the server copy, so this must actually happen.
+ *
+ * Deliberately does NOT create a session: if there's no signed-in user,
+ * there's nothing on the server to delete.
+ */
+export async function deleteRemoteState(): Promise<void> {
+  cancelPendingSync();
+  const supabase = await getSupabase();
+  if (!supabase) return;
+  try {
+    // @ts-expect-error — see ensureAnonymousUser
+    const { data } = await supabase.auth.getSession();
+    const userId = data?.session?.user?.id as string | undefined;
+    if (!userId) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from(TABLE).delete().eq("user_id", userId);
+    // @ts-expect-error — see ensureAnonymousUser
+    await supabase.auth.signOut();
+  } catch {
+    // Best-effort: worst case the orphaned row is re-deleted next time the
+    // toggle is flipped, and no further data is pushed either way because
+    // syncRemoteState is gated on the setting.
+  }
+}
+
 async function flushPush(): Promise<void> {
   const payload = pendingPush;
   pendingPush = null;
