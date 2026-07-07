@@ -29,6 +29,21 @@ const PUSH_DEBOUNCE_MS = 1000;
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
 let pendingPush: unknown | null = null;
 
+/**
+ * Hard suspend latch. Set when the user turns Cloud backup OFF (alongside
+ * deleting the row) and cleared when they turn it back ON. Exists because
+ * the AppContext gate alone has a race: a debounced save whose snapshot was
+ * captured just BEFORE the toggle still carries cloudSyncEnabled=true and
+ * would re-push (recreating the freshly-deleted row) moments after
+ * deleteRemoteState ran. The latch makes "off" mean off immediately.
+ */
+let syncSuspended = false;
+
+/** Re-allow pushes after the user turns Cloud backup back ON. */
+export function resumeRemoteSync(): void {
+  syncSuspended = false;
+}
+
 interface RowShape {
   user_id: string;
   state: unknown;
@@ -88,6 +103,7 @@ export async function hydrateRemoteState(): Promise<unknown | null> {
  * this. Errors are swallowed; the local AsyncStorage write is canonical.
  */
 export function syncRemoteState(state: unknown): void {
+  if (syncSuspended) return;
   pendingPush = state;
   if (pushTimer) clearTimeout(pushTimer);
   pushTimer = setTimeout(() => {
@@ -115,6 +131,7 @@ export function cancelPendingSync(): void {
  * there's nothing on the server to delete.
  */
 export async function deleteRemoteState(): Promise<void> {
+  syncSuspended = true;
   cancelPendingSync();
   const supabase = await getSupabase();
   if (!supabase) return;

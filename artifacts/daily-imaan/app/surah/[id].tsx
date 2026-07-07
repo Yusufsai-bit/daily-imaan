@@ -424,6 +424,12 @@ export default function SurahDetailScreen() {
   const [downloadStatus, setDownloadStatus] = useState<"none" | "downloading" | "done">("none");
   const [downloadPct, setDownloadPct] = useState(0);
   const mountedRef = useRef(true);
+  // Identifies WHICH download the progress callbacks belong to. If the user
+  // changes reciter in Settings while a download runs, the old download's
+  // callbacks must stop driving the UI (its files still land — harmless —
+  // but the shown status belongs to the current surah+reciter pair).
+  const downloadKeyRef = useRef<string>("");
+  const currentDownloadKey = `${surahId}|${reciter}`;
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -465,9 +471,18 @@ export default function SurahDetailScreen() {
   useEffect(() => {
     if (Platform.OS === "web") return;
     let cancelled = false;
+    // A reciter/surah change invalidates any in-flight download's claim on
+    // the UI (downloadKeyRef no longer matches) and re-reads disk state.
     isSurahDownloaded(surahId, reciter)
       .then((done) => {
-        if (!cancelled) setDownloadStatus((prev) => (prev === "downloading" ? prev : done ? "done" : "none"));
+        if (cancelled) return;
+        setDownloadStatus((prev) =>
+          prev === "downloading" && downloadKeyRef.current === `${surahId}|${reciter}`
+            ? prev
+            : done
+            ? "done"
+            : "none",
+        );
       })
       .catch(() => undefined);
     return () => {
@@ -496,20 +511,23 @@ export default function SurahDetailScreen() {
       );
       return;
     }
+    const key = currentDownloadKey;
+    downloadKeyRef.current = key;
+    const stillCurrent = () => mountedRef.current && downloadKeyRef.current === key;
     setDownloadStatus("downloading");
     setDownloadPct(0);
     try {
       await downloadSurahAudio(surahId, reciter, (done, total) => {
-        if (mountedRef.current) setDownloadPct(Math.round((done / total) * 100));
+        if (stillCurrent()) setDownloadPct(Math.round((done / total) * 100));
       });
-      if (mountedRef.current) setDownloadStatus("done");
+      if (stillCurrent()) setDownloadStatus("done");
     } catch {
-      if (mountedRef.current) {
+      if (stillCurrent()) {
         setDownloadStatus("none");
         Alert.alert("Download failed", "Check your connection and try again — completed ayat are kept, so retrying resumes.");
       }
     }
-  }, [downloadStatus, surahId, reciter]);
+  }, [downloadStatus, surahId, reciter, currentDownloadKey]);
 
   const cycleFontSize = useCallback(() => {
     Haptics.selectionAsync();

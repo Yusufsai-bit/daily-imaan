@@ -123,7 +123,10 @@ function AppEffects() {
 
     const routeForResponse = (response: Notifications.NotificationResponse) => {
       if (response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
-      const id = response.notification.request.identifier;
+      // Dedupe key MUST include the fire date: repeating (DAILY) triggers
+      // reuse the same request identifier every day, so identifier alone
+      // would swallow tomorrow's tap in a long-lived app session.
+      const id = `${response.notification.request.identifier}:${response.notification.date}`;
       if (handledNotificationIdRef.current === id) return;
       handledNotificationIdRef.current = id;
 

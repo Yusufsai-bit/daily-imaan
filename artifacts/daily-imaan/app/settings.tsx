@@ -26,7 +26,7 @@ import type { DimensionValue } from "react-native";
 import colors from "@/constants/colors";
 import { RECITERS } from "@/constants/reciters";
 import { useApp, type PrayerSoundSettings } from "@/context/AppContext";
-import { deleteRemoteState } from "@/lib/remoteState";
+import { deleteRemoteState, resumeRemoteSync } from "@/lib/remoteState";
 import { requestNotificationPermission, sendTestNotification } from "@/hooks/useNotifications";
 import {
   a11yButton,
@@ -187,6 +187,9 @@ export default function SettingsScreen() {
     (val: boolean) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       if (val) {
+        // Lift the hard suspend latch first so the very next state write
+        // (this settings change) syncs under a fresh anonymous session.
+        resumeRemoteSync();
         updateSettings({ cloudSyncEnabled: true });
         return;
       }
