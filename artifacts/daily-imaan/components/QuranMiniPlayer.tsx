@@ -21,6 +21,7 @@ import TrackPlayer from "react-native-track-player";
 import { Ionicons } from "@expo/vector-icons";
 import colors from "@/constants/colors";
 import { parseTrackId } from "@/lib/trackPlayer";
+import { useReduceMotion } from "@/hooks/useReduceMotion";
 
 /**
  * Floating mini-player that appears at the bottom of every screen when Quran
@@ -83,15 +84,22 @@ export function QuranMiniPlayer() {
   const isPlaying = state === State.Playing || state === State.Buffering;
   const hasTrack = !!track;
 
+  const reduceMotion = useReduceMotion();
+
   useEffect(() => {
-    Animated.spring(slideAnim, {
-      toValue: hasTrack ? 0 : 100,
-      useNativeDriver: true,
-      tension: 80,
-      friction: 12,
-    }).start();
+    if (reduceMotion) {
+      // Appear/disappear without the slide under Reduce Motion.
+      slideAnim.setValue(hasTrack ? 0 : 100);
+    } else {
+      Animated.spring(slideAnim, {
+        toValue: hasTrack ? 0 : 100,
+        useNativeDriver: true,
+        tension: 80,
+        friction: 12,
+      }).start();
+    }
     if (!hasTrack) cancelSleepTimer();
-  }, [hasTrack, slideAnim]);
+  }, [hasTrack, slideAnim, reduceMotion]);
 
   // Cleanup timer on unmount
   useEffect(() => () => { if (sleepTickRef.current) clearInterval(sleepTickRef.current); }, []);

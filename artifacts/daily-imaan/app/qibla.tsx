@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import colors from "@/constants/colors";
+import { useReduceMotion } from "@/hooks/useReduceMotion";
 
 const KAABA_LAT = 21.4225;
 const KAABA_LNG = 39.8262;
@@ -78,6 +79,7 @@ export default function QiblaScreen() {
 
   const rotation = useRef(new Animated.Value(0)).current;
   const previousAngleRef = useRef(0);
+  const reduceMotion = useReduceMotion();
 
   useEffect(() => {
     if (Platform.OS === "web") {
@@ -197,13 +199,19 @@ export default function QiblaScreen() {
     const next = previous + delta;
     previousAngleRef.current = next;
 
+    // Reduce Motion: the needle must still point correctly (it's content,
+    // not decoration) — but jump instead of easing through the arc.
+    if (reduceMotion) {
+      rotation.setValue(next);
+      return;
+    }
     Animated.timing(rotation, {
       toValue: next,
       duration: 220,
       easing: Easing.out(Easing.quad),
       useNativeDriver: true,
     }).start();
-  }, [targetAngle, rotation]);
+  }, [targetAngle, rotation, reduceMotion]);
 
   // Haptic ping when within 5° of Qibla
   const wasAlignedRef = useRef(false);

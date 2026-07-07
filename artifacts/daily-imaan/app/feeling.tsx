@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import colors from "@/constants/colors";
 import { ARABIC_FONT_REGULAR } from "@/constants/fonts";
 import { FEELINGS } from "@/data/feelingsData";
+import { useReduceMotion } from "@/hooks/useReduceMotion";
 
 if (
   Platform.OS === "android" &&
@@ -33,12 +34,15 @@ export default function FeelingScreen() {
   const insets = useSafeAreaInsets();
 
   const [openKey, setOpenKey] = useState<string | null>(null);
+  const reduceMotion = useReduceMotion();
 
   const handleToggle = (key: string) => {
     Haptics.selectionAsync();
-    LayoutAnimation.configureNext(
-      LayoutAnimation.create(220, "easeInEaseOut", "opacity")
-    );
+    if (!reduceMotion) {
+      LayoutAnimation.configureNext(
+        LayoutAnimation.create(220, "easeInEaseOut", "opacity")
+      );
+    }
     setOpenKey(openKey === key ? null : key);
   };
 

@@ -19,6 +19,7 @@ import colors from "@/constants/colors";
 import { useApp } from "@/context/AppContext";
 import { ARABIC_FONT_REGULAR } from "@/constants/fonts";
 import { a11yButton } from "@/components/a11y";
+import { useReduceMotion } from "@/hooks/useReduceMotion";
 
 interface DhikrState {
   subhanAllah: number;
@@ -126,6 +127,7 @@ export default function DhikrScreen() {
 
   const scaleAnims = useRef(DHIKR_CONFIG.map(() => new Animated.Value(1))).current;
   const completionAnims = useRef(DHIKR_CONFIG.map(() => new Animated.Value(0))).current;
+  const reduceMotion = useReduceMotion();
 
   const handlePress = useCallback(
     (key: keyof DhikrState, index: number, max: number) => {
@@ -133,11 +135,14 @@ export default function DhikrScreen() {
       const useND = Platform.OS !== "web";
 
       // Tap-bounce. Plays on every increment regardless of whether we're
-      // pre- or post-target.
-      Animated.sequence([
-        Animated.timing(scaleAnims[index]!, { toValue: 0.93, duration: 80, useNativeDriver: useND }),
-        Animated.spring(scaleAnims[index]!, { toValue: 1, tension: 200, friction: 8, useNativeDriver: useND }),
-      ]).start();
+      // pre- or post-target. Decorative — skipped under Reduce Motion (the
+      // haptic and count change still confirm the tap).
+      if (!reduceMotion) {
+        Animated.sequence([
+          Animated.timing(scaleAnims[index]!, { toValue: 0.93, duration: 80, useNativeDriver: useND }),
+          Animated.spring(scaleAnims[index]!, { toValue: 1, tension: 200, friction: 8, useNativeDriver: useND }),
+        ]).start();
+      }
 
       if (newCount === max) {
         // First time hitting the Sunnah target — celebrate once. The count
@@ -146,11 +151,17 @@ export default function DhikrScreen() {
         // idempotent and never undoes a manual check.
         markDeedDone("dhikr");
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Animated.sequence([
-          Animated.timing(completionAnims[index]!, { toValue: 1, duration: 250, useNativeDriver: useND }),
-          Animated.delay(700),
-          Animated.timing(completionAnims[index]!, { toValue: 0, duration: 300, useNativeDriver: useND }),
-        ]).start();
+        if (reduceMotion) {
+          // Show the badge without fading — visible confirmation, no motion.
+          completionAnims[index]!.setValue(1);
+          setTimeout(() => completionAnims[index]!.setValue(0), 950);
+        } else {
+          Animated.sequence([
+            Animated.timing(completionAnims[index]!, { toValue: 1, duration: 250, useNativeDriver: useND }),
+            Animated.delay(700),
+            Animated.timing(completionAnims[index]!, { toValue: 0, duration: 300, useNativeDriver: useND }),
+          ]).start();
+        }
       } else {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
@@ -158,7 +169,7 @@ export default function DhikrScreen() {
       setCounts((prev) => ({ ...prev, [key]: newCount }));
       setSessionTotal((t) => t + 1);
     },
-    [counts, scaleAnims, completionAnims, markDeedDone]
+    [counts, scaleAnims, completionAnims, markDeedDone, reduceMotion]
   );
 
   const handleReset = useCallback(() => {

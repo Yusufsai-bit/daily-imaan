@@ -1,3 +1,4 @@
+import Constants from "expo-constants";
 import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
@@ -1504,7 +1505,7 @@ export default function SettingsScreen() {
           maxFontSizeMultiplier={1.4}
           style={[styles.appInfoText, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}
         >
-          Daily Imaan v1.0.0{"\n"}May Allah accept from all of us. آمين
+          Daily Imaan v{Constants.expoConfig?.version ?? "1.0.1"}{"\n"}May Allah accept from all of us. آمين
         </Text>
       </View>
     </ScrollView>
