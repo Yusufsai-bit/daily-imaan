@@ -530,7 +530,102 @@ export interface FeaturedAyah {
       arabicText: "إِنَّآ أَعْطَيْنَـٰكَ ٱلْكَوْثَرَ",
       englishText: "Indeed, We have granted you, [O Muḥammad], al-Kawthar.",
     },
-  ];
+    {
+      id: 101, surahId: 65, surahNameEnglish: "At-Talaq", ayahNumber: 2,
+      arabicText: "فَإِذَا بَلَغْنَ أَجَلَهُنَّ فَأَمْسِكُوهُنَّ بِمَعْرُوفٍ أَوْ فَارِقُوهُنَّ بِمَعْرُوفٍ وَأَشْهِدُوا۟ ذَوَىْ عَدْلٍ مِّنكُمْ وَأَقِيمُوا۟ ٱلشَّهَـٰدَةَ لِلَّهِ ۚ ذَٰلِكُمْ يُوعَظُ بِهِۦ مَن كَانَ يُؤْمِنُ بِٱللَّهِ وَٱلْيَوْمِ ٱلْـَٔاخِرِ ۚ وَمَن يَتَّقِ ٱللَّهَ يَجْعَل لَّهُۥ مَخْرَجًا",
+      englishText: "And when they have [nearly] fulfilled their term, either retain them according to acceptable terms or part with them according to acceptable terms. And bring to witness two just men from among you and establish the testimony for [the acceptance of] Allāh. That is instructed to whoever should believe in Allāh and the Last Day. And whoever fears Allāh - He will make for him a way out",
+    },
+  {
+      id: 102, surahId: 65, surahNameEnglish: "At-Talaq", ayahNumber: 7,
+      arabicText: "لِيُنفِقْ ذُو سَعَةٍ مِّن سَعَتِهِۦ ۖ وَمَن قُدِرَ عَلَيْهِ رِزْقُهُۥ فَلْيُنفِقْ مِمَّآ ءَاتَىٰهُ ٱللَّهُ ۚ لَا يُكَلِّفُ ٱللَّهُ نَفْسًا إِلَّا مَآ ءَاتَىٰهَا ۚ سَيَجْعَلُ ٱللَّهُ بَعْدَ عُسْرٍ يُسْرًا",
+      englishText: "Let a man of wealth spend from his wealth, and he whose provision is restricted - let him spend from what Allāh has given him. Allāh does not charge a soul except [according to] what He has given it. Allāh will bring about, after hardship, ease [i.e., relief].",
+    },
+  {
+      id: 103, surahId: 93, surahNameEnglish: "Ad-Duhaa", ayahNumber: 4,
+      arabicText: "وَلَلْـَٔاخِرَةُ خَيْرٌ لَّكَ مِنَ ٱلْأُولَىٰ",
+      englishText: "And the Hereafter is better for you than the first [life].",
+    },
+  {
+      id: 104, surahId: 2, surahNameEnglish: "Al-Baqarah", ayahNumber: 153,
+      arabicText: "يَـٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوا۟ ٱسْتَعِينُوا۟ بِٱلصَّبْرِ وَٱلصَّلَوٰةِ ۚ إِنَّ ٱللَّهَ مَعَ ٱلصَّـٰبِرِينَ",
+      englishText: "O you who have believed, seek help through patience and prayer. Indeed, Allāh is with the patient.",
+    },
+  {
+      id: 105, surahId: 2, surahNameEnglish: "Al-Baqarah", ayahNumber: 201,
+      arabicText: "وَمِنْهُم مَّن يَقُولُ رَبَّنَآ ءَاتِنَا فِى ٱلدُّنْيَا حَسَنَةً وَفِى ٱلْـَٔاخِرَةِ حَسَنَةً وَقِنَا عَذَابَ ٱلنَّارِ",
+      englishText: "But among them is he who says, \"Our Lord, give us in this world [that which is] good and in the Hereafter [that which is] good and protect us from the punishment of the Fire.\"",
+    },
+  {
+      id: 106, surahId: 3, surahNameEnglish: "Ali 'Imran", ayahNumber: 8,
+      arabicText: "رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا وَهَبْ لَنَا مِن لَّدُنكَ رَحْمَةً ۚ إِنَّكَ أَنتَ ٱلْوَهَّابُ",
+      englishText: "[Who say], \"Our Lord, let not our hearts deviate after You have guided us and grant us from Yourself mercy. Indeed, You are the Bestower.",
+    },
+  {
+      id: 107, surahId: 3, surahNameEnglish: "Ali 'Imran", ayahNumber: 159,
+      arabicText: "فَبِمَا رَحْمَةٍ مِّنَ ٱللَّهِ لِنتَ لَهُمْ ۖ وَلَوْ كُنتَ فَظًّا غَلِيظَ ٱلْقَلْبِ لَٱنفَضُّوا۟ مِنْ حَوْلِكَ ۖ فَٱعْفُ عَنْهُمْ وَٱسْتَغْفِرْ لَهُمْ وَشَاوِرْهُمْ فِى ٱلْأَمْرِ ۖ فَإِذَا عَزَمْتَ فَتَوَكَّلْ عَلَى ٱللَّهِ ۚ إِنَّ ٱللَّهَ يُحِبُّ ٱلْمُتَوَكِّلِينَ",
+      englishText: "So by mercy from Allāh, [O Muḥammad], you were lenient with them. And if you had been rude [in speech] and harsh in heart, they would have disbanded from about you. So pardon them and ask forgiveness for them and consult them in the matter. And when you have decided, then rely upon Allāh. Indeed, Allāh loves those who rely [upon Him].",
+    },
+  {
+      id: 108, surahId: 10, surahNameEnglish: "Yunus", ayahNumber: 57,
+      arabicText: "يَـٰٓأَيُّهَا ٱلنَّاسُ قَدْ جَآءَتْكُم مَّوْعِظَةٌ مِّن رَّبِّكُمْ وَشِفَآءٌ لِّمَا فِى ٱلصُّدُورِ وَهُدًى وَرَحْمَةٌ لِّلْمُؤْمِنِينَ",
+      englishText: "O mankind, there has come to you instruction from your Lord and healing for what is in the breasts and guidance and mercy for the believers.",
+    },
+  {
+      id: 109, surahId: 12, surahNameEnglish: "Yusuf", ayahNumber: 86,
+      arabicText: "قَالَ إِنَّمَآ أَشْكُوا۟ بَثِّى وَحُزْنِىٓ إِلَى ٱللَّهِ وَأَعْلَمُ مِنَ ٱللَّهِ مَا لَا تَعْلَمُونَ",
+      englishText: "He said, \"I only complain of my suffering and my grief to Allāh, and I know from Allāh that which you do not know.",
+    },
+  {
+      id: 110, surahId: 16, surahNameEnglish: "An-Nahl", ayahNumber: 97,
+      arabicText: "مَنْ عَمِلَ صَـٰلِحًا مِّن ذَكَرٍ أَوْ أُنثَىٰ وَهُوَ مُؤْمِنٌ فَلَنُحْيِيَنَّهُۥ حَيَوٰةً طَيِّبَةً ۖ وَلَنَجْزِيَنَّهُمْ أَجْرَهُم بِأَحْسَنِ مَا كَانُوا۟ يَعْمَلُونَ",
+      englishText: "Whoever does righteousness, whether male or female, while he is a believer - We will surely cause him to live a good life, and We will surely give them their reward [in the Hereafter] according to the best of what they used to do.",
+    },
+  {
+      id: 111, surahId: 20, surahNameEnglish: "Taha", ayahNumber: 25,
+      arabicText: "قَالَ رَبِّ ٱشْرَحْ لِى صَدْرِى",
+      englishText: "[Moses] said, \"My Lord, expand [i.e., relax] for me my breast [with assurance]",
+    },
+  {
+      id: 112, surahId: 23, surahNameEnglish: "Al-Mu'minun", ayahNumber: 118,
+      arabicText: "وَقُل رَّبِّ ٱغْفِرْ وَٱرْحَمْ وَأَنتَ خَيْرُ ٱلرَّٰحِمِينَ",
+      englishText: "And, [O Muḥammad], say, \"My Lord, forgive and have mercy, and You are the best of the merciful.\"",
+    },
+  {
+      id: 113, surahId: 25, surahNameEnglish: "Al-Furqan", ayahNumber: 74,
+      arabicText: "وَٱلَّذِينَ يَقُولُونَ رَبَّنَا هَبْ لَنَا مِنْ أَزْوَٰجِنَا وَذُرِّيَّـٰتِنَا قُرَّةَ أَعْيُنٍ وَٱجْعَلْنَا لِلْمُتَّقِينَ إِمَامًا",
+      englishText: "And those who say, \"Our Lord, grant us from among our wives and offspring comfort to our eyes and make us a leader [i.e., example] for the righteous.\"",
+    },
+  {
+      id: 114, surahId: 29, surahNameEnglish: "Al-'Ankabut", ayahNumber: 69,
+      arabicText: "وَٱلَّذِينَ جَـٰهَدُوا۟ فِينَا لَنَهْدِيَنَّهُمْ سُبُلَنَا ۚ وَإِنَّ ٱللَّهَ لَمَعَ ٱلْمُحْسِنِينَ",
+      englishText: "And those who strive for Us - We will surely guide them to Our ways. And indeed, Allāh is with the doers of good.",
+    },
+  {
+      id: 115, surahId: 41, surahNameEnglish: "Fussilat", ayahNumber: 30,
+      arabicText: "إِنَّ ٱلَّذِينَ قَالُوا۟ رَبُّنَا ٱللَّهُ ثُمَّ ٱسْتَقَـٰمُوا۟ تَتَنَزَّلُ عَلَيْهِمُ ٱلْمَلَـٰٓئِكَةُ أَلَّا تَخَافُوا۟ وَلَا تَحْزَنُوا۟ وَأَبْشِرُوا۟ بِٱلْجَنَّةِ ٱلَّتِى كُنتُمْ تُوعَدُونَ",
+      englishText: "Indeed, those who have said, \"Our Lord is Allāh\" and then remained on a right course - the angels will descend upon them, [saying], \"Do not fear and do not grieve but receive good tidings of Paradise, which you were promised.",
+    },
+  {
+      id: 116, surahId: 46, surahNameEnglish: "Al-Ahqaf", ayahNumber: 13,
+      arabicText: "إِنَّ ٱلَّذِينَ قَالُوا۟ رَبُّنَا ٱللَّهُ ثُمَّ ٱسْتَقَـٰمُوا۟ فَلَا خَوْفٌ عَلَيْهِمْ وَلَا هُمْ يَحْزَنُونَ",
+      englishText: "Indeed, those who have said, \"Our Lord is Allāh,\" and then remained on a right course - there will be no fear concerning them, nor will they grieve.",
+    },
+  {
+      id: 117, surahId: 55, surahNameEnglish: "Ar-Rahman", ayahNumber: 60,
+      arabicText: "هَلْ جَزَآءُ ٱلْإِحْسَـٰنِ إِلَّا ٱلْإِحْسَـٰنُ",
+      englishText: "Is the reward for good [anything] but good?",
+    },
+  {
+      id: 118, surahId: 64, surahNameEnglish: "At-Taghabun", ayahNumber: 11,
+      arabicText: "مَآ أَصَابَ مِن مُّصِيبَةٍ إِلَّا بِإِذْنِ ٱللَّهِ ۗ وَمَن يُؤْمِنۢ بِٱللَّهِ يَهْدِ قَلْبَهُۥ ۚ وَٱللَّهُ بِكُلِّ شَىْءٍ عَلِيمٌ",
+      englishText: "No disaster strikes except by permission of Allāh. And whoever believes in Allāh - He will guide his heart. And Allāh is Knowing of all things.",
+    },
+  {
+      id: 119, surahId: 87, surahNameEnglish: "Al-A'la", ayahNumber: 8,
+      arabicText: "وَنُيَسِّرُكَ لِلْيُسْرَىٰ",
+      englishText: "And We will ease you toward ease.",
+    },
+];
 
   /**
    * Day-key arithmetic: YYYYMMDD as a single integer. Lets us compute the

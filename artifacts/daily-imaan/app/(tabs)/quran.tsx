@@ -102,13 +102,19 @@ export default function QuranScreen() {
   }, []);
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return SURAHS;
-    const q = query.toLowerCase();
+    const raw = query.trim();
+    if (!raw) return SURAHS;
+    const q = raw.toLowerCase();
+    // Arabic queries match against the Arabic surah name with diacritics
+    // stripped from both sides, so typing بقرة finds ٱلْبَقَرَة.
+    const stripDiacritics = (s: string) => s.replace(/[ً-ْٰـٱ]/g, (ch) => (ch === "ٱ" ? "ا" : ""));
+    const qAr = stripDiacritics(raw);
     return SURAHS.filter(
       (s) =>
         s.nameEnglish.toLowerCase().includes(q) ||
         s.nameTranslation.toLowerCase().includes(q) ||
-        String(s.id).includes(q)
+        String(s.id).includes(q) ||
+        (qAr.length > 0 && stripDiacritics(s.name).includes(qAr))
     );
   }, [query]);
 

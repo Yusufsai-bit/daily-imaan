@@ -62,6 +62,9 @@ WHAT'S INSIDE
 • 99 Names of Allah (Asma ul Husna) with English meanings.
 • Sajdah verse markers — the 14 prostration verses are flagged inline.
 • Continuous-play recitation, repeat-N for memorisation, copy-text on every ayah.
+• Download any surah's recitation for offline listening — commutes, flights, weak signal.
+• Set a khatam goal (30, 90, or 180 days) and see your gentle daily portion — no guilt if you fall behind.
+• Resume reading at the exact verse you left off.
 • "I am feeling…" — pick how your heart is and find a verse or dua tied to that state.
 • Bookmark ayat or hadith for later.
 • Adjustable Arabic font size and Mushaf-only reading mode.

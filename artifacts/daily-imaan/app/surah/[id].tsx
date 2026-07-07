@@ -36,6 +36,7 @@ import { getQuranSurah, QURAN_TRANSLATION_LABEL } from "@/data/quranFull";
 import { isSajdahVerse } from "@/data/sajdahData";
 import { useTafsir } from "@/hooks/useTafsir";
 import { playSurah, playSingleAyah, parseTrackId } from "@/lib/trackPlayer";
+import { deleteSurahAudio, downloadSurahAudio, isSurahDownloaded } from "@/lib/audioDownloads";
 
 interface ParsedAyah {
   number: number;
@@ -389,6 +390,21 @@ export default function SurahDetailScreen() {
   const [copiedFor, setCopiedFor] = useState<number | null>(null);
   const [sharingAyah, setSharingAyah] = useState<ParsedAyah | null>(null);
   const shareCardRef = useRef<View>(null);
+  const listRef = useRef<FlatList<ParsedAyah>>(null);
+
+  // Verse-level resume. The ayah the user was last reading in THIS surah is
+  // captured once at mount (before scroll tracking overwrites it) so we can
+  // scroll back to it, and updated (throttled) from the viewability callback
+  // as they read.
+  const initialResumeAyahRef = useRef<number | null>(null);
+  if (initialResumeAyahRef.current === null) {
+    initialResumeAyahRef.current =
+      state.lastReadPosition?.surahId === surahId
+        ? Math.max(1, state.lastReadPosition.ayahNumber)
+        : 1;
+  }
+  const lastSavedAyahRef = useRef(initialResumeAyahRef.current);
+  const lastSavedAtRef = useRef(0);
 
   // A-B loop: how many times to repeat a single ayah. 0 = off.
   const REPEAT_OPTIONS: { label: string; value: number }[] = [
@@ -403,6 +419,17 @@ export default function SurahDetailScreen() {
 
   // Verse notes modal
   const [noteModal, setNoteModal] = useState<{ ayahId: number; globalId: number; draft: string } | null>(null);
+
+  // Offline audio download for this surah + current reciter.
+  const [downloadStatus, setDownloadStatus] = useState<"none" | "downloading" | "done">("none");
+  const [downloadPct, setDownloadPct] = useState(0);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // RNTP state — which ayah is highlighted on THIS surah screen
   const activeTrack = useActiveTrack();
@@ -432,6 +459,57 @@ export default function SurahDetailScreen() {
     repeatCount,
     ayahNotes: state.ayahNotes,
   };
+
+  // Reflect existing download state on mount / reciter change (downloads
+  // are per-reciter — switching qari means a separate offline copy).
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    let cancelled = false;
+    isSurahDownloaded(surahId, reciter)
+      .then((done) => {
+        if (!cancelled) setDownloadStatus((prev) => (prev === "downloading" ? prev : done ? "done" : "none"));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [surahId, reciter]);
+
+  const handleDownload = useCallback(async () => {
+    if (downloadStatus === "downloading") return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (downloadStatus === "done") {
+      Alert.alert(
+        "Remove download?",
+        "This surah's audio will stream from the internet again.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Remove",
+            style: "destructive",
+            onPress: async () => {
+              await deleteSurahAudio(surahId, reciter);
+              if (mountedRef.current) setDownloadStatus("none");
+            },
+          },
+        ],
+      );
+      return;
+    }
+    setDownloadStatus("downloading");
+    setDownloadPct(0);
+    try {
+      await downloadSurahAudio(surahId, reciter, (done, total) => {
+        if (mountedRef.current) setDownloadPct(Math.round((done / total) * 100));
+      });
+      if (mountedRef.current) setDownloadStatus("done");
+    } catch {
+      if (mountedRef.current) {
+        setDownloadStatus("none");
+        Alert.alert("Download failed", "Check your connection and try again — completed ayat are kept, so retrying resumes.");
+      }
+    }
+  }, [downloadStatus, surahId, reciter]);
 
   const cycleFontSize = useCallback(() => {
     Haptics.selectionAsync();
@@ -582,9 +660,11 @@ export default function SurahDetailScreen() {
           english: a.e,
         }));
         setAyat(parsed);
+        // Keep the resume ayah if the user is re-opening the same surah;
+        // scroll tracking below refines it as they read.
         setLastReadPosition({
           surahId,
-          ayahNumber: 1,
+          ayahNumber: initialResumeAyahRef.current ?? 1,
           surahName: surah.nameEnglish,
           updatedAt: Date.now(),
         });
@@ -596,6 +676,71 @@ export default function SurahDetailScreen() {
       cancelled = true;
     };
   }, [surahId, surah, setLastReadPosition, markDeedDone]);
+
+  // Auto-scroll back to the resume ayah once the list has data. Row heights
+  // vary (no getItemLayout), so scrollToIndex can fail for far-away indices —
+  // the failure handler estimates an offset, then retries precisely.
+  useEffect(() => {
+    const target = initialResumeAyahRef.current ?? 1;
+    if (loading || ayat.length === 0 || target <= 1) return;
+    const index = Math.min(target - 1, ayat.length - 1);
+    const timer = setTimeout(() => {
+      listRef.current?.scrollToIndex({ index, viewPosition: 0.1, animated: false });
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [loading, ayat]);
+
+  const handleScrollToIndexFailed = useCallback(
+    (info: { index: number; averageItemLength: number }) => {
+      listRef.current?.scrollToOffset({
+        offset: info.averageItemLength * info.index,
+        animated: false,
+      });
+      setTimeout(() => {
+        listRef.current?.scrollToIndex({ index: info.index, viewPosition: 0.1, animated: false });
+      }, 120);
+    },
+    [],
+  );
+
+  // Track the top visible ayah as the user reads. The callback identity must
+  // stay fixed for the lifetime of the FlatList (RN requirement), so it reads
+  // everything volatile through refs and a render-updated saver.
+  const saveReadPositionRef = useRef<(ayahNumber: number) => void>(() => {});
+  saveReadPositionRef.current = (ayahNumber: number) => {
+    if (!surah) return;
+    setLastReadPosition({
+      surahId,
+      ayahNumber,
+      surahName: surah.nameEnglish,
+      updatedAt: Date.now(),
+    });
+  };
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 25,
+    minimumViewTime: 350,
+  }).current;
+
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: { isViewable: boolean; item: ParsedAyah }[] }) => {
+      const first = viewableItems.find((v) => v.isViewable)?.item;
+      if (!first) return;
+      const n = first.numberInSurah;
+      const now = Date.now();
+      // Throttle persistence: save when the reader has moved ≥3 ayat, or on
+      // any change after 5s of settling — enough fidelity for resume without
+      // writing state on every scroll frame.
+      if (
+        n !== lastSavedAyahRef.current &&
+        (Math.abs(n - lastSavedAyahRef.current) >= 3 || now - lastSavedAtRef.current > 5000)
+      ) {
+        lastSavedAyahRef.current = n;
+        lastSavedAtRef.current = now;
+        saveReadPositionRef.current(n);
+      }
+    },
+  ).current;
 
   const renderAyah = useCallback(
     ({ item }: { item: ParsedAyah }) => (
@@ -754,6 +899,40 @@ export default function SurahDetailScreen() {
           </Pressable>
         )}
 
+        {/* Offline download — download icon → % while fetching → checkmark
+            when complete (tap again to remove). Per-reciter. */}
+        {Platform.OS !== "web" && (
+          <Pressable
+            onPress={handleDownload}
+            accessibilityLabel={
+              downloadStatus === "done"
+                ? "Audio downloaded for offline listening. Tap to remove."
+                : downloadStatus === "downloading"
+                ? `Downloading audio, ${downloadPct} percent`
+                : "Download this surah's audio for offline listening"
+            }
+            style={({ pressed }) => [
+              styles.toolBtn,
+              {
+                backgroundColor: downloadStatus === "done" ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.12)",
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
+          >
+            {downloadStatus === "downloading" ? (
+              <Text style={{ color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 9 }}>
+                {downloadPct}%
+              </Text>
+            ) : (
+              <Ionicons
+                name={downloadStatus === "done" ? "checkmark-done" : "cloud-download-outline"}
+                size={15}
+                color="#fff"
+              />
+            )}
+          </Pressable>
+        )}
+
         {/* Auto (continuous play) — now labelled */}
         {Platform.OS !== "web" && (
           <Pressable
@@ -832,12 +1011,16 @@ export default function SurahDetailScreen() {
         </View>
       ) : (
         <FlatList
+          ref={listRef}
           data={ayat}
           keyExtractor={(item) => String(item.numberInSurah)}
           renderItem={renderAyah}
           contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={listHeader}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          onScrollToIndexFailed={handleScrollToIndexFailed}
           // Virtualization tuning for long surahs (Al-Baqarah = 286 rows of
           // shaped Arabic text). Same treatment the Bookmarks list already
           // has. No getItemLayout — row heights vary with font size,

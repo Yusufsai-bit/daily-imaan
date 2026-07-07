@@ -183,10 +183,27 @@ export interface StreakData {
 
 /**
  * Last position the user was reading in the Mushaf, surfaced on the Home
- * screen as a "Continue reading" card. Updated whenever the surah detail
- * screen mounts. Only the surah is tracked (not the scroll offset) because
- * the user typically resumes near the start.
+ * screen as a "Continue reading" card. Set when the surah detail screen
+ * mounts and updated (throttled) as the reader scrolls, so `ayahNumber`
+ * tracks the verse actually in view — reopening the surah auto-scrolls
+ * back to it.
  */
+/**
+ * Optional khatam (complete-the-Qur'an) goal. Progress is measured against
+ * `readAyatIds.length`, anchored to where the user was when the goal was
+ * set so an existing reader isn't credited/penalized for prior progress.
+ * Deliberately no failure state — a "behind" plan just shows a gentler
+ * daily portion, matching the app's no-guilt stance.
+ */
+export interface KhatamPlan {
+  /** YYYY-MM-DD the goal was set. */
+  startDate: string;
+  /** Total days chosen for the khatam (e.g. 30 / 90 / 180). */
+  targetDays: number;
+  /** readAyatIds.length at the moment the goal was set. */
+  startCount: number;
+}
+
 export interface LastReadPosition {
   surahId: number;
   ayahNumber: number;
@@ -210,6 +227,8 @@ export interface AppState {
   settings: AppSettings;
   readAyatIds: number[];
   lastReadPosition: LastReadPosition | null;
+  /** Active khatam goal, or null when none is set. */
+  khatamPlan: KhatamPlan | null;
   /**
    * First-launch welcome screen flag. False until the user has seen the
    * welcome / sources / privacy intro and tapped "Begin". Stored at the
@@ -253,6 +272,8 @@ interface AppContextType {
    * it once). Sets freezeCelebrationAcknowledgedOn to today. Idempotent. */
   acknowledgeFreezeCelebration: () => void;
   setLastReadPosition: (pos: LastReadPosition) => void;
+  /** Set (or clear, with null) the khatam goal. */
+  setKhatamPlan: (plan: KhatamPlan | null) => void;
   /** Mark the first-launch welcome flow as completed. Idempotent. */
   setWelcomeSeen: () => void;
   /** Permanently dismiss the home-screen reminder tip banner. Idempotent. */
@@ -325,6 +346,7 @@ const DEFAULT_STATE: AppState = {
   },
   readAyatIds: [],
   lastReadPosition: null,
+  khatamPlan: null,
   welcomeSeen: false,
   homeTipDismissed: false,
   ayahNotes: {},
@@ -389,6 +411,7 @@ function migrateState(saved: Partial<AppState>): AppState {
         ? saved.goodDeeds
         : {},
     lastReadPosition: saved.lastReadPosition ?? null,
+    khatamPlan: saved.khatamPlan ?? null,
     welcomeSeen: typeof saved.welcomeSeen === "boolean" ? saved.welcomeSeen : false,
     homeTipDismissed:
       typeof saved.homeTipDismissed === "boolean" ? saved.homeTipDismissed : false,
@@ -957,6 +980,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [updateState]
   );
 
+  const setKhatamPlan = useCallback(
+    (plan: KhatamPlan | null) => {
+      updateState((prev) => ({ ...prev, khatamPlan: plan }));
+    },
+    [updateState]
+  );
+
   return (
     <AppContext.Provider
       value={{
@@ -974,6 +1004,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         recordActivity,
         acknowledgeFreezeCelebration,
         setLastReadPosition,
+        setKhatamPlan,
         setWelcomeSeen,
         dismissHomeTip,
         setAyahNote,

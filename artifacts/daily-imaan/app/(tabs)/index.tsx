@@ -1,4 +1,10 @@
-import { Audio } from "expo-av";
+import TrackPlayer, {
+  State as TPState,
+  useActiveTrack,
+  usePlaybackState,
+} from "react-native-track-player";
+
+import { playSingleAyah, parseTrackId } from "@/lib/trackPlayer";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Linking from "expo-linking";
@@ -135,14 +141,19 @@ export default function HomeScreen() {
 
   const [ayah, setAyah] = useState<FeaturedAyah>(() => getTodayAyah(state.settings.ayatOrder));
   const [hadith, setHadith] = useState<DailyHadith>(() => getTodayHadith());
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  // Mirror `sound` into a ref so the unmount cleanup unloads whatever the
-  // CURRENT sound is, not whatever was captured in a stale closure. The
-  // previous version had a [sound]-deps useEffect cleanup that fired the
-  // wrong order on rapid shuffle (cleanup of old sound after new sound
-  // mounted), causing audio session leaks.
-  const soundRef = useRef<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  // Featured-ayah audio now rides the same react-native-track-player stack
+  // as the surah reader (expo-av is deprecated in SDK 54 and was the app's
+  // second, redundant audio pipeline). Play state is DERIVED from the
+  // player: no local sound object, no unload bookkeeping, no session leaks
+  // — and the global mini-player picks the track up for free.
+  const activeTrack = useActiveTrack();
+  const { state: playbackState } = usePlaybackState();
+  const activeParsed = parseTrackId(activeTrack?.id);
+  const isThisAyahActive =
+    activeParsed?.surahId === ayah.surahId && activeParsed?.ayahN === ayah.ayahNumber;
+  const isPlaying =
+    isThisAyahActive &&
+    (playbackState === TPState.Playing || playbackState === TPState.Buffering);
   const [audioLoading, setAudioLoading] = useState(false);
   const [showTafsir, setShowTafsir] = useState(false);
   const tafsir = useTafsir(ayah.surahId, ayah.ayahNumber, showTafsir);
@@ -253,62 +264,29 @@ export default function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- prayerTimesKey stands in for the unstable prayerTimes object
   }, [ayah, nextPrayer, prayerTimesKey]);
 
-  // Keep the ref in sync with the state — used by unmount cleanup.
-  useEffect(() => {
-    soundRef.current = sound;
-  }, [sound]);
-
-  // Unmount-only cleanup. Reads the current sound out of the ref so we
-  // unload the active instance even if React batches renders weirdly.
-  // Previously this re-ran on every sound state change with stale closures,
-  // racing with the new sound's load and leaking audio sessions.
-  useEffect(() => {
-    return () => {
-      const s = soundRef.current;
-      if (s) {
-        // Fire-and-forget: cleanup runs at unmount, no setState afterwards.
-        s.unloadAsync().catch(() => undefined);
-        soundRef.current = null;
-      }
-    };
-  }, []);
-
   const handleAudio = useCallback(async () => {
     if (Platform.OS === "web") {
       Alert.alert("Audio", "Audio playback is available on the mobile app.");
       return;
     }
     try {
-      if (isPlaying && sound) {
-        await sound.pauseAsync();
-        setIsPlaying(false);
-        return;
-      }
-      if (sound) {
-        await sound.playAsync();
-        setIsPlaying(true);
+      // Same track already loaded — just toggle.
+      if (isThisAyahActive) {
+        if (isPlaying) {
+          await TrackPlayer.pause();
+        } else {
+          await TrackPlayer.play();
+        }
         return;
       }
       setAudioLoading(true);
-      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-      const globalNum = getGlobalAyahNumber(ayah.surahId, ayah.ayahNumber);
-      const url = `https://cdn.alquran.cloud/media/audio/ayah/${state.settings.reciter}/${globalNum}`;
-      const { sound: newSound } = await Audio.Sound.createAsync({ uri: url }, { shouldPlay: true });
-      newSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) setIsPlaying(false);
-      });
-      // Update ref synchronously so a shuffle/unload that fires before the
-      // next render still finds the new sound to clean up. Otherwise we get
-      // an audio session leak on rapid tap-Listen → tap-Shuffle.
-      soundRef.current = newSound;
-      setSound(newSound);
-      setIsPlaying(true);
+      await playSingleAyah(ayah.surahId, ayah.ayahNumber, state.settings.reciter, 1);
     } catch {
       Alert.alert("Audio Error", "Could not load audio. Check your connection.");
     } finally {
       setAudioLoading(false);
     }
-  }, [isPlaying, sound, ayah, state.settings.reciter]);
+  }, [isThisAyahActive, isPlaying, ayah, state.settings.reciter]);
 
   // IMPORTANT: featuredAyat[].id is a list-local index, NOT a global Quran
   // ayah number. Bookmarks must use the global number so they resolve
@@ -332,19 +310,12 @@ export default function HomeScreen() {
 
   const handleAyatShuffle = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Tear down audio BEFORE we mutate state. We capture the current sound
-    // ref locally so a rapid second tap that sets sound to null mid-await
-    // can't leak the same instance twice.
-    const current = soundRef.current;
-    if (current) {
-      soundRef.current = null;
-      setSound(null);
-      setIsPlaying(false);
-      try {
-        await current.unloadAsync();
-      } catch {
-        // already unloaded; ignore
-      }
+    // If the outgoing ayah is what's playing, stop it — matches the old
+    // behavior of tearing audio down on shuffle. Any OTHER audio (a surah
+    // playing in the background) is left alone.
+    const parsed = parseTrackId((await TrackPlayer.getActiveTrack().catch(() => null))?.id);
+    if (parsed?.surahId === ayah.surahId && parsed?.ayahN === ayah.ayahNumber) {
+      await TrackPlayer.reset().catch(() => undefined);
     }
     const idx = Math.floor(Math.random() * FEATURED_AYAT.length);
     const useND = Platform.OS !== "web";
@@ -355,7 +326,7 @@ export default function HomeScreen() {
       Animated.spring(scaleAnim, { toValue: 1, tension: 80, friction: 8, useNativeDriver: useND }),
     ]).start();
     setAyah(FEATURED_AYAT[idx]!);
-  }, [fadeAnim, scaleAnim]);
+  }, [fadeAnim, scaleAnim, ayah.surahId, ayah.ayahNumber]);
 
   const handleHadithBookmark = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -394,13 +365,14 @@ export default function HomeScreen() {
   const hadithBookmarked = isHadithBookmarked(hadith.id);
 
   // Resume Qur'an tile values — first-run shows "Start the Qur'an".
-  // Only the surah is tracked (setLastReadPosition always records ayah 1),
-  // so the subtitle deliberately omits an ayah number — showing ":1" would
-  // imply verse-level precision the feature doesn't have.
+  // The reader tracks the verse in view (throttled), so when we know the
+  // ayah beyond the first we can honestly show verse-level precision.
   const hasLastRead = !!state.lastReadPosition;
   const resumeTitle = hasLastRead ? "Resume Qur'an" : "Start the Qur'an";
   const resumeSubtitle = hasLastRead
-    ? `Surah ${state.lastReadPosition!.surahName}`
+    ? state.lastReadPosition!.ayahNumber > 1
+      ? `${state.lastReadPosition!.surahName} · Ayah ${state.lastReadPosition!.ayahNumber}`
+      : `Surah ${state.lastReadPosition!.surahName}`
     : "Begin with Al-Fatiha";
   const resumeRoute = hasLastRead
     ? `/surah/${state.lastReadPosition!.surahId}`

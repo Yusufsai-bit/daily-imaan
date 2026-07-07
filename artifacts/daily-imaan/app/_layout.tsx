@@ -12,7 +12,7 @@ import * as Notifications from "expo-notifications";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { router, Stack, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Appearance, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -109,13 +109,24 @@ function AppEffects() {
 
   // Deep-link routing on notification tap. Routes to the screen that matches
   // the notification category so tapping a hadith nudge opens /hadith, an
-  // adhkar nudge opens /adhkar, etc. Ayah taps also mark the verse as read
-  // and record activity for streak purposes.
+  // adhkar nudge opens /adhkar (with the right period), etc. Ayah taps also
+  // mark the verse as read and record activity for streak purposes.
+  //
+  // Two delivery paths, both required:
+  //  - listener: taps while the app is alive (foreground/background).
+  //  - getLastNotificationResponseAsync: the COLD-START tap — when the app
+  //    is launched by the notification itself the listener never fires, so
+  //    without this the tap just opened Home. De-duped by response identifier.
+  const handledNotificationIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (Platform.OS === "web") return;
-    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      if (!loaded) return;
+    if (Platform.OS === "web" || !loaded) return;
+
+    const routeForResponse = (response: Notifications.NotificationResponse) => {
       if (response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
+      const id = response.notification.request.identifier;
+      if (handledNotificationIdRef.current === id) return;
+      handledNotificationIdRef.current = id;
+
       const category = response.notification.request.content.categoryIdentifier;
       if (category === "daily_ayat") {
         const todayAyah = getTodayAyah(state.settings.ayatOrder);
@@ -126,12 +137,22 @@ function AppEffects() {
         recordActivity();
         router.navigate("/hadith");
       } else if (category === "daily_adhkar") {
-        router.navigate("/adhkar");
+        // Morning nudge fires 07:00, evening 17:30 — route by which half of
+        // the day the tap happens in so the right list opens.
+        const period = new Date().getHours() < 12 ? "morning" : "evening";
+        router.navigate(`/adhkar?period=${period}` as never);
       } else {
         // prayer_time, wudu_reminder → home
         router.navigate("/");
       }
-    });
+    };
+
+    const sub = Notifications.addNotificationResponseReceivedListener(routeForResponse);
+    Notifications.getLastNotificationResponseAsync()
+      .then((response) => {
+        if (response) routeForResponse(response);
+      })
+      .catch(() => undefined);
     return () => sub.remove();
   }, [loaded, recordActivity, markAyahRead, state.settings.ayatOrder]);
 

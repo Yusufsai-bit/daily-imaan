@@ -41,11 +41,37 @@ export default function MeScreen() {
   const C = isDark ? colors.dark : colors.light;
   const insets = useSafeAreaInsets();
 
-  const { state, toggleDeed, isDeedChecked } = useApp();
-  const { streak, bookmarks, readAyatIds } = state;
+  const { state, toggleDeed, isDeedChecked, setKhatamPlan } = useApp();
+  const { streak, bookmarks, readAyatIds, khatamPlan } = state;
 
   const checked = GOOD_DEEDS.filter((d) => isDeedChecked(d.id)).length;
   const progress = checked / GOOD_DEEDS.length;
+
+  // Khatam goal math. Anchored to progress at the time the goal was set so
+  // a long-time reader starts their plan from where they are, not zero.
+  const TOTAL_AYAT = 6236;
+  const khatam = (() => {
+    if (!khatamPlan) return null;
+    const msPerDay = 86400000;
+    const start = new Date(khatamPlan.startDate + "T00:00:00");
+    const daysElapsed = Number.isNaN(start.getTime())
+      ? 1
+      : Math.max(1, Math.floor((Date.now() - start.getTime()) / msPerDay) + 1);
+    const remainingAtStart = Math.max(1, TOTAL_AYAT - khatamPlan.startCount);
+    const perDay = Math.ceil(remainingAtStart / khatamPlan.targetDays);
+    const expectedByToday = Math.min(TOTAL_AYAT, khatamPlan.startCount + perDay * daysElapsed);
+    const daysLeft = Math.max(0, khatamPlan.targetDays - daysElapsed);
+    const readToday = Math.max(0, readAyatIds.length - khatamPlan.startCount);
+    const behindBy = Math.max(0, expectedByToday - readAyatIds.length);
+    return { daysElapsed, daysLeft, perDay, behindBy, readSincePlan: readToday };
+  })();
+
+  const startKhatam = (targetDays: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const d = new Date();
+    const startDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    setKhatamPlan({ startDate, targetDays, startCount: readAyatIds.length });
+  };
 
   const handleToggle = useCallback(
     (id: string) => {
@@ -159,7 +185,7 @@ export default function MeScreen() {
         </Pressable>
       </View>
       <Text style={[styles.streakNote, { color: C.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-        Two streak freezes per week, refilled every Sunday — they auto-apply when life gets in the way.{streak.longestStreak > 1 ? ` Longest streak so far: ${streak.longestStreak}.` : ""}
+        ❄ {streak.freezesAvailable} freeze{streak.freezesAvailable === 1 ? "" : "s"} left this week (refilled every Sunday) — they auto-apply when life gets in the way.{streak.longestStreak > 1 ? ` Longest streak so far: ${streak.longestStreak}.` : ""}
       </Text>
 
       {/* Daily Deeds — moved above Khatam so the daily habit loop is the
@@ -315,6 +341,63 @@ export default function MeScreen() {
             ]}
           />
         </View>
+
+        {/* Khatam goal — turns the passive % into a plan. Gentle by design:
+            being behind changes the message, never adds guilt or resets. */}
+        {khatam ? (
+          <View style={styles.khatamPlanRow}>
+            <View style={{ flex: 1 }}>
+              <Text
+                maxFontSizeMultiplier={1.5}
+                style={[styles.khatamPlanText, { color: C.foreground, fontFamily: "Inter_500Medium" }]}
+              >
+                Day {khatam.daysElapsed} of {khatamPlan!.targetDays} · ~{khatam.perDay} ayat/day
+              </Text>
+              <Text
+                maxFontSizeMultiplier={1.5}
+                style={[styles.khatamPlanSub, { color: khatam.behindBy === 0 ? C.primary : C.mutedForeground, fontFamily: "Inter_400Regular" }]}
+              >
+                {khatam.behindBy === 0
+                  ? "On pace — mashaAllah, keep going."
+                  : `A little behind (${khatam.behindBy.toLocaleString()} ayat) — every ayah counts, no guilt.`}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setKhatamPlan(null);
+              }}
+              {...a11yButton("Clear khatam goal", "Removes the goal without touching your reading progress")}
+              hitSlop={8}
+              style={({ pressed }) => [styles.khatamClearBtn, { backgroundColor: C.muted, opacity: pressed ? 0.7 : 1 }]}
+            >
+              <Text style={[styles.khatamClearText, { color: C.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Clear
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.khatamPlanRow}>
+            <Text
+              maxFontSizeMultiplier={1.5}
+              style={[styles.khatamPlanText, { color: C.mutedForeground, fontFamily: "Inter_400Regular", flex: 1 }]}
+            >
+              Set a khatam goal:
+            </Text>
+            {[30, 90, 180].map((days) => (
+              <Pressable
+                key={days}
+                onPress={() => startKhatam(days)}
+                {...a11yButton(`Finish the Qur'an in ${days} days`)}
+                style={({ pressed }) => [styles.khatamChip, { backgroundColor: C.secondary, opacity: pressed ? 0.7 : 1 }]}
+              >
+                <Text style={[styles.khatamChipText, { color: C.primary, fontFamily: "Inter_600SemiBold" }]}>
+                  {days}d
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
       </Pressable>
 
       {/* Quick Links */}
@@ -431,6 +514,13 @@ const styles = StyleSheet.create({
   khatamSub: { fontSize: 12, marginTop: 1 },
   khatamBarBg: { height: 6, borderRadius: 3, overflow: "hidden" },
   khatamBarFill: { height: "100%", borderRadius: 3 },
+  khatamPlanRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 },
+  khatamPlanText: { fontSize: 12 },
+  khatamPlanSub: { fontSize: 11, marginTop: 1, lineHeight: 15 },
+  khatamChip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  khatamChipText: { fontSize: 12 },
+  khatamClearBtn: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  khatamClearText: { fontSize: 11 },
   section: { gap: 12 },
   sectionHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
   sectionTitle: { fontSize: 17 },

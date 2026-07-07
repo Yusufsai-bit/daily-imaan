@@ -1,6 +1,7 @@
 import TrackPlayer, { Capability, RepeatMode, Event } from "react-native-track-player";
 import { SURAHS } from "@/data/surahsData";
 import { getReciterById } from "@/constants/reciters";
+import { getLocalSurahDirIfComplete } from "@/lib/audioDownloads";
 
 let playerReady = false;
 
@@ -47,11 +48,17 @@ export async function playSurah(
   if (!surah) return;
   const reciterInfo = getReciterById(reciter);
 
+  // Prefer the offline copy when the surah has been fully downloaded —
+  // one marker check per surah, not per ayah.
+  const localDir = await getLocalSurahDirIfComplete(surahId, reciter).catch(() => null);
+  const urlFor = (n: number) =>
+    localDir ? `${localDir}/${n}.mp3` : ayahUrl(surahId, n, reciter);
+
   const tracks = Array.from({ length: surah.ayahCount }, (_, i) => {
     const n = i + 1;
     return {
       id: `${surahId}:${n}`,
-      url: ayahUrl(surahId, n, reciter),
+      url: urlFor(n),
       title: `${surah.nameEnglish} · Ayah ${n}`,
       artist: reciterInfo.name,
       album: surah.nameEnglish,
@@ -81,7 +88,8 @@ export async function playSingleAyah(
   if (!surah) return;
   const reciterInfo = getReciterById(reciter);
 
-  const url = ayahUrl(surahId, ayahN, reciter);
+  const localDir = await getLocalSurahDirIfComplete(surahId, reciter).catch(() => null);
+  const url = localDir ? `${localDir}/${ayahN}.mp3` : ayahUrl(surahId, ayahN, reciter);
   const title = `${surah.nameEnglish} · Ayah ${ayahN}`;
 
   await TrackPlayer.reset();
