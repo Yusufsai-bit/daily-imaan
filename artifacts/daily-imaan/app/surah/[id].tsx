@@ -366,7 +366,7 @@ const AyahRow = React.memo(function AyahRow({
 });
 
 export default function SurahDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, ayah } = useLocalSearchParams<{ id: string; ayah?: string }>();
   const surahId = parseInt(id ?? "1");
   const surah = getSurahById(surahId);
 
@@ -398,10 +398,15 @@ export default function SurahDetailScreen() {
   // as they read.
   const initialResumeAyahRef = useRef<number | null>(null);
   if (initialResumeAyahRef.current === null) {
+    // A deep-link ?ayah= param (e.g. from a tapped daily-ayah notification)
+    // takes priority over the saved resume position for this open.
+    const deepLinkAyah = ayah ? parseInt(ayah, 10) : NaN;
     initialResumeAyahRef.current =
-      state.lastReadPosition?.surahId === surahId
-        ? Math.max(1, state.lastReadPosition.ayahNumber)
-        : 1;
+      Number.isFinite(deepLinkAyah) && deepLinkAyah >= 1
+        ? deepLinkAyah
+        : state.lastReadPosition?.surahId === surahId
+          ? Math.max(1, state.lastReadPosition.ayahNumber)
+          : 1;
   }
   const lastSavedAyahRef = useRef(initialResumeAyahRef.current);
   const lastSavedAtRef = useRef(0);
