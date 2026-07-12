@@ -135,7 +135,11 @@ function AppEffects() {
         const todayAyah = getTodayAyah(state.settings.ayatOrder);
         markAyahRead(getGlobalId(todayAyah.surahId, todayAyah.ayahNumber));
         recordActivity();
-        router.navigate("/");
+        // Open the surah reader scrolled to today's ayah — landing on Home
+        // marked the verse read without ever showing it.
+        router.navigate(
+          `/surah/${todayAyah.surahId}?ayah=${todayAyah.ayahNumber}` as never
+        );
       } else if (category === "daily_hadith") {
         recordActivity();
         router.navigate("/hadith");
