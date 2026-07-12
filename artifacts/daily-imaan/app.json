@@ -19,7 +19,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.dailyimaan.app",
-      "buildNumber": "12",
+      "buildNumber": "13",
       "entitlements": {
         "com.apple.security.application-groups": [
           "group.com.dailyimaan.app"
